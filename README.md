@@ -1,4 +1,3 @@
-```markdown
 # TabPay
 
 ## Empower Your Community: Contribute, Host & Connect with Ease
@@ -33,7 +32,7 @@ TabPay is a revolutionary digital platform designed to empower your community by
 
 2. **Dashboard Overview**
 
-   - Get an overview of your community’s performance including total members, number of blocks, total contributions, and more.
+   - Get an overview of your community's performance including total members, number of blocks, total contributions, and more.
 
 3. **Community Umbrella Management**
 
@@ -54,21 +53,7 @@ Foster stronger connections among members through shared experiences and contrib
 
 - Register or log in to start managing your community with TabPay.
 - For support, contact us at: [hello@tabpay.com](mailto:hello@tabpay.com).
-  - Update your personal information, set new passwords, and manage your profile with ease.
-
-5. **Block & Zone Definition**
-   - Define and organize blocks and zones under your community umbrella to streamline event allocation and management.
-
-### Contribute to Your Community
-
-Foster stronger connections among members through shared experiences and contributions. TabPay is here to help you build a more connected and organized community.
-
-### Join Us Today!
-
-- Register or log in to start managing your community with TabPay.
-- For support, contact us at: [hello@tabpay.com](mailto:hello@tabpay.com).
 
 ---
 
 © 2024 TabPay. All rights reserved.
-```
