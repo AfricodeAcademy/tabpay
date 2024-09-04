@@ -54,6 +54,19 @@ Foster stronger connections among members through shared experiences and contrib
 
 - Register or log in to start managing your community with TabPay.
 - For support, contact us at: [hello@tabpay.com](mailto:hello@tabpay.com).
+  - Update your personal information, set new passwords, and manage your profile with ease.
+
+5. **Block & Zone Definition**
+   - Define and organize blocks and zones under your community umbrella to streamline event allocation and management.
+
+### Contribute to Your Community
+
+Foster stronger connections among members through shared experiences and contributions. TabPay is here to help you build a more connected and organized community.
+
+### Join Us Today!
+
+- Register or log in to start managing your community with TabPay.
+- For support, contact us at: [hello@tabpay.com](mailto:hello@tabpay.com).
 
 ---
 
