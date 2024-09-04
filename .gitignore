@@ -1,1 +1,78 @@
+
+# Byte-compiled / optimized / DLL files
+app/__pycache__/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Environment variables
 .tabpay/
+.env
+.venv/
+myenv/
+.myenv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Flask configuration files
+instance/
+config.py
+*.ini
+*.cfg
+
+# Pytest cache
+.pytest_cache/
+
+# Coverage reports
+htmlcov/
+.tox/
+.coverage
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# Flask logs
+*.log
+*.sqlite
+
+# Static files
+staticfiles/
+
+# Templates
+templates/__pycache__/
+
+# IDE-specific files
+.vscode/
+.idea/
+
+# macOS-specific files
+.DS_Store
+
+# Docker-related files
+*.log
+docker-compose.yml
+Dockerfile
+
+# Ignore database files
+*.sqlite3
+*.db
+
+# Python virtual environment
+.pip/
+pip-log.txt
+
+# Other
+*.bak
+*.swp
+*~
