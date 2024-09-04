@@ -1,3 +1,5 @@
+.tabpay/
+app/__pycache__/
 
 # Byte-compiled / optimized / DLL files
 app/__pycache__/
@@ -76,3 +78,4 @@ pip-log.txt
 *.bak
 *.swp
 *~
+
