@@ -27,21 +27,47 @@
   </head>
   <body>
     {% if title != 'TabPay | Home' %}
-    <!-- Sidebar -->
-    <div class="glass-sidebar d-flex flex-column">
-      <!-- TabPay Logo -->
-      <div class="tabpay-logo"><span>Tab</span>Pay</div>
+    <div class="">
+      <div class="row">
+        <div class="col-lg-2">
+          <!-- Sidebar -->
+          <div class="glass-sidebar d-flex flex-column">
+            <!-- TabPay Logo -->
+            <div class="tabpay-logo"><span>Tab</span>Pay</div>
 
-      <a href="#" class="active"><i class="bi bi-grid-fill"></i> Dashboard</a>
-      <a href="#"><i class="bi bi-currency-exchange"></i> Contribute</a>
-      <a href="#"><i class="bi bi-house-fill"></i> Host</a>
-      <a href="#"><i class="bi bi-people-fill"></i> Committee</a>
-      <a href="#"><i class="bi bi-bar-chart-fill"></i> Reports</a>
+            <a href="#" class="active"
+              ><i class="bi bi-grid-fill"></i> Dashboard</a
+            >
+            <a href="#"><i class="bi bi-currency-exchange"></i> Contribute</a>
+            <a href="#"><i class="bi bi-house-fill"></i> Host</a>
+            <a href="#"><i class="bi bi-people-fill"></i> Committee</a>
+            <a href="#"><i class="bi bi-bar-chart-fill"></i> Reports</a>
 
-      <!-- Bottom of the Sidebar -->
-      <div class="sidebar-bottom mt-auto">
-        <a href="#"><i class="bi bi-gear-fill"></i> Settings</a>
-        <a href="#"><i class="bi bi-box-arrow-right"></i> Logout</a>
+            <!-- Bottom of the Sidebar -->
+            <div class="sidebar-bottom mt-auto">
+              <a href="#"><i class="bi bi-gear-fill"></i> Settings</a>
+              <a href="#"><i class="bi bi-box-arrow-right"></i> Logout</a>
+            </div>
+            <!-- Close Sidebar -->
+          </div>
+        </div>
+        <div class="col-lg-10">
+          <div class="row d-flex justify-content-between p-2">
+            <div class="col-lg-6 ms-3">
+              <h1 class="temp-5-h1">{% block heading %}{% endblock %}</h1>
+            </div>
+            <div class="col-lg-4">
+              <!-- Profile section -->
+              <div class="profile-area">
+                <i class="bi bi-search me-2"></i>
+                <i class="bi bi-bell"></i>
+                <img src="../static/images/image.png" alt="Profile Picture" />
+                <span>Cheruiyot</span>
+                <i class="bi bi-chevron-down"></i>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     {% endif %} {% block content %} {% endblock %}
