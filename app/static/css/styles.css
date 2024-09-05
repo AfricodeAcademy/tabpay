@@ -1,0 +1,106 @@
+/*LOGIN TO TOUR ACCOUNT STYLING */
+body {
+    margin: 0; /* Remove default margin */
+    font-family: 'Arial', sans-serif;
+    background-color: #f7f9fc; /* Light background color */
+    display: flex;
+    height: 100vh; /* Full viewport height */
+    overflow: hidden; /* Prevent scrolling */
+}
+
+.container {
+    display: flex;
+    width: 110%;
+    height: 100%; /* Full height of the viewport */
+}
+
+.image-section {
+    flex: 1;
+    background-image: url('/app/static/images/image.jpg'); /* Adjust the path as needed */
+    background-size: cover; /* Cover the entire section */
+    background-position: center; /* Center the image */
+    background-repeat: no-repeat; /* Prevent repetition */
+}
+
+.form-section {
+    flex: 1;
+    padding: 40px 30px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #ffffff;
+    height: 82%; /* Full height of the container */
+}
+
+h1 {
+    color: #6fb44d; /* Green color */
+    font-size: 2rem;
+    margin-bottom: 10px;
+    letter-spacing: 0.2em;
+    
+}
+p {
+    line-height: 0.1; /* or you can use specific values like 1.5, 2, etc. */
+}
+p {
+    color: #6fb44d; /* Darker text color */
+    font-size: 1.3rem;
+    text-align: center;
+    margin-bottom: 0px;
+    letter-spacing: 0.2em;
+}
+
+label {
+    margin-top: 20px;
+    text-align: left;
+    width: 61%;
+    color: #34495ea0; /* Darker label color */
+}
+
+input {
+    padding: 16px;
+    margin-top: 5px;
+    border: 1px solid #bdc3c7; /* Softer border color */
+    border-radius: 4px;
+    width: 100%;
+    max-width: 270px; /* Limit max width */
+    transition: border-color 0.3s; /* Smooth transition */
+}
+
+input:focus {
+    border-color: #2ecc71; /* Focus border color */
+    outline: none; /* Remove default outline */
+}
+input::placeholder{
+    font-size: medium;
+}
+
+button {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #64ca3c; /* Green button */
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 10px;
+    width: 100%;
+    max-width: 130px; /* Limit max width */
+    transition: background-color 0.3s; /* Smooth transition */
+}
+
+button:hover {
+    background-color: #27ae60; /* Darker green on hover */
+}
+
+hr {
+    border: none;
+    border-top: 2px solid #bdc3c7;
+    width: 150%; /* Ensures the hr fills the container */
+    margin: 30px auto; /* Adjust the vertical spacing */
+    max-width: 1000px; /* Adjust based on how far you want it to reach */
+    position: relative;
+    left: -30px; /* Adjust based on your image's position */
+}
+/*END OF LOGIN STYLING*/
