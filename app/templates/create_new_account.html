@@ -1,0 +1,22 @@
+{% extends 'auth.html' %} {% block content %}
+<main class="create-account-body">
+<div class="acc-container">
+    <div class="acc-image-section"></div>
+    <div class="acc-form-section">
+        <h1 class="acc-h1">Create new Account</h1>
+        <p class="acc-p">Already Registered? Login</p>
+        
+        <hr>
+        <label for="name" class="acc-label">Please enter your Full Names</label>
+        <input type="text" class="acc-input" id="name" placeholder="Jiara Martins" required>
+        <label for="email" class="acc-label">Please enter Email</label>
+        <input type="email" class="acc-input" id="email" placeholder="hello@reallygreatsite.com" required>
+        <label for="password" class="acc-label">Please enter password</label>
+        <input type="password" class="acc-input" id="password" placeholder="******" required>
+        <label for="ID No" class="acc-label">ID No:</label>
+        <input type="number" class="acc-input" id="ID No" placeholder="xxxxxxxx" required>
+        <button type="submit" class="acc-button">SIGN UP</button>
+    </div>
+</div>
+</main>
+{% endblock %}
