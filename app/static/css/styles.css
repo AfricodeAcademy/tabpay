@@ -1,5 +1,5 @@
-/* Container holding both image and form */  
-.container {  
+/* START OF FORGOT_PASSWORD.HTML */  
+.contmage {  
     display: flex;  /* Flexbox for side-by-side layout */  
     height: 100vh;  /* Full viewport height */  
     width: 100%;    /* Full width */  
@@ -39,28 +39,30 @@
 }  
 
 /* Heading Styles */  
-h1, h2 {  
+.custom-heading, .custom-subheading {  
     color: #4CAF50;  /* Light green color */  
     font-weight: 500; /* Adjust font weight */  
     margin-bottom: 5px; /* Reduce margin for closer spacing */  
     text-align: left; /* Align text to the left */  
 }  
 
-h2 {  
-    font-size: 1.2rem; /* Smaller font size for subheading */  
+.custom-subheading {  
+    font-size: 1.1rem; /* Smaller font size for subheading */  
     margin-bottom: 30px; /* Add spacing after subheading */  
-}  
+}
+  
 
 /* Paragraph and Label Styles */  
-p, label {  
+.custom-paragraph, .custom-label {  
     color: #34495e; /* Darker color */  
     margin-bottom: 15px; /* Spacing between elements */  
     font-size: 0.9rem;  /* Adjust font size */  
     text-align: left; /* Align text to the left */  
-}  
+}
+ 
 
 /* Input Styles */  
-input {  
+.custom-input {  
     width: 100%; /* Full width of form section */  
     max-width: 400px; /* Adjust width of input */  
     padding: 10px;  /* Add padding */  
@@ -68,15 +70,17 @@ input {
     border-radius: 4px;  /* Rounded corners */  
     margin-bottom: 20px;  /* Space below input */  
     transition: border-color 0.3s;  /* Smooth transition on focus */  
-}  
+}
+  
 
-input:focus {  
+.custom-input:focus {  
     border-color: #4CAF50;  /* Green border on focus */  
     outline: none;  /* Remove default outline */  
-}  
+}
+  
 
 /* Button Styles */  
-button {  
+.custom-button {  /* Changed from 'button' to '.custom-button' */
     padding: 10px 30px;  /* Adjust padding */  
     background-color: #64ca3c;  /* Green button */  
     color: white;  /* White text */  
@@ -88,17 +92,24 @@ button {
     max-width: 200px;  /* Limit max width */  
     margin-top: 20px;  /* Space above button */  
     transition: background-color 0.3s;  /* Smooth transition */  
-}  
+}
+
+/* Hover effect for button */
+.custom-button:hover {
+    background-color: #4CAF50;  /* Slightly darker green on hover */
+}
+ 
 
 /* Hover effect for button */  
-button:hover {  
+.btn {  
     background-color: #4CAF50;  /* Slightly darker green on hover */  
 }  
 
 /* Horizontal line */  
-hr {  
+.divider {  
     border: none;  /* Remove default border */  
     border-top: 2px solid #bdc3c7;  /* Custom border style */  
     width: 100%;  /* Full width */  
     margin: 20px 0;  /* Spacing around line */  
 }
+/* END OF FORGOT_PASSWORD.HTML */ 
