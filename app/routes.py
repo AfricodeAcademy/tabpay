@@ -6,3 +6,7 @@ main = Blueprint('main', __name__)
 @main.route('/')
 def home():
     return render_template('index.html')
+
+@main.route('/create_new_account')
+def create_new_account():
+    return render_template('create_new_account.html')
