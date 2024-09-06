@@ -1,106 +1,121 @@
-/*LOGIN TO TOUR ACCOUNT STYLING */
-body {
-    margin: 0; /* Remove default margin */
+/* LOGIN TO YOUR ACCOUNT STYLING */
+.my-body {
+    margin: 0;
     font-family: 'Arial', sans-serif;
-    background-color: #f7f9fc; /* Light background color */
+    background-color: hwb(180 98% 1%);
     display: flex;
-    height: 100vh; /* Full viewport height */
-    overflow: hidden; /* Prevent scrolling */
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
 }
 
-.container {
+.login-container {
     display: flex;
-    width: 110%;
-    height: 100%; /* Full height of the viewport */
+    width: 100%;
+    height: 100%;
 }
 
-.image-section {
-    flex: 1;
-    background-image: url('/app/static/images/image.jpg'); /* Adjust the path as needed */
-    background-size: cover; /* Cover the entire section */
-    background-position: center; /* Center the image */
-    background-repeat: no-repeat; /* Prevent repetition */
+.my-image-section {
+    background-image: url('/app/static/images/image.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
-.form-section {
-    flex: 1;
-    padding: 40px 30px;
+.form-section-area {
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     background-color: #ffffff;
-    height: 82%; /* Full height of the container */
 }
 
-h1 {
-    color: #6fb44d; /* Green color */
+.hi-login {
+    color: #6fb44d;
     font-size: 2rem;
     margin-bottom: 10px;
     letter-spacing: 0.2em;
-    
 }
-p {
-    line-height: 0.1; /* or you can use specific values like 1.5, 2, etc. */
-}
-p {
-    color: #6fb44d; /* Darker text color */
+
+.my-sign-in {
+    color: #6fb44d;
     font-size: 1.3rem;
     text-align: center;
-    margin-bottom: 0px;
+    margin-bottom: 20px;
     letter-spacing: 0.2em;
 }
 
-label {
+.email-label,
+.password-center {
     margin-top: 20px;
-    text-align: left;
     width: 61%;
-    color: #34495ea0; /* Darker label color */
+    color: #34495ea0;
 }
 
-input {
+.rop-input {
     padding: 16px;
     margin-top: 5px;
-    border: 1px solid #bdc3c7; /* Softer border color */
+    border: 1px solid #bdc3c7;
     border-radius: 4px;
     width: 100%;
-    max-width: 270px; /* Limit max width */
-    transition: border-color 0.3s; /* Smooth transition */
+    max-width: 270px;
+    transition: border-color 0.3s;
 }
 
-input:focus {
-    border-color: #2ecc71; /* Focus border color */
-    outline: none; /* Remove default outline */
-}
-input::placeholder{
-    font-size: medium;
+.rop-input:focus {
+    border-color: #2ecc71;
+    outline: none;
 }
 
-button {
+.rop-input::placeholder {
+    font-size: large;
+}
+
+.login-button {
     margin-top: 20px;
     padding: 10px;
-    background-color: #64ca3c; /* Green button */
+    background-color: #64ca3c;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 9px;
     cursor: pointer;
-    font-size: 10px;
+    font-size: 11px;
     width: 100%;
-    max-width: 130px; /* Limit max width */
-    transition: background-color 0.3s; /* Smooth transition */
+    max-width: 180px;
+    transition: background-color 0.3s;
 }
 
 button:hover {
-    background-color: #27ae60; /* Darker green on hover */
+    background-color: #27ae60;
 }
 
-hr {
+.login-hr {
     border: none;
-    border-top: 2px solid #bdc3c7;
-    width: 150%; /* Ensures the hr fills the container */
-    margin: 30px auto; /* Adjust the vertical spacing */
-    max-width: 1000px; /* Adjust based on how far you want it to reach */
-    position: relative;
-    left: -30px; /* Adjust based on your image's position */
+    border-top: 2px solid #5d5f61;
+    width: 107%;
+    position:left;
+    left: -3%;
+    top: 30px;
 }
-/*END OF LOGIN STYLING*/
+
+/* Responsive Adjustments */
+@media (min-width: 768px) {
+    .login-container {
+        flex-direction: row;
+        height: 100%;
+    }
+
+    .my-image-section {
+        display: block;
+    }
+}
+
+@media (max-width: 768px) {
+    .my-image-section {
+        height: 300px; /* Adjust image height for small screens */
+    }
+
+    .form-section-area {
+        padding: 20px;
+    }
+}
