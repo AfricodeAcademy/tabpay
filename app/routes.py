@@ -18,3 +18,7 @@ def create_new_account():
 def dashboard():
     return render_template('template-5.html', title='Dashboard')
 
+@main.route('/management')
+def management():
+    return render_template('management.html', title='Management')
+
