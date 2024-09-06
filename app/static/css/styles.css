@@ -55,15 +55,7 @@
 }
 
 .tabpay-logo {
-  font-weight: bold;
-  font-size: 2rem;
-  color: #00a86b;
-  margin-bottom: 20px;
-  text-align: center;
-  text-decoration: 4px underline;
-}
-.tabpay-logo span {
-  color: #e63946;
+  height: 50px;
 }
 
 .dashboard-content {
