@@ -1,10 +1,10 @@
 /* TEMPLATE NUMBER 5 STYLING */
 
-body {
+.temp-5-body {
   background: white;
   font-family: "Montserrat", sans-serif;
   height: 100vh;
-  /* display: flex; */
+  overflow: hidden;
 }
 
 .glass-card {
@@ -75,9 +75,12 @@ body {
   margin-left: 250px;
   padding: 20px;
 }
-h1 {
-  font-weight: bold;
+/* .name {
   text-wrap: nowrap;
+} */
+.temp-5-h1 {
+  font-weight: bold;
+  font-size: xx-large;
 }
 
 .profile-area {
