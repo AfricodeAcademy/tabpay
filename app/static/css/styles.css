@@ -1,3 +1,275 @@
+
+/* LOGIN TO YOUR ACCOUNT STYLING */
+.my-body {
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background-color: hwb(180 98% 1%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.login-container {
+
+
+/* CREATE-NEW-ACCOUNT STYLING */
+.create-account-body {
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background-color: #f7f9fc;
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.acc-container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+
+.my-image-section {
+    background-image: url('/app/static/images/image.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.form-section-area {
+
+.acc-image-section {
+    flex: 1;
+    background-image: url('/static/images/tabpay.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    width: 100%;
+    height: 100vh;
+}
+
+.acc-form-section {
+    flex: 1;
+    padding: 50px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: #ffffff;
+
+}
+
+.hi-login {
+    color: #6fb44d;
+    font-size: 2rem;
+    margin-bottom: 10px;
+    letter-spacing: 0.2em;
+}
+
+.my-sign-in {
+    color: #6fb44d;
+    font-size: 1.3rem;
+    text-align: center;
+    margin-bottom: 20px;
+    letter-spacing: 0.2em;
+}
+
+.email-label,
+.password-center {
+    margin-top: 20px;
+    width: 61%;
+    color: #34495ea0;
+}
+
+.rop-input {
+    padding: 16px;
+    margin-top: 5px;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    width: 100%;
+    max-width: 270px;
+    transition: border-color 0.3s;
+}
+
+.rop-input:focus {
+
+    height: 85%;
+}
+
+.acc-h1 {
+    color: #6ab843;
+    font-size: 2rem;
+    margin-bottom: 10px;
+    letter-spacing: 0.1em;
+}
+
+.acc-p {
+    color: #91e046;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.acc-label {
+    margin-top: 5px;
+    margin-bottom: 5px;
+    text-align: left;
+    width: 50%;
+    color: #777b80;
+}
+
+.acc-input {
+    padding: 25px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    width: 100%;
+    max-width: 400px;
+    transition: border-color 0.3s;
+}
+
+input:focus {
+
+    border-color: #2ecc71;
+    outline: none;
+}
+
+
+.rop-input::placeholder {
+    font-size: large;
+}
+
+.login-button {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #64ca3c;
+    color: white;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    font-size: 11px;
+    width: 100%;
+    max-width: 180px;
+
+.acc-button {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #46e905;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    width: 100%;
+    max-width: 130px;
+
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #27ae60;
+}
+
+.login-hr {
+    border: none;
+    border-top: 2px solid #5d5f61;
+    width: 107%;
+    position:left;
+    left: -3%;
+    top: 30px;
+}
+
+/* Responsive Adjustments */
+@media (min-width: 768px) {
+    .login-container {
+        flex-direction: row;
+        height: 100%;
+    }
+
+    .my-image-section {
+        display: block;
+    }
+}
+
+@media (max-width: 768px) {
+    .my-image-section {
+        height: 300px; /* Adjust image height for small screens */
+    }
+
+    .form-section-area {
+        padding: 20px;
+    }
+}
+    background-color: #08f76c;
+}
+
+hr {
+    border: none;
+    border-top: 2px solid #0c0c0c;
+    width: 130%;
+    margin: 30px auto;
+    max-width: 1000px;
+    position: relative;
+    left: -50px;
+}
+
+/* Responsive Styling */
+
+/* For tablets */
+@media only screen and (max-width: 768px) {
+    .acc-container {
+        flex-direction: column; /* Stack sections vertically */
+    }
+
+    .acc-image-section, 
+    .acc-form-section {
+        width: 100%; /* Full width for both sections */
+        height: auto; /* Adjust height for content */
+    }
+
+    .acc-form-section {
+        padding: 30px; /* Reduce padding on smaller screens */
+    }
+
+    .acc-input {
+        width: 100%; /* Full width for input fields */
+    }
+
+    hr {
+        width: 100%;
+        left: 10; /* Align hr properly for stacked layout */
+    }
+}
+
+/* For small devices (phones) */
+@media only screen and (max-width: 480px) {
+    .acc-h1 {
+        font-size: 1.5rem; /* Adjust font size for smaller screens */
+    }
+
+    .acc-p {
+        font-size: 1rem;
+    }
+
+    .acc-input {
+        font-size: 1rem; /* Adjust input font size */
+        padding: 15px; /* Adjust padding */
+    }
+
+    .acc-button {
+        font-size: 14px; /* Smaller button text */
+        padding: 8px; /* Adjust padding for buttons */
+    }
+
+    hr {
+        width: 80%; /* Adjust hr width */
+        left: 10; /* Re-align hr */
+    }
+}
+/* END-CREATE-NEW-ACCOUNT STYLING */
+
 /* TEMPLATE NUMBER 5 STYLING */
 
 .temp-5-body {
@@ -138,6 +410,7 @@
 }
 /* END OF TEMPLATE NUMBER 5 STYLING */
 
+
 /* TEMPLATE NUMBER 6 STYLING */
 .settings-container {
   border: 2px solid black;
@@ -240,3 +513,107 @@ input[type="number"] {
 
 /* TODO Usisahau kutumia unique classes */
 /* END OF TEMPLATE NUMBER 6 STYLING */
+
+/*BEGINNING OF STYLING OF TEMPLATE NUMBER 18*/
+
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+}
+
+.container {
+    max-width: 600px;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+}
+
+h2 {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+p {
+    font-size: 14px;
+    color: #555;
+    line-height: 1.5;
+}
+
+
+.frame {
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    margin-top: 20px;
+    background-color: #f9f9f9;
+}
+
+
+.frame-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #ccc;
+}
+
+.frame-button {
+    flex: 1;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border: none;
+    font-weight: bold;
+    font-size: 16px;
+    color: black;
+    text-align: center;
+    cursor: pointer;
+}
+
+.frame-button.active {
+    color: #21a13f;
+    border-bottom: 3px solid white;
+}
+
+
+.form-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.form-row label {
+    font-size: 14px;
+    margin-right: 10px;
+    flex: 1;
+}
+
+.form-row select, 
+.form-row input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    width: 100%;
+}
+
+
+.form-inline {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.send-button {
+    width: 100%;
+    padding: 10px;
+    background-color: #28a745;
+    border: none;
+    color: white;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+}
+/*END OF TEMPLATE NUMBER 18 STYLINGG */
+
