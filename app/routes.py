@@ -21,6 +21,15 @@ def create_new_account():
 
    
 
+
+@main.route('/dashboard_stats')
+def dashboard_stats():
+    return render_template('template-5.html', title='Dashboard | Statistics')
+
+@main.route('/dashboard_settings')
+def dashboard_settings():
+    return render_template('template-6.html', title='Dashboard | Settings')
+
 @main.route('/dashboard')
 def dashboard():
     return render_template('template-5.html', title='Dashboard')
@@ -28,4 +37,5 @@ def dashboard():
 @main.route('/management')
 def management():
     return render_template('management.html', title='Management')
+
 

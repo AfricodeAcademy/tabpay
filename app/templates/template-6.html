@@ -1,0 +1,357 @@
+{% extends "base.html" %} {% block heading %}Community Umbrella settings{%
+endblock %} {% block content %}
+
+<!-- Dashboard Content -->
+<div class="dashboard-content">
+  <div class="container">
+    <div class="dashboard-paragraph">
+      <p class="mb-4 fs-6">
+        Configure your user account with ease by managing your profile, setting
+        up your community umbrella, defining blocks under that umbrella,
+        establishing zones within each block, adding members to their respective
+        zones, inviting and managing committee members.
+      </p>
+    </div>
+
+    <div class="settings-container">
+      <!-- Tab Navigation -->
+      <ul class="nav nav-tabs p-3">
+        <li class="nav-item">
+          <a class="nav-link active" data-bs-toggle="tab" href="#profile"
+            >Profile</a
+          >
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#committee"
+            >Add Committee</a
+          >
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#umbrella"
+            >Community Umbrella</a
+          >
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#block"
+            >Block Definition</a
+          >
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#zone"
+            >Zone Definition</a
+          >
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#members"
+            >Add Members</a
+          >
+        </li>
+      </ul>
+
+      <!-- Tab Panes -->
+      <div class="tab-content">
+        <div id="profile" class="tab-pane fade show active">
+          <form>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="fullName" class="form-label"
+                    >Update Your Full Names</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="fullName"
+                    placeholder="Patrick Cheruiyot"
+                  />
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="userId" class="form-label">Update Your ID</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="userId"
+                    placeholder="xxxxxxx"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="newPassword" class="form-label"
+                    >New Password</label
+                  >
+                  <input
+                    type="password"
+                    class="form-control"
+                    id="newPassword"
+                    placeholder="xxxxxxxx"
+                  />
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="confirmPassword" class="form-label"
+                    >Confirm Password</label
+                  >
+                  <input
+                    type="password"
+                    class="form-control"
+                    id="confirmPassword"
+                    placeholder="xxxxxxxx"
+                  />
+                </div>
+              </div>
+            </div>
+            <button type="submit" class="btn submit-btn">SUBMIT</button>
+            <p class="success-message mt-3">Success Message</p>
+          </form>
+        </div>
+        <!-- COMMITTEE TAB -->
+        <div id="committee" class="tab-pane fade">
+          <form>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="committeeName" class="form-label"
+                    >Committee Full Name</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="committeeName"
+                    placeholder="Patrick Cheruiyot"
+                  />
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="idNumber" class="form-label"
+                    >There ID Number</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="idNumber"
+                    placeholder="xxxxxxx"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="role" class="form-label">Role</label>
+                  <select id="role" class="form-control">
+                    <option>Committee Member</option>
+                    <option>Chairperson</option>
+                    <option>Secretary</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="phoneNumber" class="form-label"
+                    >Phone Number</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="phoneNumber"
+                    placeholder="0714513252"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="btn submit-btn">SUBMIT</button>
+            <p class="success-message mt-3">Success Message</p>
+          </form>
+        </div>
+        <!--/ COMMITTEE TAB -->
+
+        <!-- COMMUNITY UMBRELLA TAB -->
+        <div id="umbrella" class="tab-pane fade">
+          <p>
+            Establish your community's foundation by creating overarching
+            umbrellas that represent geographic areas, such as counties,
+            constituencies, or wards. For example, 'Bomet East' becomes a
+            top-level umbrella, under which you can create distinct blocks,
+            fostering collaboration and organization at the local level.
+          </p>
+          <form>
+            <div class="row">
+              <div class="form-group col-md-6">
+                <label for="inputPassword4">Password</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="inputPassword4"
+                  placeholder="Password"
+                />
+              </div>
+              <div class="form-group col-md-6">
+                <label for="inputPassword4">Password</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="inputPassword4"
+                  placeholder="Password"
+                />
+              </div>
+            </div>
+            <button type="submit" class="btn submit-btn">SUBMIT</button>
+            <p class="success-message mt-3">Success Message</p>
+          </form>
+        </div>
+
+        <!-- COMMUNITY UMBRELLA TAB -->
+        <!-- BLOCK DEFINITION -->
+        <div id="block" class="tab-pane fade">
+          <p>
+            Organize your community's structure by defining distinct blocks
+            within each umbrella.
+          </p>
+          <form>
+            <div class="row">
+              <div class="form-group col-md-6">
+                <label for="inputPassword4">Password</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="inputPassword4"
+                  placeholder="Password"
+                />
+              </div>
+              <div class="form-group col-md-6">
+                <label for="inputPassword4">Password</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="inputPassword4"
+                  placeholder="Password"
+                />
+              </div>
+            </div>
+            <button type="submit" class="btn submit-btn">SUBMIT</button>
+            <p class="success-message mt-3">Success Message</p>
+          </form>
+        </div>
+
+        <!--/ BLOCK DEFINITION -->
+        <!--ZONE DEFINITION -->
+        <div id="zone" class="tab-pane fade">
+          <p>
+            Define zones within each block to make it easier when allocating
+            block event to zone members.
+          </p>
+          <form>
+            <div class="row">
+              <div class="form-group col-md-6">
+                <label for="inputPassword4">Password</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="inputPassword4"
+                  placeholder="Password"
+                />
+              </div>
+              <div class="form-group col-md-6">
+                <label for="inputPassword4">Password</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="inputPassword4"
+                  placeholder="Password"
+                />
+              </div>
+            </div>
+            <button type="submit" class="btn submit-btn">SUBMIT</button>
+            <p class="success-message mt-3">Success Message</p>
+          </form>
+        </div>
+
+        <!--/ ZONE DEFINITION -->
+        <!--ADD MEMBERS -->
+        <div id="members" class="tab-pane fade">
+          <p>
+            Each zone has distinct members, please add the different members of
+            the zone.
+          </p>
+          <form>
+            <div class="row">
+              <div class="form-group col-md-6">
+                <label for="inputPassword4">Password</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="inputPassword4"
+                  placeholder="Password"
+                />
+              </div>
+              <div class="form-group col-md-6">
+                <label for="inputPassword4">Password</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="inputPassword4"
+                  placeholder="Password"
+                />
+              </div>
+            </div>
+            <div class="row">
+              <div class="form-group col-md-6">
+                <label for="inputPassword4">Password</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="inputPassword4"
+                  placeholder="Password"
+                />
+              </div>
+              <div class="form-group col-md-6">
+                <label for="inputPassword4">Password</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="inputPassword4"
+                  placeholder="Password"
+                />
+              </div>
+            </div>
+            <div class="row">
+              <div class="form-group col-md-6">
+                <label for="inputPassword4">Password</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="inputPassword4"
+                  placeholder="Password"
+                />
+              </div>
+              <div class="form-group col-md-6">
+                <label for="inputPassword4">Password</label>
+                <input
+                  type="password"
+                  class="form-control"
+                  id="inputPassword4"
+                  placeholder="Password"
+                />
+              </div>
+            </div>
+            <button type="submit" class="btn submit-btn">SUBMIT</button>
+            <p class="success-message mt-3">Success Message</p>
+          </form>
+        </div>
+
+        <!--/ ADD MEMBERS -->
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

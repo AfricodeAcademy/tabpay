@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="../static/css/styles.css">
 
     {% endif %}
-    <link rel="stylesheet" href="../static/css/styles.css" />
+
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css"
       rel="stylesheet"
@@ -26,22 +26,29 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css"
       rel="stylesheet"
     />
+    <link rel="stylesheet" href="../static/css/styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   </head>
   <body>
     {% if title != 'TabPay | Home' %}
-    <div class="">
+    <div class="sidebar-h1-profile-dashboard">
       <div class="row">
         <div class="col-lg-2">
           <!-- Sidebar -->
           <div class="glass-sidebar d-flex flex-column">
             <!-- TabPay Logo -->
-            <div class="tabpay-logo"><span>Tab</span>Pay</div>
+            <div class="tabpay-logo m-2"><img src="../static/images/logo.png" alt=""></div>
 
-            <a href="#" class="active"
-              ><i class="bi bi-grid-fill"></i> Dashboard</a
-            >
+            <a href="{{url_for('main.dashboard_stats')}}" 
+            style="background-color: {% if 'Dashboard' in title %} rgb(3, 185, 3) {% endif %}; 
+                   border-radius: 5px; 
+                   color: white;">
+            <i class="bi bi-grid-fill"></i> Dashboard
+         </a>
+         
+              
+            </a>
             <a href="#"><i class="bi bi-currency-exchange"></i> Contribute</a>
             <a href="#"><i class="bi bi-house-fill"></i> Host</a>
             <a href="#"><i class="bi bi-people-fill"></i> Committee</a>
@@ -49,8 +56,14 @@
 
             <!-- Bottom of the Sidebar -->
             <div class="sidebar-bottom mt-auto">
-              <a href="#"><i class="bi bi-gear-fill"></i> Settings</a>
-              <a href="#"><i class="bi bi-box-arrow-right"></i> Logout</a>
+              {% if title == 'Dashboard | Settings' %}
+              <a href="#" class="active"
+                ><i class="bi bi-gear-fill"></i> Settings</a
+              >
+              {% else %}
+              <a href="{{url_for('main.dashboard_settings')}}"><i class="bi bi-gear-fill"></i> Settings</a>
+              {% endif %}
+              <a href="{{url_for('main.home')}}"><i class="bi bi-box-arrow-left"></i> Logout</a>
             </div>
             <!-- Close Sidebar -->
           </div>
@@ -58,7 +71,7 @@
         <div class="col-lg-10">
           <div class="row d-flex justify-content-between p-2">
             <div class="col-lg-6 ms-3">
-              <h1 class="temp-5-h1">{% block heading %}{% endblock %}</h1>
+              <h1 class="dashboard-h1">{% block heading %}{% endblock %}</h1>
             </div>
             <div class="col-lg-4">
               <!-- Profile section -->
