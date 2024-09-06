@@ -1,0 +1,149 @@
+{% extends "base.html" %} {% block heading %} Welcome back,
+<span class="#">Patrick Cheruiyot</span>{% endblock %} {% block content %}
+<main class="temp-5-body">
+  <!-- Dashboard Content -->
+  <div class="dashboard-content">
+    <div class="container">
+      <div class="dashboard-paragraph">
+        <p class="mb-4 fs-4">
+          Foster stronger connections among members through shared experiences
+          and contributions.
+        </p>
+      </div>
+      <!-- Stats -->
+      <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+          <div
+            class="glass-card stats-card text-dark"
+            style="background-color: #abf7b13f"
+          >
+            <p>All Members</p>
+            <h2>890</h2>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+          <div
+            class="glass-card stats-card text-dark"
+            style="background-color: #f9e79f18"
+          >
+            <p>Total Number of Blocks</p>
+            <h2>10</h2>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+          <div
+            class="glass-card stats-card text-dark"
+            style="background-color: #a9cce369"
+          >
+            <p>Total Value to Date</p>
+            <h3>Kes 1,000,000</h3>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+          <div
+            class="glass-card stats-card text-dark"
+            style="background-color: #f3b9b249"
+          >
+            <p>Members Yet to Host</p>
+            <h2>123</h2>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contribution Stats and Charts -->
+      <div class="row">
+        <div class="col-lg-6 mb-4">
+          <div class="chart-container relative lineChart">
+            <h4>Contribution Stats</h4>
+
+            <select class="dropdown absolute top-0 right-0">
+              <option>This year</option>
+              <option>Last year</option>
+            </select>
+
+            <canvas id="lineChart" class="chart"></canvas>
+          </div>
+        </div>
+        <div class="col-lg-6 mb-4">
+          <div class="chart-container doughnutChart">
+            <h4>Contribution by Block</h4>
+
+            <select class="dropdown">
+              <option>This year</option>
+              <option>Last year</option>
+            </select>
+
+            <canvas id="doughnutChart" class="chart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    // Line Chart
+    const ctxLine = document.getElementById("lineChart").getContext("2d");
+    new Chart(ctxLine, {
+      type: "line",
+      data: {
+        labels: [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ],
+        datasets: [
+          {
+            label: "Contributions",
+            data: [10, 20, 30, 50, 70, 100, 130, 170, 200, 230, 240, 250],
+            borderColor: "#36A2EB",
+            fill: false,
+            tension: 0.1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+          },
+        },
+      },
+    });
+
+    // Doughnut Chart
+    const ctxDoughnut = document
+      .getElementById("doughnutChart")
+      .getContext("2d");
+    new Chart(ctxDoughnut, {
+      type: "doughnut",
+      data: {
+        labels: ["Block 1", "Block 2", "Block 3", "Block 4"],
+        datasets: [
+          {
+            label: "Contribution by Block",
+            data: [345, 512, 432, 366],
+            backgroundColor: ["#FF6384", "#FFCE56", "#36A2EB", "#8E44AD"],
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: "right",
+          },
+        },
+      },
+    });
+  </script>
+</main>
+{% endblock %}
