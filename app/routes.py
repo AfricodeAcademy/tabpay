@@ -5,7 +5,14 @@ main = Blueprint('main', __name__)
 #home route
 @main.route('/')
 def home():
-   return render_template('index.html',title='TabPay | Home')
+  return render_template('index.html',title='TabPay | Home')
+
+    
+
+@main.route('/forgot')
+def forgot():
+    return render_template('forgot_password.html')
+
 
 
 @main.route('/create_new_account')
