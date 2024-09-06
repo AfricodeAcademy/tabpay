@@ -5,7 +5,14 @@ main = Blueprint('main', __name__)
 #home route
 @main.route('/')
 def home():
-    return render_template('index.html',title='TabPay | Home')
+   return render_template('index.html',title='TabPay | Home')
+
+
+@main.route('/create_new_account')
+def create_new_account():
+    return render_template('create_new_account.html')
+
+   
 
 @main.route('/dashboard')
 def dashboard():
@@ -14,3 +21,4 @@ def dashboard():
 @main.route('/management')
 def management():
     return render_template('management.html', title='Management')
+
