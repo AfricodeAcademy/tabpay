@@ -1,4 +1,18 @@
 
+/* LOGIN TO YOUR ACCOUNT STYLING */
+.my-body {
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    background-color: hwb(180 98% 1%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.login-container {
+
+
 /* CREATE-NEW-ACCOUNT STYLING */
 .create-account-body {
     margin: 0;
@@ -15,6 +29,16 @@
     height: 100%;
 }
 
+
+.my-image-section {
+    background-image: url('/app/static/images/image.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.form-section-area {
+
 .acc-image-section {
     flex: 1;
     background-image: url('/static/images/tabpay.png');
@@ -28,11 +52,49 @@
 .acc-form-section {
     flex: 1;
     padding: 50px;
+
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
     background-color: #ffffff;
+
+}
+
+.hi-login {
+    color: #6fb44d;
+    font-size: 2rem;
+    margin-bottom: 10px;
+    letter-spacing: 0.2em;
+}
+
+.my-sign-in {
+    color: #6fb44d;
+    font-size: 1.3rem;
+    text-align: center;
+    margin-bottom: 20px;
+    letter-spacing: 0.2em;
+}
+
+.email-label,
+.password-center {
+    margin-top: 20px;
+    width: 61%;
+    color: #34495ea0;
+}
+
+.rop-input {
+    padding: 16px;
+    margin-top: 5px;
+    border: 1px solid #bdc3c7;
+    border-radius: 4px;
+    width: 100%;
+    max-width: 270px;
+    transition: border-color 0.3s;
+}
+
+.rop-input:focus {
+
     height: 85%;
 }
 
@@ -69,9 +131,27 @@
 }
 
 input:focus {
+
     border-color: #2ecc71;
     outline: none;
 }
+
+
+.rop-input::placeholder {
+    font-size: large;
+}
+
+.login-button {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #64ca3c;
+    color: white;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    font-size: 11px;
+    width: 100%;
+    max-width: 180px;
 
 .acc-button {
     margin-top: 20px;
@@ -84,10 +164,44 @@ input:focus {
     font-size: 16px;
     width: 100%;
     max-width: 130px;
+
     transition: background-color 0.3s;
 }
 
 button:hover {
+    background-color: #27ae60;
+}
+
+.login-hr {
+    border: none;
+    border-top: 2px solid #5d5f61;
+    width: 107%;
+    position:left;
+    left: -3%;
+    top: 30px;
+}
+
+/* Responsive Adjustments */
+@media (min-width: 768px) {
+    .login-container {
+        flex-direction: row;
+        height: 100%;
+    }
+
+    .my-image-section {
+        display: block;
+    }
+}
+
+@media (max-width: 768px) {
+    .my-image-section {
+        height: 300px; /* Adjust image height for small screens */
+    }
+
+    .form-section-area {
+        padding: 20px;
+    }
+}
     background-color: #08f76c;
 }
 
