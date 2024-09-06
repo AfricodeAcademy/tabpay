@@ -7,6 +7,10 @@ main = Blueprint('main', __name__)
 def home():
     return render_template('index.html',title='TabPay | Home')
 
-@main.route('/dashboard')
-def dashboard():
-    return render_template('template-5.html', title='Dashboard')
+@main.route('/dashboard_stats')
+def dashboard_stats():
+    return render_template('template-5.html', title='Dashboard | Statistics')
+
+@main.route('/dashboard_settings')
+def dashboard_settings():
+    return render_template('template-6.html', title='Dashboard | Settings')

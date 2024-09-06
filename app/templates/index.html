@@ -1,3 +1,156 @@
-{% extends 'base.html' %} {% block content %}
-<h2 class="text-center">Welcome to TabPay!</h2>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Add Members Form</title>
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      /* Custom form container styling */
+      .form-container {
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 10px;
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #f9f9f9;
+      }
+
+      /* Form header */
+      .form-header {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      /* Success message */
+      .success-message {
+        border: 1px solid #28a745;
+        color: #28a745;
+        padding: 10px;
+        border-radius: 5px;
+        text-align: center;
+      }
+
+      /* Center and reduce the size of the Save button */
+      .btn-save {
+        display: block;
+        margin: 20px auto 0 auto;
+        padding: 5px 20px;
+        font-size: 16px;
+      }
+
+      /* Spacing for input fields */
+      .form-group {
+        margin-bottom: 15px;
+      }
+
+      /* Responsive design */
+      @media (max-width: 768px) {
+        .form-container {
+          padding: 15px;
+        }
+
+        .form-header h3 {
+          font-size: 1.2rem;
+        }
+
+        .btn-save {
+          font-size: 14px;
+          padding: 5px 15px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container mt-5">
+      <!-- Form Container -->
+      <div class="form-container">
+        <!-- Form Header -->
+        <div class="form-header">
+          <h3>
+            Each zone has distinct members, please add the different members of
+            the zone.
+          </h3>
+        </div>
+
+        <!-- Form -->
+        <form>
+          <div class="form-group">
+            <label for="memberFullName" class="form-label"
+              >Member Full Name</label
+            >
+            <input
+              type="text"
+              class="form-control"
+              id="memberFullName"
+              placeholder="Patrick Cheruiyot"
+            />
+          </div>
+          <div class="form-group">
+            <label for="memberPhoneNumber" class="form-label"
+              >Member Phone Number</label
+            >
+            <input
+              type="text"
+              class="form-control"
+              id="memberPhoneNumber"
+              placeholder="+254 714 513 252"
+            />
+          </div>
+          <div class="form-group">
+            <label for="memberIdNumber" class="form-label"
+              >Member ID Number</label
+            >
+            <input
+              type="text"
+              class="form-control"
+              id="memberIdNumber"
+              placeholder="xxxxxxxxxx"
+            />
+          </div>
+          <div class="form-group">
+            <label for="memberZone" class="form-label">Member Zone</label>
+            <select class="form-select" id="memberZone">
+              <option value="Meja Estate">Meja Estate</option>
+              <option value="Zone 2">Zone 2</option>
+              <option value="Zone 3">Zone 3</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="bank" class="form-label">Select Bank</label>
+            <select class="form-select" id="bank">
+              <option value="Equity">Equity</option>
+              <option value="KCB">KCB</option>
+              <option value="Cooperative">Cooperative</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="bankAccountNumber" class="form-label"
+              >Bank Account Number</label
+            >
+            <input
+              type="text"
+              class="form-control"
+              id="bankAccountNumber"
+              placeholder="xxxxxxxxxx"
+            />
+          </div>
+
+          <!-- Save Button -->
+          <button type="submit" class="btn btn-success btn-save">Save</button>
+        </form>
+
+        <!-- Success Message Placeholder -->
+        <div class="success-message mt-3">Success Message</div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS and Popper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+  </body>
+</html>
