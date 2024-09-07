@@ -1,8 +1,11 @@
+body {
+  font-family: "Roboto", sans-serif;
+}
+
 /* TEMPLATE NUMBER 5 STYLING */
 
 .temp-5-body {
   background: white;
-  font-family: "Montserrat", sans-serif;
   height: 100vh;
 }
 
@@ -143,7 +146,9 @@
   border: 2px solid black;
   border-radius: 20px;
 }
-
+.nav-tabs {
+  border-bottom: 2px solid black;
+}
 .nav-tabs .nav-item {
   flex-grow: 1;
   text-align: center;
@@ -161,14 +166,17 @@
 }
 .nav-item .nav-link {
   color: black;
+  font-weight: bold;
+  border: none;
 }
 .nav-item .nav-link.active {
   color: #28a745;
-  border: none;
+  border-bottom: 2px solid black;
 }
 
 .nav-item .nav-link:hover {
-  border: none;
+  color: black;
+  font-weight: normal;
 }
 
 .tab-content {
@@ -223,14 +231,15 @@ input[type="number"] {
 }
 
 .form-label {
-  font-weight: 500;
-  color: #333;
+  color: rgba(0, 0, 0, 0.512);
+  margin-left: 18px;
+  margin-bottom: 0;
 }
 
 .form-control::placeholder {
   color: #aaa;
 }
-
+.form-select:focus,
 .form-control:focus {
   border-color: #12b931;
   outline: 0;

@@ -49,10 +49,10 @@ endblock %} {% block content %}
       </ul>
 
       <!-- Tab Panes -->
-      <div class="tab-content">
+      <div class="tab-content d-flex justify-content-around">
         <div id="profile" class="tab-pane fade show active">
           <form>
-            <div class="row">
+            <div class="row mb-5 mt-2">
               <div class="col-md-6">
                 <div class="mb-3">
                   <label for="fullName" class="form-label"
@@ -89,7 +89,7 @@ endblock %} {% block content %}
                     type="password"
                     class="form-control"
                     id="newPassword"
-                    placeholder="xxxxxxxx"
+                    placeholder="*********"
                   />
                 </div>
               </div>
@@ -102,7 +102,7 @@ endblock %} {% block content %}
                     type="password"
                     class="form-control"
                     id="confirmPassword"
-                    placeholder="xxxxxxxx"
+                    placeholder="*********"
                   />
                 </div>
               </div>
@@ -114,7 +114,7 @@ endblock %} {% block content %}
         <!-- COMMITTEE TAB -->
         <div id="committee" class="tab-pane fade">
           <form>
-            <div class="row">
+            <div class="row mb-5 mt-2">
               <div class="col-md-6">
                 <div class="mb-3">
                   <label for="committeeName" class="form-label"
@@ -131,7 +131,7 @@ endblock %} {% block content %}
               <div class="col-md-6">
                 <div class="mb-3">
                   <label for="idNumber" class="form-label"
-                    >There ID Number</label
+                    >Their ID Number</label
                   >
                   <input
                     type="text"
@@ -147,8 +147,13 @@ endblock %} {% block content %}
               <div class="col-md-6">
                 <div class="mb-3">
                   <label for="role" class="form-label">Role</label>
-                  <select id="role" class="form-control">
-                    <option>Committee Member</option>
+
+                  <select
+                    id="role"
+                    class="form-select p-2 mt-2 ms-3"
+                    aria-label="Role"
+                  >
+                    <option selected>Committee Member</option>
                     <option>Chairperson</option>
                     <option>Secretary</option>
                   </select>
@@ -177,7 +182,7 @@ endblock %} {% block content %}
 
         <!-- COMMUNITY UMBRELLA TAB -->
         <div id="umbrella" class="tab-pane fade">
-          <p>
+          <p class="p-3">
             Establish your community's foundation by creating overarching
             umbrellas that represent geographic areas, such as counties,
             constituencies, or wards. For example, 'Bomet East' becomes a
@@ -185,24 +190,28 @@ endblock %} {% block content %}
             fostering collaboration and organization at the local level.
           </p>
           <form>
-            <div class="row">
-              <div class="form-group col-md-6">
-                <label for="inputPassword4">Password</label>
-                <input
-                  type="password"
-                  class="form-control"
-                  id="inputPassword4"
-                  placeholder="Password"
-                />
+            <div class="row p-2">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="fullName" class="form-label">Umbrella Name</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="fullName"
+                    placeholder="Patrick Cheruiyot"
+                  />
+                </div>
               </div>
-              <div class="form-group col-md-6">
-                <label for="inputPassword4">Password</label>
-                <input
-                  type="password"
-                  class="form-control"
-                  id="inputPassword4"
-                  placeholder="Password"
-                />
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="userId" class="form-label">Location</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="userId"
+                    placeholder="xxxxxxx"
+                  />
+                </div>
               </div>
             </div>
             <button type="submit" class="btn submit-btn">SUBMIT</button>
@@ -218,24 +227,31 @@ endblock %} {% block content %}
             within each umbrella.
           </p>
           <form>
-            <div class="row">
-              <div class="form-group col-md-6">
-                <label for="inputPassword4">Password</label>
-                <input
-                  type="password"
-                  class="form-control"
-                  id="inputPassword4"
-                  placeholder="Password"
-                />
+            <div class="row p-4">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="userId" class="form-label">Block Name</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="userId"
+                    placeholder="Block 5"
+                  />
+                </div>
               </div>
-              <div class="form-group col-md-6">
-                <label for="inputPassword4">Password</label>
-                <input
-                  type="password"
-                  class="form-control"
-                  id="inputPassword4"
-                  placeholder="Password"
-                />
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="userId" class="form-label">Parent Umbrella</label>
+                  <select
+                    id="role"
+                    class="form-select p-2 mt-2 ms-3"
+                    aria-label="Parent Umbrella"
+                  >
+                    <option selected>Nyangores</option>
+                    <option>Tuiyobei</option>
+                    <option>Metipso</option>
+                  </select>
+                </div>
               </div>
             </div>
             <button type="submit" class="btn submit-btn">SUBMIT</button>
@@ -251,24 +267,33 @@ endblock %} {% block content %}
             block event to zone members.
           </p>
           <form>
-            <div class="row">
-              <div class="form-group col-md-6">
-                <label for="inputPassword4">Password</label>
-                <input
-                  type="password"
-                  class="form-control"
-                  id="inputPassword4"
-                  placeholder="Password"
-                />
+            <div class="row p-4">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="fullName" class="form-label">Zone Name</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="fullName"
+                    placeholder="Meja Estate Zone"
+                  />
+                </div>
               </div>
-              <div class="form-group col-md-6">
-                <label for="inputPassword4">Password</label>
-                <input
-                  type="password"
-                  class="form-control"
-                  id="inputPassword4"
-                  placeholder="Password"
-                />
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="userId" class="form-label">Parent Block</label>
+                  <select
+                    id="role"
+                    class="form-select p-2 mt-2"
+                    aria-label="Parent Umbrella"
+                  >
+                    <option selected>Block 5</option>
+                    <option>Block 4</option>
+                    <option>Block 3</option>
+                    <option>Block 2</option>
+                    <option>Block 1</option>
+                  </select>
+                </div>
               </div>
             </div>
             <button type="submit" class="btn submit-btn">SUBMIT</button>
@@ -285,66 +310,95 @@ endblock %} {% block content %}
           </p>
           <form>
             <div class="row">
-              <div class="form-group col-md-6">
-                <label for="inputPassword4">Password</label>
-                <input
-                  type="password"
-                  class="form-control"
-                  id="inputPassword4"
-                  placeholder="Password"
-                />
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="fullName" class="form-label"
+                    >Member Full Name</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="fullName"
+                    placeholder="Patrick Cheruiyot"
+                  />
+                </div>
               </div>
-              <div class="form-group col-md-6">
-                <label for="inputPassword4">Password</label>
-                <input
-                  type="password"
-                  class="form-control"
-                  id="inputPassword4"
-                  placeholder="Password"
-                />
-              </div>
-            </div>
-            <div class="row">
-              <div class="form-group col-md-6">
-                <label for="inputPassword4">Password</label>
-                <input
-                  type="password"
-                  class="form-control"
-                  id="inputPassword4"
-                  placeholder="Password"
-                />
-              </div>
-              <div class="form-group col-md-6">
-                <label for="inputPassword4">Password</label>
-                <input
-                  type="password"
-                  class="form-control"
-                  id="inputPassword4"
-                  placeholder="Password"
-                />
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="userId" class="form-label"
+                    >Member Phone Number</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="userId"
+                    placeholder="0700223344"
+                  />
+                </div>
               </div>
             </div>
             <div class="row">
-              <div class="form-group col-md-6">
-                <label for="inputPassword4">Password</label>
-                <input
-                  type="password"
-                  class="form-control"
-                  id="inputPassword4"
-                  placeholder="Password"
-                />
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="fullName" class="form-label"
+                    >Member ID Number
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="fullName"
+                    placeholder="xxxxxxx"
+                  />
+                </div>
               </div>
-              <div class="form-group col-md-6">
-                <label for="inputPassword4">Password</label>
-                <input
-                  type="password"
-                  class="form-control"
-                  id="inputPassword4"
-                  placeholder="Password"
-                />
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="userId" class="form-label">Member Zone</label>
+                  <select
+                    id="role"
+                    class="form-select p-2 mt-2 ms-3"
+                    aria-label="Member Zone"
+                  >
+                    <option selected>Meja Estate</option>
+                    <option>Zone 4</option>
+                    <option>Zone 3</option>
+                    <option>Zone 2</option>
+                    <option>Zone 1</option>
+                  </select>
+                </div>
               </div>
             </div>
-            <button type="submit" class="btn submit-btn">SUBMIT</button>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="userId" class="form-label">Select Bank</label>
+                  <select
+                    id="role"
+                    class="form-select p-2 mt-2 ms-3"
+                    aria-label="Member Zone"
+                  >
+                    <option selected>Equity</option>
+                    <option>DTB</option>
+                    <option>Cooperative</option>
+                    <option>KCB</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label for="userId" class="form-label"
+                    >Bank Account Number</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="userId"
+                    placeholder="xxxxxxx"
+                  />
+                </div>
+              </div>
+            </div>
+            <button type="submit" class="btn submit-btn">SAVE</button>
             <p class="success-message mt-3">Success Message</p>
           </form>
         </div>
