@@ -152,102 +152,102 @@
 /*BEGINNING OF STYLING OF TEMPLATE NUMBER 18*/
 
 body {
-    font-family: Arial, sans-serif;
-    margin: 20px;
+  font-family: Arial, sans-serif;
+  margin: 20px;
 }
 
 .container {
-    max-width: 600px;
-    margin: auto;
-    padding: 20px;
-    border: 1px solid #ccc;
-    border-radius: 10px;
+  max-width: 600px;
+  margin: auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
 }
 
 h2 {
-    font-size: 24px;
-    margin-bottom: 10px;
+  font-size: 24px;
+  margin-bottom: 10px;
 }
 
 p {
-    font-size: 14px;
-    color: #555;
-    line-height: 1.5;
+  font-size: 14px;
+  color: #555;
+  line-height: 1.5;
 }
 
 
 .frame {
-    padding: 20px;
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    margin-top: 20px;
-    background-color: #f9f9f9;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  margin-top: 20px;
+  background-color: #f9f9f9;
 }
 
 
 .frame-buttons {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    border-bottom: 2px solid #ccc;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #ccc;
 }
 
 .frame-button {
-    flex: 1;
-    padding: 10px;
-    background-color: #f9f9f9;
-    border: none;
-    font-weight: bold;
-    font-size: 16px;
-    color: black;
-    text-align: center;
-    cursor: pointer;
+  flex: 1;
+  padding: 10px;
+  background-color: #f9f9f9;
+  border: none;
+  font-weight: bold;
+  font-size: 16px;
+  color: black;
+  text-align: center;
+  cursor: pointer;
 }
 
 .frame-button.active {
-    color: #21a13f;
-    border-bottom: 3px solid white;
+  color: #21a13f;
+  border-bottom: 3px solid white;
 }
 
 
 .form-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
 }
 
 .form-row label {
-    font-size: 14px;
-    margin-right: 10px;
-    flex: 1;
+  font-size: 14px;
+  margin-right: 10px;
+  flex: 1;
 }
 
 .form-row select, 
 .form-row input {
-    flex: 1;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 14px;
-    width: 100%;
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+  width: 100%;
 }
 
 
 .form-inline {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 .send-button {
-    width: 100%;
-    padding: 10px;
-    background-color: #28a745;
-    border: none;
-    color: white;
-    border-radius: 5px;
-    font-size: 16px;
-    cursor: pointer;
+  width: 100%;
+  padding: 10px;
+  background-color: #28a745;
+  border: none;
+  color: white;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
 }
 /*END OF TEMPLATE NUMBER 18 STYLINGG */

@@ -1,8 +1,11 @@
 {% extends 'base.html' %}
-
-{% block title %}Manage Contribution{% endblock %}
+{% block heading %}Manage Contribution
+{% endblock %}
 
 {% block content %}
+    <div class="dashboard-content">
+      <div class="container">
+
     <h2>Manage Contribution</h2>
     <p>Initiate an M-Pesa push notification to facilitate member contributions. Transfer the collected funds to the designated host bank account. Send reminder messages to members who have not yet made their contributions and generate a payment link where necessary.</p>
     
@@ -40,4 +43,6 @@
 
         <button class="send-button">SEND MPESA PUSH</button>
     </div>
+</div>
+</div>
 {% endblock %}
