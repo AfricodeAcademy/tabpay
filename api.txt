@@ -1,0 +1,139 @@
+Primary URL: app.tabpay.africa
+
+
+
+System Administrator:
+
+/system-administrators: Retrieve a list of all system administrators.
+
+GET /system-administrators/{id}: Retrieve a specific system administrator by ID.
+
+POST /system-administrators: Create a new system administrator.
+
+PUT /system-administrators/{id}: Update an existing system administrator.
+
+DELETE /system-administrators/{id}: Delete a system administrator.
+
+
+
+Account Owner:
+
+/account-owners: Retrieve a list of all account owners.
+
+GET /account-owners/{id}: Retrieve a specific account owner by ID.
+
+POST /account-owners: Create a new account owner.
+
+PUT /account-owners/{id}: Update an existing account owner.
+
+DELETE /account-owners/{id}: Delete an account owner.
+
+
+
+Umbrella:
+
+/umbrellas: Retrieve a list of all umbrellas.
+
+GET /umbrellas/{id}: Retrieve a specific umbrella by ID.
+
+POST /umbrellas: Create a new umbrella.
+
+PUT /umbrellas/{id}: Update an existing umbrella.
+
+DELETE /umbrellas/{id}: Delete an umbrella.
+
+
+
+
+
+Block:
+
+/blocks: Retrieve a list of all blocks.
+
+GET /blocks/{id}: Retrieve a specific block by ID.
+
+POST /blocks: Create a new block.
+
+PUT /blocks/{id}: Update an existing block.
+
+DELETE /blocks/{id}: Delete a block.
+
+
+
+
+
+Committee Member:
+
+/committee-members: Retrieve a list of all committee members.
+
+GET /committee-members/{id}: Retrieve a specific committee member by ID.
+
+POST /committee-members: Create a new committee member.
+
+PUT /committee-members/{id}: Update an existing committee member.
+
+DELETE /committee-members/{id}: Delete a committee member.
+
+
+
+
+
+Zone:
+
+/zones: Retrieve a list of all zones.
+
+GET /zones/{id}: Retrieve a specific zone by ID.
+
+POST /zones: Create a new zone.
+
+PUT /zones/{id}: Update an existing zone.
+
+DELETE /zones/{id}: Delete a zone.
+
+
+
+
+
+Member:
+
+/members: Retrieve a list of all members.
+
+GET /members/{id}: Retrieve a specific member by ID.
+
+POST /members: Create a new member.
+
+PUT /members/{id}: Update an existing member.
+
+DELETE /members/{id}: Delete a member.
+
+
+
+
+
+Block Event:
+
+/block-events: Retrieve a list of all block events.
+
+GET /block-events/{id}: Retrieve a specific block event by ID.
+
+POST /block-events: Create a new block event.
+
+PUT /block-events/{id}: Update an existing block event.
+
+DELETE /block-events/{id}: Delete a block event.
+
+
+
+
+
+Payment:
+
+/payments: Retrieve a list of all payments.
+
+GET /payments/{id}: Retrieve a specific payment by ID.
+
+POST /payments: Create a new payment.
+
+PUT /payments/{id}: Update an existing payment.
+
+DELETE /payments/{id}: Delete a payment.
