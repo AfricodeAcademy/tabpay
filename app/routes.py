@@ -1,4 +1,4 @@
-from flask import Blueprint,render_template
+from flask import Blueprint,render_template,request
 
 main = Blueprint('main', __name__)
 
@@ -6,7 +6,6 @@ main = Blueprint('main', __name__)
 @main.route('/')
 def home():
   return render_template('index.html',title='TabPay | Home')
-
     
 @main.route('/register')
 def register():
@@ -35,4 +34,10 @@ def manage_contribution():
 @main.route('/host')
 def host():
     return render_template('host.html', title='Dashboard | host')
+
+@main.route('/block_reports')
+def block_reports():
+  return render_template('block_reports.html',title='Dashboard | Block Reports')  
+
+
 
