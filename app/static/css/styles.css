@@ -300,7 +300,7 @@ button:hover {
   margin-top: 5px;
   margin-bottom: 5px;
   text-align: left;
-  width: 50%;
+  width: 80%;
   color: #777b80;
 }
 
@@ -309,7 +309,7 @@ button:hover {
   margin-top: 5px;
   margin-bottom: 5px;
   border: 1px solid #bdc3c7;
-  border-radius: 4px;
+  border-radius: 5px;
   width: 100%;
   max-width: 400px;
   transition: border-color 0.3s;
@@ -318,7 +318,7 @@ button:hover {
 .acc-button {
   margin-top: 20px;
   padding: 10px;
-  background-color: #46e905;
+  background-color: #257904c4;
   color: white;
   border: none;
   border-radius: 4px;
@@ -330,13 +330,13 @@ button:hover {
   transition: background-color 0.3s;
 }
 
-.login-hr {
-  border: none;
-  border-top: 2px solid #5d5f61;
-  width: 107%;
-  position: left;
-  left: -3%;
-  top: 30px;
+.acc-hr {  
+  border: none;                      /* Remove default border */  
+  border-top: 2px solid #5d5f61;    /* Solid border on top */  
+  width: 100%;                       /* Adjust width appropriately */  
+  position: relative;                /* Use a valid position */  
+  left: -30%;                         /* Adjust as needed */  
+  margin-top: 30px;                 /* Use margin for spacing */  
 }
 
 /* For tablets */
@@ -574,11 +574,13 @@ button:hover {
   margin: 15px;
 }
 
+
 .settings-form-control {
   width: calc(100% - 40px); /* Set a fixed width matching the screenshot */
   padding: 10px;
   margin: 10px 20px; /* Adjust margin for better alignment */
 }
+
 
 .submit-btn {
   background-color: #28a745;
@@ -737,5 +739,4 @@ tbody tr td {
 
 
 /*END OF REPORT.HTML STYLING */
-
 
