@@ -55,12 +55,12 @@ endblock %} {% block content %}
             <div class="row mb-5 mt-2">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="fullName" class="form-label"
+                  <label for="fullName" class="settings-form-label form-label"
                     >Update Your Full Names</label
                   >
                   <input
                     type="text"
-                    class="form-control"
+                    class="settings-form-label form-control"
                     id="fullName"
                     placeholder="Patrick Cheruiyot"
                   />
@@ -68,10 +68,12 @@ endblock %} {% block content %}
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="userId" class="form-label">Update Your ID</label>
+                  <label for="userId" class="settings-form-label form-label"
+                    >Update Your ID</label
+                  >
                   <input
-                    type="text"
-                    class="form-control"
+                    type="number"
+                    class="settings-form-label form-control"
                     id="userId"
                     placeholder="xxxxxxx"
                   />
@@ -82,12 +84,14 @@ endblock %} {% block content %}
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="newPassword" class="form-label"
+                  <label
+                    for="newPassword"
+                    class="settings-form-label form-label"
                     >New Password</label
                   >
                   <input
                     type="password"
-                    class="form-control"
+                    class="settings-form-label form-control"
                     id="newPassword"
                     placeholder="*********"
                   />
@@ -95,12 +99,14 @@ endblock %} {% block content %}
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="confirmPassword" class="form-label"
+                  <label
+                    for="confirmPassword"
+                    class="settings-form-label form-label"
                     >Confirm Password</label
                   >
                   <input
                     type="password"
-                    class="form-control"
+                    class="settings-form-label form-control"
                     id="confirmPassword"
                     placeholder="*********"
                   />
@@ -117,12 +123,14 @@ endblock %} {% block content %}
             <div class="row mb-5 mt-2">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="committeeName" class="form-label"
+                  <label
+                    for="committeeName"
+                    class="settings-form-label form-label"
                     >Committee Full Name</label
                   >
                   <input
                     type="text"
-                    class="form-control"
+                    class="settings-form-label form-control"
                     id="committeeName"
                     placeholder="Patrick Cheruiyot"
                   />
@@ -130,12 +138,13 @@ endblock %} {% block content %}
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="idNumber" class="form-label"
+                  <label for="idNumber" class="settings-form-label form-label"
                     >Their ID Number</label
                   >
                   <input
-                    type="text"
-                    class="form-control"
+                    type="number"
+                    id="idNumber"
+                    class="settings-form-label form-control"
                     id="idNumber"
                     placeholder="xxxxxxx"
                   />
@@ -146,7 +155,9 @@ endblock %} {% block content %}
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="role" class="form-label">Role</label>
+                  <label for="role" class="settings-form-label form-label"
+                    >Role</label
+                  >
 
                   <select
                     id="role"
@@ -161,12 +172,14 @@ endblock %} {% block content %}
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="phoneNumber" class="form-label"
+                  <label
+                    for="phoneNumber"
+                    class="settings-form-label form-label"
                     >Phone Number</label
                   >
                   <input
-                    type="text"
-                    class="form-control"
+                    type="number"
+                    class="settings-form-label form-control"
                     id="phoneNumber"
                     placeholder="0714513252"
                   />
@@ -190,25 +203,29 @@ endblock %} {% block content %}
             fostering collaboration and organization at the local level.
           </p>
           <form>
-            <div class="row p-2">
-              <div class="col-md-6">
+            <div class="row p-2 d-flex justify-content-center">
+              <div class="col-md-4">
                 <div class="mb-3">
-                  <label for="fullName" class="form-label">Umbrella Name</label>
+                  <label for="fullName" class="settings-form-label form-label"
+                    >Umbrella Name</label
+                  >
                   <input
                     type="text"
-                    class="form-control"
+                    class="settings-form-label form-control"
                     id="fullName"
-                    placeholder="Patrick Cheruiyot"
+                    placeholder="Nyangores"
                   />
                 </div>
               </div>
-              <div class="col-md-6">
+              <div class="col-md-4">
                 <div class="mb-3">
-                  <label for="userId" class="form-label">Location</label>
+                  <label for="location" class="settings-form-label form-label"
+                    >Location</label
+                  >
                   <input
                     type="text"
-                    class="form-control"
-                    id="userId"
+                    class="settings-form-label form-control"
+                    id="location"
                     placeholder="xxxxxxx"
                   />
                 </div>
@@ -230,20 +247,26 @@ endblock %} {% block content %}
             <div class="row p-4">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="userId" class="form-label">Block Name</label>
+                  <label for="blockName" class="settings-form-label form-label"
+                    >Block Name</label
+                  >
                   <input
                     type="text"
-                    class="form-control"
-                    id="userId"
+                    class="settings-form-label form-control"
+                    id="blockName"
                     placeholder="Block 5"
                   />
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="userId" class="form-label">Parent Umbrella</label>
+                  <label
+                    for="parentUmbrella"
+                    class="settings-form-label form-label"
+                    >Parent Umbrella</label
+                  >
                   <select
-                    id="role"
+                    id="parentUmbrella"
                     class="form-select p-2 mt-2 ms-3"
                     aria-label="Parent Umbrella"
                   >
@@ -270,22 +293,28 @@ endblock %} {% block content %}
             <div class="row p-4">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="fullName" class="form-label">Zone Name</label>
+                  <label for="zoneName" class="settings-form-label form-label"
+                    >Zone Name</label
+                  >
                   <input
                     type="text"
-                    class="form-control"
-                    id="fullName"
+                    class="settings-form-label form-control"
+                    id="zoneName"
                     placeholder="Meja Estate Zone"
                   />
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="userId" class="form-label">Parent Block</label>
+                  <label
+                    for="parentBlock"
+                    class="settings-form-label form-label"
+                    >Parent Block</label
+                  >
                   <select
-                    id="role"
+                    id="parentBlock"
                     class="form-select p-2 mt-2"
-                    aria-label="Parent Umbrella"
+                    aria-label="Parent Block"
                   >
                     <option selected>Block 5</option>
                     <option>Block 4</option>
@@ -312,26 +341,30 @@ endblock %} {% block content %}
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="fullName" class="form-label"
+                  <label
+                    for="memberfullName"
+                    class="settings-form-label form-label"
                     >Member Full Name</label
                   >
                   <input
                     type="text"
-                    class="form-control"
-                    id="fullName"
+                    class="settings-form-label form-control"
+                    id="memberfullName"
                     placeholder="Patrick Cheruiyot"
                   />
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="userId" class="form-label"
+                  <label
+                    for="phoneNumber"
+                    class="settings-form-label form-label"
                     >Member Phone Number</label
                   >
                   <input
-                    type="text"
-                    class="form-control"
-                    id="userId"
+                    type="number"
+                    class="settings-form-label form-control"
+                    id="phoneNumber"
                     placeholder="0700223344"
                   />
                 </div>
@@ -340,22 +373,28 @@ endblock %} {% block content %}
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="fullName" class="form-label"
+                  <label
+                    for="member-id-number"
+                    class="settings-form-label form-label"
                     >Member ID Number
                   </label>
                   <input
-                    type="text"
-                    class="form-control"
-                    id="fullName"
+                    type="number"
+                    class="settings-form-label form-control"
+                    id="member-id-number"
                     placeholder="xxxxxxx"
                   />
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="userId" class="form-label">Member Zone</label>
+                  <label
+                    for="member-zone"
+                    class="settings-form-label form-label"
+                    >Member Zone</label
+                  >
                   <select
-                    id="role"
+                    id="member-zone"
                     class="form-select p-2 mt-2 ms-3"
                     aria-label="Member Zone"
                   >
@@ -371,9 +410,11 @@ endblock %} {% block content %}
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="userId" class="form-label">Select Bank</label>
+                  <label for="bank" class="settings-form-label form-label"
+                    >Select Bank</label
+                  >
                   <select
-                    id="role"
+                    id="bank"
                     class="form-select p-2 mt-2 ms-3"
                     aria-label="Member Zone"
                   >
@@ -386,13 +427,13 @@ endblock %} {% block content %}
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="userId" class="form-label"
+                  <label for="acc_number" class="settings-form-label form-label"
                     >Bank Account Number</label
                   >
                   <input
-                    type="text"
-                    class="form-control"
-                    id="userId"
+                    type="number"
+                    class="settings-form-label form-control"
+                    id="acc_number"
                     placeholder="xxxxxxx"
                   />
                 </div>
