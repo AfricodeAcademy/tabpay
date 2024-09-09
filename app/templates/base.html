@@ -14,9 +14,12 @@
       rel="stylesheet"
     />
     <!-- Google Font: Roboto -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
+      rel="stylesheet"
+    />
     <!-- Bootstrap Icons CDN -->
     <link
       href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css"
@@ -24,7 +27,6 @@
     />
     <link rel="stylesheet" href="../static/css/styles.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
   </head>
   <body>
     {% if title != 'TabPay | Home' %}
@@ -34,33 +36,57 @@
           <!-- Sidebar -->
           <div class="glass-sidebar d-flex flex-column">
             <!-- TabPay Logo -->
-            <div class="tabpay-logo m-2"><img src="../static/images/logo.png" alt=""></div>
+            <div class="tabpay-logo m-2">
+              <img src="../static/images/logo.png" alt="" />
+            </div>
 
-            <a href="{{url_for('main.dashboard_stats')}}" 
-            style="background-color: {% if 'Dashboard' in title %} rgb(3, 185, 3) {% endif %}; 
+            <a
+              href="{{url_for('main.dashboard_stats')}}"
+              style="background-color: {% if 'Dashboard' in title %} rgb(3, 185, 3) {% endif %}; 
                    border-radius: 5px; 
-                   color: white;">
-            <i class="bi bi-grid-fill"></i> Dashboard
-         </a>
-         
-              
+                   color: white;"
+            >
+              <i class="bi bi-grid-fill"></i> Dashboard
             </a>
-            <a href="{{url_for('main.manage_contribution')}}"><i class="bi bi-currency-exchange"></i> Contribute</a>
-            <a href="#"><i class="bi bi-house-fill"></i> Host</a>
+
+            <!-- Navigation Links -->
+            <a
+              href="{{ url_for('main.manage_contribution') }}"
+              class="{% if request.endpoint == 'main.manage_contribution' %}active{% endif %}"
+            >
+              <i class="bi bi-currency-exchange"></i> Contribute
+            </a>
+
+            <a
+              href="#"
+              class="{% if request.endpoint == 'main.host' %}active{% endif %}"
+            >
+              <i class="bi bi-house-fill"></i> Host
+            </a>
+
             <!-- <a href="#"><i class="bi bi-people-fill"></i> Committee</a> -->
-            <a href="#"><i class="bi bi-bar-chart-fill"></i> Reports</a>
+
+            <a
+              href="{{ url_for('main.block_reports')}}"
+              class="{% if request.endpoint == 'main.block_reports' %}active{% endif %}"
+            >
+              <i class="bi bi-bar-chart-fill"></i> Reports
+            </a>
 
             <!-- Bottom of the Sidebar -->
             <div class="sidebar-bottom mt-auto">
-              {% if title == 'Dashboard | Settings' %}
-              <a href="#" class="active"
-                ><i class="bi bi-gear-fill"></i> Settings</a
+              <a
+                href="{{ url_for('main.dashboard_settings') }}"
+                class="{% if request.endpoint == 'main.dashboard_settings' %}active{% endif %}"
               >
-              {% else %}
-              <a href="{{url_for('main.dashboard_settings')}}"><i class="bi bi-gear-fill"></i> Settings</a>
-              {% endif %}
-              <a href="{{url_for('main.home')}}"><i class="bi bi-box-arrow-left"></i> Logout</a>
+                <i class="bi bi-gear-fill"></i> Settings
+              </a>
+
+              <a href="{{ url_for('main.home') }}">
+                <i class="bi bi-box-arrow-left"></i> Logout
+              </a>
             </div>
+
             <!-- Close Sidebar -->
           </div>
         </div>
@@ -74,7 +100,10 @@
               <div class="profile-area">
                 <i class="bi bi-search me-2"></i>
                 <i class="bi bi-bell"></i>
-                <img src="../static/images/image.png" alt="Profile Picture" />
+                <img
+                  src="../static/images/profile_image.png"
+                  alt="Profile Picture"
+                />
                 <span>Cheruiyot</span>
                 <i class="bi bi-chevron-down"></i>
               </div>
