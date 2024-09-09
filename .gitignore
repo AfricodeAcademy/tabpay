@@ -2,6 +2,8 @@
 app/__pycache__/
 
 # Byte-compiled / optimized / DLL files
+app/__pycache__/__init__*
+app/__pycache__/routes*
 app/__pycache__/
 __pycache__/
 *.py[cod]
