@@ -67,8 +67,8 @@
             <!-- <a href="#"><i class="bi bi-people-fill"></i> Committee</a> -->
 
             <a
-              href="#"
-              class="{% if request.endpoint == 'main.reports' %}active{% endif %}"
+              href="{{ url_for('main.block_reports')}}"
+              class="{% if request.endpoint == 'main.block_reports' %}active{% endif %}"
             >
               <i class="bi bi-bar-chart-fill"></i> Reports
             </a>
