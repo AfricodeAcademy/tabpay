@@ -1,0 +1,201 @@
+{% extends 'base.html' %} {% block heading %}Manage Contribution {% endblock %}
+{% block content %}
+<!-- Dashboard Content -->
+<div class="dashboard-content">
+  <div class="container">
+    <p class="contribution">
+      Initiate an M-Pesa push notification to facilitate member contributions.
+      Transfer the collected funds to the designated host bank account. Send
+      reminder messages to members who have not yet made their contributions and
+      generate a payment link where necessary.
+    </p>
+    <div class="settings-container">
+      <!-- Tab Navigation -->
+      <ul class="nav nav-tabs p-3">
+        <li class="nav-item">
+          <a
+            class="nav-link active"
+            data-bs-toggle="tab"
+            href="#Request-Payment"
+            >Request Payment</a
+          >
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#Send-to-Bank"
+            >Send to Bank</a
+          >
+        </li>
+      </ul>
+      <!-- Tab Panes -->
+      <div class="tab-content p-5">
+        <!-- REQUEST PAYMENT -->
+        <div id="Request-Payment" class="tab-pane fade show active">
+          <form>
+            <div class="row p-4">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label
+                    for="blockNumber"
+                    class="settings-form-label form-label"
+                    >Select Block</label
+                  >
+                  <select
+                    id="blockNumber"
+                    class="form-select p-2 mt-2 ms-3"
+                    aria-label="Select Block"
+                  >
+                    <option selected>Block 1</option>
+                    <option>Block 2</option>
+                    <option>Block 3</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label
+                    for="blockMember"
+                    class="settings-form-label form-label"
+                    >Select Block Member</label
+                  >
+                  <select
+                    id="blockMember"
+                    class="form-select p-2 mt-2 ms-3"
+                    aria-label="Select Block Member"
+                  >
+                    <option selected>Member 1</option>
+                    <option>Member 2</option>
+                    <option>Member 3</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="mb-3 ms-3">
+              <label
+                for="contributionAmount"
+                class="settings-form-label form-label"
+                >Contribution Amount</label
+              >
+              <input
+                type="number"
+                class="settings-form-control form-control"
+                id="contributionAmount"
+                placeholder="Kes 5,000"
+              />
+            </div>
+            <button type="submit" class="btn submit-btn">SUBMIT</button>
+            <p class="success-message mt-3">Success Message</p>
+          </form>
+        </div>
+        <!--/ REQUEST PAYMENT -->
+        <!-- SEND TO BANK -->
+        <div id="Send-to-Bank" class="tab-pane fade">
+          <form>
+            <div class="row p-4">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label
+                    for="blockNumber"
+                    class="settings-form-label form-label"
+                    >Select Block</label
+                  >
+                  <select
+                    id="blockNumber"
+                    class="form-select p-2 mt-2 ms-3"
+                    aria-label="Select Block"
+                  >
+                    <option selected>Block 1</option>
+                    <option>Block 2</option>
+                    <option>Block 3</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label
+                    for="blockMember"
+                    class="settings-form-label form-label"
+                    >Select Block Member</label
+                  >
+                  <select
+                    id="blockMember"
+                    class="form-select p-2 mt-2 ms-3"
+                    aria-label="Select Block Member"
+                  >
+                    <option selected>Member 1</option>
+                    <option>Member 2</option>
+                    <option>Member 3</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="row p-4">
+              <div class="col-md-6">
+                <div class="mb-3 ms-3">
+                  <label
+                    for="contributionAmount"
+                    class="settings-form-label form-label"
+                    >Amount to Send</label
+                  >
+                  <input
+                    type="number"
+                    class="settings-form-control form-control"
+                    id="contributionAmount"
+                    placeholder="Kes 200,000"
+                  />
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3 ms-3">
+                  <div class="mb-3">
+                    <label
+                      for="accountNumber"
+                      class="settings-form-label form-label"
+                      >Members A/C No:</label
+                    >
+                    <input
+                      type="text"
+                      class="form-input"
+                      id="accountNumber"
+                      placeholder="Enter account number"
+                    />
+                  </div>
+                  <div class="mb-3">
+                    <label for="bankName" class="settings-form-label form-label"
+                      >Bank:</label
+                    >
+                    <input
+                      type="text"
+                      class="form-input"
+                      id="bankName"
+                      value="Equity Bank"
+                      readonly
+                    />
+                  </div>
+                  <div class="mb-3">
+                    <label
+                      for="accountDetails"
+                      class="settings-form-label form-label"
+                      >A/C:</label
+                    >
+                    <input
+                      type="text"
+                      class="form-input"
+                      id="accountDetails"
+                      value="xxxxxxxxxx"
+                      readonly
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button type="submit" class="btn submit-btn">SUBMIT</button>
+            <p class="success-message mt-3">Success Message</p>
+          </form>
+        </div>
+        <!--/ SEND TO BANK -->
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

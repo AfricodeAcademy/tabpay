@@ -8,34 +8,28 @@ def home():
   return render_template('index.html',title='TabPay | Home')
 
     
+@main.route('/register')
+def register():
+    return render_template('register.html',title='TabPay | Register')
 
-@main.route('/forgot')
-def forgot():
-    return render_template('forgot_password.html')
-
-
-
-@main.route('/create_new_account')
-def create_new_account():
-    return render_template('create_new_account.html')
-
-   
-
+@main.route('/login')
+def login():
+    return render_template('login.html',title='TabPay | Login')
+ 
+@main.route('/forgot_password')
+def forgot_password():
+    return render_template('forgot_password.html',title='TabPay | Forgot Password')
 
 @main.route('/dashboard_stats')
 def dashboard_stats():
-    return render_template('template-5.html', title='Dashboard | Statistics')
+    return render_template('statistics.html', title='Dashboard | Statistics')
 
 @main.route('/dashboard_settings')
 def dashboard_settings():
-    return render_template('template-6.html', title='Dashboard | Settings')
+    return render_template('settings.html', title='Dashboard | Settings')
 
-@main.route('/dashboard')
-def dashboard():
-    return render_template('template-5.html', title='Dashboard')
-
-@main.route('/management')
-def management():
-    return render_template('management.html', title='Management')
+@main.route('/manage_contribution')
+def manage_contribution():
+    return render_template('manage_contribution.html', title='Dashboard | Manage_contribution')
 
 
