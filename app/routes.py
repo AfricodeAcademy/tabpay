@@ -32,4 +32,7 @@ def dashboard_settings():
 def manage_contribution():
     return render_template('manage_contribution.html', title='Dashboard | Manage_contribution')
 
+@main.route('/host')
+def host():
+    return render_template('host.html', title='Dashboard | host')
 
