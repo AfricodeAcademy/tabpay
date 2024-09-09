@@ -6,7 +6,6 @@ main = Blueprint('main', __name__)
 @main.route('/')
 def home():
   return render_template('index.html',title='TabPay | Home')
-
     
 @main.route('/register')
 def register():
@@ -31,5 +30,9 @@ def dashboard_settings():
 @main.route('/manage_contribution')
 def manage_contribution():
     return render_template('manage_contribution.html', title='Dashboard | Manage_contribution')
+
+@main.route('/block_reports')
+def block_reports():
+  return render_template('block_reports.html',title='Dashboard | Block Reports')  
 
 

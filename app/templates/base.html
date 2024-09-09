@@ -48,7 +48,7 @@
             <a href="{{url_for('main.manage_contribution')}}"><i class="bi bi-currency-exchange"></i> Contribute</a>
             <a href="#"><i class="bi bi-house-fill"></i> Host</a>
             <!-- <a href="#"><i class="bi bi-people-fill"></i> Committee</a> -->
-            <a href="#"><i class="bi bi-bar-chart-fill"></i> Reports</a>
+            <a href="{{url_for('main.block_reports')}}"><i class="bi bi-bar-chart-fill"></i> Reports</a>
 
             <!-- Bottom of the Sidebar -->
             <div class="sidebar-bottom mt-auto">
@@ -67,7 +67,7 @@
         <div class="col-lg-10">
           <div class="row d-flex justify-content-between p-2">
             <div class="col-lg-6 ms-3">
-              <h1 class="dashboard-h1">{% block heading %}{% endblock %}</h1>
+              <h1 class="dashboard-h1 ms-3">{% block heading %}{% endblock %}</h1>
             </div>
             <div class="col-lg-4">
               <!-- Profile section -->
