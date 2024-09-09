@@ -574,9 +574,7 @@ button:hover {
   margin: 15px;
 }
 
-input[type="text"],
-input[type="password"],
-input[type="number"] {
+.settings-form-control {
   width: calc(100% - 40px); /* Set a fixed width matching the screenshot */
   padding: 10px;
   margin: 10px 20px; /* Adjust margin for better alignment */
