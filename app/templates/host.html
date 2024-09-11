@@ -1,13 +1,102 @@
-{% extends 'base.html' %} {% block heading %}Regular Block Hosting {% endblock %}
-{% block content %}
+{% extends 'base.html' %} {% block heading %}Regular Block Hosting {% endblock
+%} {% block content %}
+
+<style>
+  .btn.btn-success {
+    margin-bottom: 20px; /* Adjust this value for more or less space */
+  }
+  .payment-link-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 2px solid #8bc34a; /* Green border */
+    border-radius: 5px;
+    padding: 10px 20px;
+    width: 300px;
+    font-family: "Arial", sans-serif;
+  }
+
+  .payment-text {
+    color: #8bc34a; /* Green text */
+    font-weight: bold;
+    letter-spacing: 2px;
+    font-size: 14px;
+  }
+
+  .copy-button {
+    background-color: transparent;
+    border: none;
+    color: #c0c0c0; /* Light gray color for 'COPY' */
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    letter-spacing: 2px;
+  }
+
+  .copy-button:hover {
+    color: #8bc34a; /* Change color on hover */
+  }
+
+  .form-row {
+    display: flex;
+    gap: 20px; /* Space between the two fields */
+    align-items: flex-start; /* Align them at the top */
+  }
+
+  .col-md-6 {
+    flex: 1; /* Each input takes equal space */
+  }
+
+  label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: normal;
+    color: #6c757d; /* Optional styling for the label */
+  }
+
+  .form-select,
+  .form-control {
+    width: 100%; /* Ensure the inputs fill the container */
+  }
+
+  .button-container {
+    display: flex;
+    justify-content: center; /* Center the button horizontally */
+    align-items: center; /* Center vertically, optional */
+    width: 100%; /* Ensure the container takes the full width */
+  }
+
+  .btn.Schedule {
+    padding: 10px 20px; /* Optional padding for the button */
+  }
+  /* Optional: Style adjustments for the textarea */
+  #message {
+    overflow-y: auto; /* Allows vertical scrolling */
+    resize: none; /* Disables resizing */
+  }
+  .total-contributed {
+    border: 1px solid #ced4da;
+    padding: 10px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+  }
+  .total-contributed span {
+    color: rgba(7, 8, 7, 0.904);
+    font-weight: bold;
+  }
+</style>
+
 <!-- Dashboard Content -->
-<div class="dashboard-content">
+<div class="dashboard">
   <div class="container">
     <p class="contribution">
-        A cornerstone of community engagement, regular block meetings are held weekly at the designated host's homestead,
-        where members commit to contributing a pre-agreed amount, fostering a culture of mutual support and collective progress.
+      A cornerstone of community engagement, regular block meetings are held
+      weekly at the designated host's homestead, where members commit to
+      contributing a pre-agreed amount, fostering a culture of mutual support
+      and collective progress.
     </p>
-    <div class="settings-container">
+    <div class="dashboard-content">
       <!-- Tab Navigation -->
       <ul class="nav nav-tabs p-3">
         <li class="nav-item">
@@ -24,25 +113,29 @@
           >
         </li>
         <li class="nav-item">
-            <a class="nav-link" data-bs-toggle="tab" href="#Block-Members"
-              >Block Members</a
-            >
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" data-bs-toggle="tab" href="#Contribution-Status"
-              >Contribution Status</a
-            >
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" data-bs-toggle="tab" href="#Analytics"
-              >Analytics</a
-            >
-          </li>
+          <a class="nav-link" data-bs-toggle="tab" href="#Block-Members"
+            >Block Members</a
+          >
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#Contribution-Status"
+            >Contribution Status</a
+          >
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-bs-toggle="tab" href="#Analytics"
+            >Analytics</a
+          >
+        </li>
       </ul>
+
       <!-- Tab Panes -->
       <div class="tab-content p-5">
         <!-- Schedule Weekly Block Meeting -->
-        <div id="Schedule-Weekly-Block-Meeting" class="tab-pane fade show active">
+        <div
+          id="Schedule-Weekly-Block-Meeting"
+          class="tab-pane fade show active"
+        >
           <form>
             <div class="row p-4">
               <div class="col-md-6">
@@ -84,372 +177,283 @@
                 </div>
               </div>
             </div>
-            
+
             <div class="form-row">
-                <div class="col-md-6">
-                  <label for="member" class="form-label">Select the member</label>
-                  <select id="member" class="form-select p-2">
-                    <option selected>Patrick Cheruiyot</option>
-                  </select>
-                </div>
-              
-                <div class="col-md-6">
-                  <label for="date" class="form-label">Pick the date</label>
-                  <input type="date" id="date" class="form-control">
-                </div>
+              <div class="col-md-6">
+                <label for="member" class="form-label">Select the member</label>
+                <select id="member" class="form-select p-2">
+                  <option selected>Patrick Cheruiyot</option>
+                </select>
               </div>
-              
-              <style>
-                .form-row {
-                  display: flex;
-                  gap: 20px; /* Space between the two fields */
-                  align-items: flex-start; /* Align them at the top */
-                }
-              
-                .col-md-6 {
-                  flex: 1; /* Each input takes equal space */
-                }
-              
-                label {
-                  display: block;
-                  margin-bottom: 5px;
-                  font-weight: normal;
-                  color: #6c757d; /* Optional styling for the label */
-                }
-              
-                .form-select, .form-control {
-                  width: 100%; /* Ensure the inputs fill the container */
-                }
-              </style>
-              
 
-
-              <div class="button-container">
-                <button type="schedule" class="btn Schedule mt-3">SCHEDULE</button>
+              <div class="col-md-6">
+                <label for="date" class="form-label">Pick the date</label>
+                <input type="date" id="date" class="form-control" />
               </div>
-              
-              <style>
-                .button-container {
-                  display: flex;
-                  justify-content: center; /* Center the button horizontally */
-                  align-items: center; /* Center vertically, optional */
-                  width: 100%; /* Ensure the container takes the full width */
-                }
-              
-                .btn.Schedule {
-                  padding: 10px 20px; /* Optional padding for the button */
-                }
-              </style>
-              
+            </div>
+
+            <div class="button-container">
+              <button type="schedule" class="btn Schedule mt-3">
+                SCHEDULE
+              </button>
+            </div>
+
             <p class="success-message mt-3">Success Message</p>
           </form>
         </div>
-    
+
         <!--/ Schedule Weekly Block Meeting -->
 
         <!-- Upcoming Block -->
         <div id="Upcoming-Block" class="tab-pane fade show active">
-            <h2 class="text-center mb-4">Upcoming Block</h2>  
-            <div class="row">  
-                <!-- Block Details Section -->  
-                <div class="col-md-6">  
-                    <div class="card p-3">  
-                        <h5>Block Details</h5>  
-                        <p><strong>Block Name:</strong> Block 1</p>  
-                        <p><strong>Zone Name:</strong> Meja Estate</p>  
-                        <p><strong>The Host:</strong> Patrick Cheruiyot</p>  
-                        <p><strong>When:</strong> 1st of October</p>  
-                        <button class="btn btn-success">GENERATE PAYMENT LINK</button>  
-                        <div class="payment-link-container">
-                            <span class="payment-text">PAYMENT LINK</span>
-                            <button class="copy-button">COPY</button>
-                          </div>
-                          
-                          <style>
-                            .btn.btn-success {
-                                margin-bottom: 20px; /* Adjust this value for more or less space */
-                            }
-                            .payment-link-container {
-                              display: flex;
-                              justify-content: space-between;
-                              align-items: center;
-                              border: 2px solid #8BC34A; /* Green border */
-                              border-radius: 5px;
-                              padding: 10px 20px;
-                              width: 300px;
-                              font-family: 'Arial', sans-serif;
-                            }
-                          
-                            .payment-text {
-                              color: #8BC34A; /* Green text */
-                              font-weight: bold;
-                              letter-spacing: 2px;
-                              font-size: 14px;
-                            }
-                          
-                            .copy-button {
-                              background-color: transparent;
-                              border: none;
-                              color: #C0C0C0; /* Light gray color for 'COPY' */
-                              font-weight: bold;
-                              font-size: 14px;
-                              cursor: pointer;
-                              letter-spacing: 2px;
-                            }
-                          
-                            .copy-button:hover {
-                              color: #8BC34A; /* Change color on hover */
-                            }
-                          </style>
-                           
-                    </div>  
-                </div>  
-        
-                <!-- Communicate & Send Payment Link Section -->  
-                <div class="col-md-6">  
-                    <div class="card p-3">  
-                        <h5>Communicate & Send Payment Link</h5>  
-                        <label for="message">Message:</label>  
-                        <textarea id="message" class="form-control" rows="5" style="height: 150px;">Dear Member,  
+          <h2 class="text-center mb-4">Upcoming Block</h2>
+          <div class="row">
+            <!-- Block Details Section -->
+            <div class="col-md-6">
+              <div class="card p-3">
+                <h5>Block Details</h5>
+                <p><strong>Block Name:</strong> Block 1</p>
+                <p><strong>Zone Name:</strong> Meja Estate</p>
+                <p><strong>The Host:</strong> Patrick Cheruiyot</p>
+                <p><strong>When:</strong> 1st of October</p>
+                <button class="btn btn-success">GENERATE PAYMENT LINK</button>
+                <div class="payment-link-container">
+                  <span class="payment-text">PAYMENT LINK</span>
+                  <button class="copy-button">COPY</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Communicate & Send Payment Link Section -->
+            <div class="col-md-6">
+              <div class="card p-3">
+                <h5>Communicate & Send Payment Link</h5>
+                <label for="message">Message:</label>
+                <textarea
+                  id="message"
+                  class="form-control"
+                  rows="5"
+                  style="height: 150px"
+                >
+Dear Member,  
         Upcoming block is hosted by Meja zone and the host is <<host variable name>>. Make payment through this link:  
-        www.paymentlink.com or through the paybill: xxxxxxx Account Number: <Your Phone Number>.</textarea>  
-                        <button class="btn btn-success mt-2">SEND</button>  
-                    </div>  
-                </div>  
-            </div>  
-        </div>  
-        
-        <style>  
-            /* Optional: Style adjustments for the textarea */  
-            #message {  
-                overflow-y: auto; /* Allows vertical scrolling */  
-                resize: none; /* Disables resizing */  
-            }  
-        </style>
+        www.paymentlink.com or through the paybill: xxxxxxx Account Number: <Your Phone Number>.</textarea
+                >
+                <button class="btn btn-success mt-2">SEND</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!--/ upcoming Block -->
 
         <!-- Block Members -->
-         
+
         <div id="Block-Members" class="tab-pane fade show active">
-        
-            <div class="container">  
-                <h2>Filter By:</h2>  
-                <div class="row mb-3">  
-                    <div class="col-md-4">  
-                        <select class="form-select" aria-label="Select Block">  
-                            <option selected>BLOCK 5</option>  
-                            <option value="1">BLOCK 1</option>  
-                            <option value="2">BLOCK 2</option>  
-                            <option value="3">BLOCK 3</option>  
-                            <option value="4">BLOCK 4</option>  
-                        </select>  
-                    </div>  
-                    <div class="col-md-4">  
-                        <select class="form-select" aria-label="Select Zone">  
-                            <option selected>MEJA ZONE</option>  
-                            <option value="1">ZONE 1</option>  
-                            <option value="2">ZONE 2</option>  
-                            <option value="3">ZONE 3</option>  
-                        </select>  
-                    </div>  
-                </div>  
-            
-                <table class="table table-bordered text-center">  
-                    <thead>  
-                        <tr>  
-                            <th>Full Names</th>  
-                            <th>Phone Number</th>  
-                            <th>ID Number</th>  
-                            <th>Edit</th>  
-                            <th>Remove</th>  
-                        </tr>  
-                    </thead>  
-                    <tbody>  
-                        <tr>  
-                            <td>Patrick Cheruiyot</td>  
-                            <td>xxxxxxxxxx</td>  
-                            <td>xxxxxxxxxx</td>  
-                            <td><button class="btn " style="color: green; background-color: white;  font-size: 25px;padding: 0; margin: 0;"><i class="fas fa-edit"></i></button></td>  
-                            <td><button class="btn " style="color: white; background-color: red; border-radius: 20px;" ><i class="fas fa-trash"></i></button></td>  
-                        </tr>  
-                        
-                    </tbody>  
-                </table>  
-            </div>  
-            
-            <!-- Include Font Awesome for icons -->  
-            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    </div>
-
-    
-        <!--/ Block Members -->
-
-        <!-- Contribution Status -->
-
-        <div id="Contribution-Status" class="tab-pane fade show active">
-            <div class="container">  
-                <h2>Filter By:</h2>  
-                <div class="row mb-3">  
-                    <div class="col-md-4">  
-                        <select class="form-select" aria-label="Select Block">  
-                            <option selected>BLOCK 5</option>  
-                            <option value="1">BLOCK 1</option>  
-                            <option value="2">BLOCK 2</option>  
-                            <option value="3">BLOCK 3</option>  
-                            <option value="4">BLOCK 4</option>  
-                        </select>  
-                    </div>  
-                    <div class="col-md-4">  
-                        <select class="form-select" aria-label="Select Zone">  
-                            <option selected>MEJA ZONE</option>  
-                            <option value="1">ZONE 1</option>  
-                            <option value="2">ZONE 2</option>  
-                            <option value="3">ZONE 3</option>  
-                        </select>  
-                    </div>   
-                    <div class="col-md-4">  
-                        <div class="total-contributed">  
-                            <span>Total Contributed:</span>  
-                            <span class="ml-2">Kes <span style="color: green;">200,000</span></span>  
-                        </div>  
-                    </div> 
-                    <style>  
-                        .total-contributed {  
-                            border: 1px solid #ced4da;  
-                            padding: 10px;  
-                            border-radius: 5px;  
-                            display: flex;  
-                            align-items: center;  
-                        }  
-                        .total-contributed span {  
-                            color: rgba(7, 8, 7, 0.904);  
-                            font-weight: bold;  
-                        }  
-                    </style>
-                </div>  
-                 
+          <div class="container">
+            <h2>Filter By:</h2>
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <select class="form-select" aria-label="Select Block">
+                  <option selected>BLOCK 5</option>
+                  <option value="1">BLOCK 1</option>
+                  <option value="2">BLOCK 2</option>
+                  <option value="3">BLOCK 3</option>
+                  <option value="4">BLOCK 4</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <select class="form-select" aria-label="Select Zone">
+                  <option selected>MEJA ZONE</option>
+                  <option value="1">ZONE 1</option>
+                  <option value="2">ZONE 2</option>
+                  <option value="3">ZONE 3</option>
+                </select>
+              </div>
             </div>
-        
-            <table class="table table-bordered text-center">  
-                <thead>  
-                    <tr>  
-                        <th>Full Names</th>  
-                        <th>Status</th>  
-                        <th>Amount</th>  
-                        <th>Send reminder</th> 
-                    </tr>  
-                </thead>  
-                <tbody>  
-                    <tr>  
-                        <td>Patrick Cheruiyot</td>  
-                        <td>contributed</td>  
-                        <td>kes 10000</td>  
-                        <td></td>  
-                         
-                    </tr>  
-                    <tr>  
-                        <td>Benard Ronoh</td>  
-                        <td>Pending</td>  
-                        <td>Kes 0.00</td>  
-                        <td><button class="btn btn-success">SEND</button></td> 
-                         
-                    </tr>  
-                    
-                </tbody>  
-            </table>  
-        </div>  
-        
-        <!-- Include Font Awesome for icons -->  
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
-         <!--/  Contribution Status -->
+            <table class="table table-bordered text-center">
+              <thead>
+                <tr>
+                  <th>Full Names</th>
+                  <th>Phone Number</th>
+                  <th>ID Number</th>
+                  <th>Edit</th>
+                  <th>Remove</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Patrick Cheruiyot</td>
+                  <td>xxxxxxxxxx</td>
+                  <td>xxxxxxxxxx</td>
+                  <td>
+                    <button
+                      class="btn"
+                      style="
+                        color: green;
+                        background-color: white;
+                        font-size: 25px;
+                        padding: 0;
+                        margin: 0;
+                      "
+                    >
+                      <i class="fas fa-edit"></i>
+                    </button>
+                  </td>
+                  <td>
+                    <button
+                      class="btn"
+                      style="
+                        color: white;
+                        background-color: red;
+                        border-radius: 20px;
+                      "
+                    >
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-         <!--  Analytics -->
-         <div id="Analytics" class="tab-pane fade show active"> 
-            <h2>Filter By:</h2>  
-            <div class="row mb-3">  
-                <div class="col-md-4">  
-                    <select class="form-select" aria-label="Select Block">  
-                        <option selected>BLOCK 5</option>  
-                        <option value="1">BLOCK 1</option>  
-                        <option value="2">BLOCK 2</option>  
-                        <option value="3">BLOCK 3</option>  
-                        <option value="4">BLOCK 4</option>  
-                    </select>  
-                </div>  
-                <div class="col-md-4">  
-                    <select class="form-select" aria-label="Select Zone">  
-                        <option selected>MEJA ZONE</option>  
-                        <option value="1">ZONE 1</option>  
-                        <option value="2">ZONE 2</option>  
-                        <option value="3">ZONE 3</option>  
-                    </select>  
-                </div>  
-            </div>  
-            <div class="mt-3 ms-5">  
-                      <div class="d-flex">            <h3>Contribution Overview</h3><button class="btn ms-3" style="color: white;background-color: #6c757d;">This Week</button>  
-                      </div>
-              <div style="height: 400px; width: 400px;">
-                <canvas id="contributionChart" ></canvas> 
+          <!--/ Block Members -->
+
+          <!-- Contribution Status -->
+
+          <div id="Contribution-Status" class="tab-pane fade show active">
+            <div class="container">
+              <h2>Filter By:</h2>
+              <div class="row mb-3">
+                <div class="col-md-4">
+                  <select class="form-select" aria-label="Select Block">
+                    <option selected>BLOCK 5</option>
+                    <option value="1">BLOCK 1</option>
+                    <option value="2">BLOCK 2</option>
+                    <option value="3">BLOCK 3</option>
+                    <option value="4">BLOCK 4</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <select class="form-select" aria-label="Select Zone">
+                    <option selected>MEJA ZONE</option>
+                    <option value="1">ZONE 1</option>
+                    <option value="2">ZONE 2</option>
+                    <option value="3">ZONE 3</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <div class="total-contributed">
+                    <span>Total Contributed:</span>
+                    <span class="ml-2"
+                      >Kes <span style="color: green">200,000</span></span
+                    >
+                  </div>
+                </div>
+              </div>
             </div>
-            
-        </div>    
-              </div>  
 
-        <!-- <style>  
-            .container {  
-                margin-top: 20px;  
-            }  
-            .chart-container {  
-                position: relative;  
-                margin: auto;  
-                height: 25vh; /* Reduced height */  
-                width: 25vw; /* Reduced width */  
-            }  
-        </style>   -->
-        
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  
-        <script>  
-            const ctx = document.getElementById('contributionChart').getContext('2d');  
-            const contributionChart = new Chart(ctx, {  
-                type: 'doughnut',  
-                data: {  
-                    labels: ['Contributed', 'Pending'],  
-                    datasets: [{  
-                        label: 'Contribution Overview',  
-                        data: [512, 245],  
-                        backgroundColor: ['orange', 'red'],  
-                        borderWidth: 1  
-                    }]  
-                },  
-                options: {  
-                    responsive: true,  
-                    plugins: {  
-                        legend: {  
-                            position: 'bottom',  
-                        }  
-                      
-                    }  
-                }  
-            });  
-        </script>  
-        
-        
-        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>  
-        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>  
-        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>  
+            <table class="table table-bordered text-center">
+              <thead>
+                <tr>
+                  <th>Full Names</th>
+                  <th>Status</th>
+                  <th>Amount</th>
+                  <th>Send reminder</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Patrick Cheruiyot</td>
+                  <td>contributed</td>
+                  <td>kes 10000</td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>Benard Ronoh</td>
+                  <td>Pending</td>
+                  <td>Kes 0.00</td>
+                  <td><button class="btn btn-success">SEND</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-         <!--/  Analytics -->
+          <!--/  Contribution Status -->
 
+          <!--  Analytics -->
+          <div id="Analytics" class="tab-pane fade show active">
+            <h2>Filter By:</h2>
+            <div class="row mb-3">
+              <div class="col-md-4">
+                <select class="form-select" aria-label="Select Block">
+                  <option selected>BLOCK 5</option>
+                  <option value="1">BLOCK 1</option>
+                  <option value="2">BLOCK 2</option>
+                  <option value="3">BLOCK 3</option>
+                  <option value="4">BLOCK 4</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <select class="form-select" aria-label="Select Zone">
+                  <option selected>MEJA ZONE</option>
+                  <option value="1">ZONE 1</option>
+                  <option value="2">ZONE 2</option>
+                  <option value="3">ZONE 3</option>
+                </select>
+              </div>
+            </div>
+            <div class="mt-3 ms-5">
+              <div class="d-flex">
+                <h3>Contribution Overview</h3>
+                <button
+                  class="btn ms-3"
+                  style="color: white; background-color: #6c757d"
+                >
+                  This Week
+                </button>
+              </div>
+              <div style="height: 400px; width: 400px">
+                <canvas id="contributionChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+          <script>
+            const ctx = document
+              .getElementById("contributionChart")
+              .getContext("2d");
+            const contributionChart = new Chart(ctx, {
+              type: "doughnut",
+              data: {
+                labels: ["Contributed", "Pending"],
+                datasets: [
+                  {
+                    label: "Contribution Overview",
+                    data: [512, 245],
+                    backgroundColor: ["orange", "red"],
+                    borderWidth: 1,
+                  },
+                ],
+              },
+              options: {
+                responsive: true,
+                plugins: {
+                  legend: {
+                    position: "bottom",
+                  },
+                },
+              },
+            });
+          </script>
+
+          <!--/  Analytics -->
+        </div>
       </div>
     </div>
   </div>
+
+  {% endblock %}
 </div>
-
-{% endblock %}
-
-
-
-
-
-

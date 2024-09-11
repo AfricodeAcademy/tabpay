@@ -1,90 +1,92 @@
-{% extends "base.html" %} 
+{% extends "base.html" %} {% block heading %} Block Reports{% endblock %} {%
+block content %}
+<div class="dashboard">
+  <div class="container">
+    <p class="mt-2 text-gray-600 fs-5">
+      Reports showing insights into block dynamics such as, contribution by
+      members, overall performance etc.
+    </p>
 
-{% block heading %}       
-    Block Reports
-{% endblock %} 
-
-{% block content %}
-<div class="dashboard-content">
-    <div class="container">
-        <p class="mt-2 text-gray-600 fs-5">
-            Reports showing insights into block dynamics such as, contribution by members, overall performance etc.
-        </p>  
-
-        <div class="settings-container">
-                  <!-- Tab Navigation -->
+    <div class="dashboard-content">
+      <!-- Tab Navigation -->
       <ul class="nav nav-tabs p-3">
-        <li class="nav-item">  
-            <a  
-                class="nav-link active"  
-                data-bs-toggle="tab"  
-                href="#member-contribution"  
-                style="color: black; float: left;"  
-            >  
-                Member Contribution  
-            </a>  
+        <li class="nav-item">
+          <a
+            class="nav-link active"
+            data-bs-toggle="tab"
+            href="#member-contribution"
+            style="color: black; float: left"
+          >
+            Member Contribution
+          </a>
         </li>
       </ul>
-         <!-- Tab Panes -->
-         <div class="tab-content p-5">
-            <div id="member-contribution" class="tab-pane fade show active">
-        
-                <label for="block" class="block" style="font-weight: bold;text-decoration: underline;">Filter By:</label>
-                <div class="flex justify-between mt-4">  
-                    <div >  
-                        <select id="block" class="border rounded p-1">  
-                            <option>BLOCK 5</option>  
-                        </select>  
-                    </div>  
-                    <div>  
-                        <select id="member" class="border rounded p-1">  
-                            <option>PATRICK</option>  
-                        </select>  
-                    </div>  
-                    <div>   
-                        <select id="date" class="border rounded p-1">  
-                            <option>DATE FILTER</option>  
-                        </select>  
-                    </div>  
-                    <div class="flex items-center">  
-                        <span class="font-bold">Total Contributed: Kes 200,000</span>
-                    </div>  
-                </div>  
-                <table class="mt-4 w-full border-collapse " style="border: 5px solid black;">  
-                    <thead>  
-                        <tr>  
-                            <th style="border: 5px solid black;">Zone</th>  
-                            <th style="border: 5px solid black;">Host</th>  
-                            <th style="border: 5px solid black;">Contributed Amount</th>  
-                        </tr>  
-                    </thead>  
-                    <tbody>  
-                        <tr>  
-                            <td style="border: 5px solid black;">Meja Estate</td>  
-                            <td style="border: 5px solid black;">Francis Ronoh</td>  
-                            <td style="border: 5px solid black;">Kes 20,000</td>  
-                        </tr>  
-                        <tr>  
-                            <td style="border: 5px solid black;">Another Zone</td>  
-                            <td style="border: 5px solid black;">Another Host</td>  
-                            <td style="border: 5px solid black;">Kes 15,000</td>  
-                        </tr>
-                        <tr>  
-                            <td style="border: 5px solid black;"></td>  
-                            <td style="border: 5px solid black;"></td>  
-                            <td style="border: 5px solid black;"></td>  
-                        </tr>
-                        <tr>  
-                            <td style="border: 5px solid black;"></td>  
-                            <td style="border: 5px solid black;"></td>  
-                            <td style="border: 5px solid black;"></td>  
-                        </tr>
-                    </tbody>  
-                </table>  
-            
-        </div> 
-         </div>
+      <!-- Tab Panes -->
+      <div class="tab-content p-5">
+        <div id="member-contribution" class="tab-pane fade show active">
+          <label
+            for="block"
+            class="block"
+            style="font-weight: bold; text-decoration: underline"
+            >Filter By:</label
+          >
+          <div class="flex justify-between mt-4">
+            <div>
+              <select id="block" class="border rounded p-1">
+                <option>BLOCK 5</option>
+              </select>
+            </div>
+            <div>
+              <select id="member" class="border rounded p-1">
+                <option>PATRICK</option>
+              </select>
+            </div>
+            <div>
+              <select id="date" class="border rounded p-1">
+                <option>DATE FILTER</option>
+              </select>
+            </div>
+            <div class="flex items-center">
+              <span class="font-bold">Total Contributed: Kes 200,000</span>
+            </div>
+          </div>
+          <table
+            class="mt-4 w-full border-collapse"
+            style="border: 5px solid black"
+          >
+            <thead>
+              <tr>
+                <th style="border: 5px solid black">Zone</th>
+                <th style="border: 5px solid black">Host</th>
+                <th style="border: 5px solid black">Contributed Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="border: 5px solid black">Meja Estate</td>
+                <td style="border: 5px solid black">Francis Ronoh</td>
+                <td style="border: 5px solid black">Kes 20,000</td>
+              </tr>
+              <tr>
+                <td style="border: 5px solid black">Another Zone</td>
+                <td style="border: 5px solid black">Another Host</td>
+                <td style="border: 5px solid black">Kes 15,000</td>
+              </tr>
+              <tr>
+                <td style="border: 5px solid black"></td>
+                <td style="border: 5px solid black"></td>
+                <td style="border: 5px solid black"></td>
+              </tr>
+              <tr>
+                <td style="border: 5px solid black"></td>
+                <td style="border: 5px solid black"></td>
+                <td style="border: 5px solid black"></td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-    </div> 
-</div>  
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
