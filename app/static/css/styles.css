@@ -311,7 +311,7 @@ button:hover {
   border: 1px solid #bdc3c7;
   border-radius: 5px;
   width: 100%;
-  max-width: 400px;
+  max-width: 620px;
   transition: border-color 0.3s;
 }
 
