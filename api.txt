@@ -137,3 +137,17 @@ POST /payments: Create a new payment.
 PUT /payments/{id}: Update an existing payment.
 
 DELETE /payments/{id}: Delete a payment.
+
+
+Communication:
+
+/Communication: Retrieve a list of all Communication.
+
+GET /Communication/{id}: Retrieve a specific communication by ID.
+
+POST /Communication: Create a new communication.
+
+PUT /Communication/{id}: Update an existing communication.
+
+DELETE /Communication/{id}: Delete a communication.
+
