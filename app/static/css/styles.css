@@ -1,6 +1,480 @@
-body {
-  font-family: "Roboto", sans-serif;
+* {
+  box-sizing: border-box;
 }
+body,
+html {
+  font-family: "Roboto", sans-serif;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+/* BASE STYLING */
+.dashboard-h1 {
+  font-weight: bold;
+  font-size: xx-large;
+}
+
+.profile-area {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-area i {
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.profile-area img {
+  border-radius: 50%;
+  margin-left: 10px;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+}
+.glass-sidebar {
+  height: 100vh;
+  padding: 30px 10px;
+  position: fixed;
+  /* width: 220px; */
+  display: flex;
+  flex-direction: column;
+}
+
+.glass-sidebar a {
+  text-decoration: none;
+  color: rgb(38, 34, 34, 0.7);
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  margin-bottom: 10px;
+  transition: all 0.3s;
+}
+
+.glass-sidebar a:hover {
+  color: black;
+}
+
+.glass-sidebar a.active {
+  color: rgb(3, 185, 3);
+}
+
+.glass-sidebar a i {
+  margin-right: 10px;
+}
+.sidebar-bottom {
+  margin-top: auto;
+}
+
+.tabpay-logo {
+  height: 50px;
+}
+
+/* CSS ADJUSTMENTS */
+@media (max-width: 576px) {
+  body {
+    padding: 10px;
+    padding-bottom: 80px;
+  }
+  .glass-sidebar {
+    display: none; /* Hide sidebar on small screens */
+  }
+
+  .mobile-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 3cqh;
+  }
+  .logo {
+    width: 10px;
+    height: 10px;
+  }
+  .mobile-nav .profile-info {
+    display: flex;
+    align-items: center;
+  }
+
+  .rounded-circle {
+    margin-left: 8px;
+    height: 30px;
+    width: 30px;
+    border-radius: 15px;
+  }
+  .dashboard-h1 {
+    font-size: xx-large;
+  }
+  .mobile-nav span {
+    font-size: 12px;
+    margin-left: 3px;
+  }
+
+  /* Static navigation on small screens */
+  .mobile-nav-links {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 10px;
+  }
+
+  .mobile-nav-links a {
+    font-size: 14px;
+    text-decoration: underline;
+    color: #3ebf13;
+    font-weight: bold !important;
+    padding: 10px;
+    transition: color 0.3s ease;
+  }
+  .mobile-nav-links a:active {
+    text-decoration: none;
+    color: #fff;
+    border: 1px solid white;
+    background-color: #235b25;
+    padding: 10px;
+    transition: color 0.3s ease;
+  }
+
+  .mobile-nav-links a:hover {
+    font-size: 16px;
+  }
+
+  /* Footer at the bottom */
+  .mobile-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background-color: #f8f9fa;
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+  }
+
+  .mobile-footer .icon-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    padding: 5px;
+    width: 100px;
+  }
+
+  .mobile-footer .icon-container i {
+    font-size: 18px;
+    margin: 0 10px;
+  }
+
+  .mobile-footer .settings-link {
+    font-size: 14px;
+    text-decoration: none;
+    color: #333;
+  }
+
+  .mobile-footer .settings-link:hover {
+    color: black;
+  }
+}
+
+@media (min-width: 576px) {
+  .navbar {
+    display: none; /* Hide mobile navbar on larger screens */
+  }
+
+  .glass-sidebar {
+    display: block; /* Show sidebar again on larger screens */
+  }
+}
+@media (max-width: 576px) {
+  .headProfile {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+}
+
+/* END OF BASE STYLING */
+
+/* DASHBOARD STYLING */
+
+.dashboard-content {
+  border: 2px solid black;
+  border-radius: 20px;
+}
+.nav-tabs {
+  border-bottom: 2px solid black;
+}
+.nav-tabs .nav-item {
+  flex-grow: 1;
+  text-align: center;
+  border: 2px solid #000;
+}
+
+.nav-tabs .nav-item:first-child {
+  border-left: 2px solid black; /* Merge the left tab with the container border */
+  border-top-left-radius: 10px; /* Rounded corner for the first tab */
+}
+@media (min-width: 576px) {
+  .nav-tabs .nav-item:last-child {
+    border-right: 2px solid black; /* Merge the right tab with the container border */
+    border-top-right-radius: 10px; /* Rounded corner for the last tab */
+  }
+}
+@media (max-width: 576px) {
+  .nav-tabs .nav-item:nth-child(3) {
+    border-right: 2px solid black; /* Merge the right tab with the container border */
+    border-top-right-radius: 10px; /* Rounded corner for the last tab */
+  }
+}
+.nav-item .nav-link {
+  color: black;
+  font-weight: bold;
+  border: none;
+}
+.nav-item .nav-link.active {
+  color: #0a9a2c;
+  border-bottom: 2px solid black;
+}
+/* END OF DASHBOARD STYLING */
+
+/* STATISTICS STYLING */
+
+.glass-card {
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 20px;
+  color: #333;
+}
+
+.stats-card {
+  color: #fff;
+  text-align: center;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+}
+
+.stats-card h2 {
+  font-size: 2.5rem;
+  margin-bottom: 0;
+}
+
+.stats-card p {
+  font-weight: bold;
+}
+
+.chart-container {
+  background-color: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 20px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  position: relative;
+}
+
+.dropdown {
+  padding: 5px 10px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.chart {
+  height: 400px;
+}
+.doughnutChart {
+  height: 350px;
+}
+.lineChart {
+  height: 350px;
+  background-color: rgba(231, 182, 176, 0.164);
+}
+/* END OF SETTINGS STYLING */
+
+/* SETTINGS STYLING */
+
+.tab-content {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  background-color: #fff;
+  padding: 20px;
+  margin-top: 20px;
+  border: 2px solid black;
+  margin: 15px;
+}
+
+.settings-form-control {
+  width: calc(100% - 40px); /* Set a fixed width matching the screenshot */
+  padding: 10px;
+  margin: 10px 20px; /* Adjust margin for better alignment */
+}
+
+.submit-btn {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  border-radius: 5px;
+  display: block;
+  margin: 20px auto 0 auto;
+
+  font-size: 16px;
+}
+
+.submit-btn:hover {
+  border: 3px solid green;
+  color: white;
+  background-color: #28a745;
+}
+
+.success-message {
+  border: 1px solid #28a745;
+  color: #28a745;
+  padding: 10px;
+  border-radius: 5px;
+  text-align: center;
+  width: 50%;
+  margin: 0 auto;
+
+  /* display: none;  */
+}
+
+.settings-form-control {
+  box-shadow: none;
+}
+
+.settings-form-label {
+  color: rgba(0, 0, 0, 0.512);
+  margin-left: 18px;
+  margin-bottom: 0;
+}
+
+.settings-form-control::placeholder {
+  color: #aaa;
+}
+.form-select:focus,
+.form-control:focus {
+  border-color: #12b931;
+  outline: 0;
+  box-shadow: inset 0 1px 1px rgba(0, 123, 255, 0.075),
+    0 0 8px rgba(65, 216, 80, 0.6);
+}
+
+/* TODO Usisahau kutumia unique classes */
+/* END OF SETTINGS STYLING */
+
+/*BEGINNING OF STYLING OF TEMPLATE NUMBER 18*/
+
+.contribution {
+  font-size: 18px;
+  color: #555;
+  line-height: 1.5;
+}
+
+/*END OF TEMPLATE NUMBER 18 STYLINGG */
+
+/*START OF REPORT.HTML STYLING */
+/* Main Content Container */
+.main-content {
+  flex: 1; /* Take remaining space */
+  padding: 1.5rem; /* Padding */
+  background-color: #fff; /* White background */
+  border: 1px solid #ddd; /* Light border for the container */
+  border-radius: 8px; /* Rounded corners */
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  margin-top: 1rem; /* Top margin */
+}
+
+/* Custom Container for Title */
+.custom-container {
+  font-size: 1.25rem; /* Larger font size for the title */
+  font-weight: bold; /* Bold font for title */
+  border-bottom: 3px solid #000; /* Black bottom border */
+  padding-bottom: 0.5rem; /* Padding below the title */
+  margin-bottom: 1rem; /* Margin below the title */
+}
+
+/* Filter and Total Contributed Section */
+.flex {
+  display: flex; /* Flexbox layout */
+  gap: 1rem; /* Gap between flex items */
+  align-items: center; /* Center vertically */
+}
+
+.flex div {
+  flex-grow: 1; /* Each item takes equal space */
+}
+
+.select-container select {
+  width: 100%; /* Full width of the select */
+  padding: 0.5rem; /* Padding inside the select */
+  border: 1px solid #ddd; /* Light border */
+  border-radius: 4px; /* Rounded corners */
+}
+
+/* Total Contributed Section */
+.flex.items-center {
+  display: flex; /* Flexbox layout */
+  align-items: center; /* Center vertically */
+  justify-content: flex-end; /* Align to the right */
+  font-size: 1.1rem; /* Slightly larger font */
+  background-color: #f0f0f0; /* Light grey background */
+  padding: 0.5rem 1rem; /* Padding around the text */
+  border-radius: 8px; /* Rounded corners */
+  border: 1px solid #ddd; /* Light border */
+}
+
+/* Member Contribution Table Styling */
+/* Member Contribution Table Styling */
+table {
+  width: 100%; /* Full width */
+  border-collapse: collapse; /* Collapse borders */
+  margin-top: 1rem; /* Top margin */
+  background-color: #fff; /* White background */
+}
+
+th,
+td {
+  border: 2px solid #000; /* Solid black border for table cells */
+  padding: 1.5rem; /* Padding inside cells */
+  text-align: center; /* Center align text */
+  font-size: 1rem; /* Consistent font size */
+  vertical-align: middle; /* Center vertically */
+}
+
+th {
+  background-color: #fff; /* White background for headers */
+  font-weight: bold; /* Bold text for headers */
+}
+
+td {
+  background-color: #fff; /* White background for table data */
+  font-weight: normal; /* Normal weight for data cells */
+}
+
+/* Additional Styles for Specific Appearance */
+tr {
+  height: 100px; /* Fixed height for each row */
+}
+
+tbody tr td {
+  height: 80px; /* Fixed height for tbody cells */
+  padding: 0; /* Remove extra padding */
+}
+
+/*END OF REPORT.HTML STYLING */
 
 /* START OF FORGOT_PASSWORD.HTML */
 .contmage {
@@ -330,13 +804,13 @@ button:hover {
   transition: background-color 0.3s;
 }
 
-.acc-hr {  
-  border: none;                      /* Remove default border */  
-  border-top: 2px solid #5d5f61;    /* Solid border on top */  
-  width: 100%;                       /* Adjust width appropriately */  
-  position: relative;                /* Use a valid position */  
-  left: -30%;                         /* Adjust as needed */  
-  margin-top: 30px;                 /* Use margin for spacing */  
+.acc-hr {
+  border: none; /* Remove default border */
+  border-top: 2px solid #5d5f61; /* Solid border on top */
+  width: 100%; /* Adjust width appropriately */
+  position: relative; /* Use a valid position */
+  left: -30%; /* Adjust as needed */
+  margin-top: 30px; /* Use margin for spacing */
 }
 
 /* For tablets */
@@ -391,352 +865,3 @@ button:hover {
   }
 }
 /* END-CREATE-NEW-ACCOUNT STYLING */
-
-/* TEMPLATE NUMBER 5 STYLING */
-
-.temp-5-body {
-  background: white;
-  height: 100vh;
-}
-
-.glass-card {
-  backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  padding: 20px;
-  color: #333;
-}
-
-.glass-sidebar {
-  height: 100vh;
-  padding: 30px 10px;
-  position: fixed;
-  width: 220px;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(12px);
-  border-radius: 10px;
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-  display: flex;
-  flex-direction: column;
-}
-
-.glass-sidebar a {
-  text-decoration: none;
-  color: rgb(38, 34, 34, 0.7);
-  display: flex;
-  align-items: center;
-  padding: 10px;
-  margin-bottom: 10px;
-  transition: all 0.3s;
-}
-
-.glass-sidebar a:hover {
-  color: black;
-}
-
-.glass-sidebar a.active {
-  color: rgb(3, 185, 3);
-}
-
-.glass-sidebar a i {
-  margin-right: 10px;
-}
-.sidebar-bottom {
-  margin-top: auto;
-}
-
-.tabpay-logo {
-  height: 50px;
-}
-
-.dashboard-content {
-  margin-left: 250px;
-  padding: 20px;
-}
-
-.dashboard-h1 {
-  font-weight: bold;
-  font-size: xx-large;
-  margin-bottom: 0;
-}
-
-.profile-area {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 10px;
-}
-
-.profile-area i {
-  font-size: 1.2rem;
-}
-
-.profile-area img {
-  border-radius: 50%;
-  margin-left: 10px;
-  width: 30px;
-  height: 30px;
-}
-
-.stats-card {
-  color: #fff;
-  text-align: center;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-}
-
-.stats-card h2 {
-  font-size: 2.5rem;
-  margin-bottom: 0;
-}
-
-.stats-card p {
-  font-weight: bold;
-}
-
-.chart-container {
-  background-color: rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-  border-radius: 10px;
-  padding: 20px;
-  margin-top: 20px;
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-  position: relative;
-}
-
-.dropdown {
-  padding: 5px 10px;
-  font-size: 14px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background-color: #fff;
-  cursor: pointer;
-  position: absolute;
-  top: 10px;
-  right: 10px;
-}
-
-.chart {
-  height: 400px;
-}
-.doughnutChart {
-  height: 350px;
-}
-.lineChart {
-  height: 350px;
-  background-color: rgba(231, 182, 176, 0.164);
-}
-/* END OF TEMPLATE NUMBER 5 STYLING */
-
-/* TEMPLATE NUMBER 6 STYLING */
-.settings-container {
-  border: 2px solid black;
-  border-radius: 20px;
-}
-.nav-tabs {
-  border-bottom: 2px solid black;
-}
-.nav-tabs .nav-item {
-  flex-grow: 1;
-  text-align: center;
-  border: 2px solid #000;
-}
-
-.nav-tabs .nav-item:first-child {
-  border-left: 2px solid black; /* Merge the left tab with the container border */
-  border-top-left-radius: 10px; /* Rounded corner for the first tab */
-}
-
-.nav-tabs .nav-item:last-child {
-  border-right: 2px solid black; /* Merge the right tab with the container border */
-  border-top-right-radius: 10px; /* Rounded corner for the last tab */
-}
-.nav-item .nav-link {
-  color: black;
-  font-weight: bold;
-  border: none;
-}
-.nav-item .nav-link.active {
-  color: #0a9a2c;
-  border-bottom: 2px solid black;
-}
-
-.tab-content {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  border-radius: 10px;
-  background-color: #fff;
-  padding: 20px;
-  margin-top: 20px;
-  border: 2px solid black;
-  margin: 15px;
-}
-
-
-.settings-form-control {
-  width: calc(100% - 40px); /* Set a fixed width matching the screenshot */
-  padding: 10px;
-  margin: 10px 20px; /* Adjust margin for better alignment */
-}
-
-
-.submit-btn {
-  background-color: #28a745;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  cursor: pointer;
-  border-radius: 5px;
-  display: block;
-  margin: 20px auto 0 auto;
-
-  font-size: 16px;
-}
-
-.submit-btn:hover {
-  border: 3px solid green;
-  color: white;
-  background-color: #28a745;
-}
-
-.success-message {
-  border: 1px solid #28a745;
-  color: #28a745;
-  padding: 10px;
-  border-radius: 5px;
-  text-align: center;
-  width: 50%;
-  margin: 0 auto;
-
-  /* display: none;  */
-}
-
-.settings-form-control {
-  box-shadow: none;
-}
-
-.settings-form-label {
-  color: rgba(0, 0, 0, 0.512);
-  margin-left: 18px;
-  margin-bottom: 0;
-}
-
-.settings-form-control::placeholder {
-  color: #aaa;
-}
-.form-select:focus,
-.form-control:focus {
-  border-color: #12b931;
-  outline: 0;
-  box-shadow: inset 0 1px 1px rgba(0, 123, 255, 0.075),
-    0 0 8px rgba(65, 216, 80, 0.6);
-}
-
-/* TODO Usisahau kutumia unique classes */
-/* END OF TEMPLATE NUMBER 6 STYLING */
-
-/*BEGINNING OF STYLING OF TEMPLATE NUMBER 18*/
-
-.contribution {
-  font-size: 18px;
-  color: #555;
-  line-height: 1.5;
-}
-
-/*END OF TEMPLATE NUMBER 18 STYLINGG */
-
-
-/*START OF REPORT.HTML STYLING */
-/* Main Content Container */
-.main-content {
-  flex: 1; /* Take remaining space */
-  padding: 1.5rem; /* Padding */
-  background-color: #fff; /* White background */
-  border: 1px solid #ddd; /* Light border for the container */
-  border-radius: 8px; /* Rounded corners */
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-  margin-top: 1rem; /* Top margin */
-}
-
-/* Custom Container for Title */
-.custom-container {
-  font-size: 1.25rem; /* Larger font size for the title */
-  font-weight: bold; /* Bold font for title */
-  border-bottom: 3px solid #000; /* Black bottom border */
-  padding-bottom: 0.5rem; /* Padding below the title */
-  margin-bottom: 1rem; /* Margin below the title */
-}
-
-
-/* Filter and Total Contributed Section */
-.flex {
-  display: flex; /* Flexbox layout */
-  gap: 1rem; /* Gap between flex items */
-  align-items: center; /* Center vertically */
-}
-
-.flex div {
-  flex-grow: 1; /* Each item takes equal space */
-}
-
-.select-container select {
-  width: 100%; /* Full width of the select */
-  padding: 0.5rem; /* Padding inside the select */
-  border: 1px solid #ddd; /* Light border */
-  border-radius: 4px; /* Rounded corners */
-}
-
-/* Total Contributed Section */
-.flex.items-center {
-  display: flex; /* Flexbox layout */
-  align-items: center; /* Center vertically */
-  justify-content: flex-end; /* Align to the right */
-  font-size: 1.1rem; /* Slightly larger font */
-  background-color: #f0f0f0; /* Light grey background */
-  padding: 0.5rem 1rem; /* Padding around the text */
-  border-radius: 8px; /* Rounded corners */
-  border: 1px solid #ddd; /* Light border */
-}
-
-/* Member Contribution Table Styling */
-/* Member Contribution Table Styling */
-table {
-    width: 100%; /* Full width */
-    border-collapse: collapse; /* Collapse borders */
-    margin-top: 1rem; /* Top margin */
-    background-color: #fff; /* White background */
-}
-
-th, td {
-    border: 2px solid #000; /* Solid black border for table cells */
-    padding: 1.5rem; /* Padding inside cells */
-    text-align: center; /* Center align text */
-    font-size: 1rem; /* Consistent font size */
-    vertical-align: middle; /* Center vertically */
-}
-
-th {
-    background-color: #fff; /* White background for headers */
-    font-weight: bold; /* Bold text for headers */
-}
-
-td {
-    background-color: #fff; /* White background for table data */
-    font-weight: normal; /* Normal weight for data cells */
-}
-
-/* Additional Styles for Specific Appearance */
-tr {
-    height: 100px; /* Fixed height for each row */
-}
-
-tbody tr td {
-    height: 80px; /* Fixed height for tbody cells */
-    padding: 0; /* Remove extra padding */
-}
-
-
-/*END OF REPORT.HTML STYLING */
-
