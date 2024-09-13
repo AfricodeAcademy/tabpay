@@ -31,17 +31,13 @@
         <!-- REQUEST PAYMENT -->
         <div id="Request-Payment" class="tab-pane fade show active">
           <form>
-            <div class="row p-4">
+            <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label
-                    for="blockNumber"
-                    class="settings-form-label form-label"
-                    >Select Block</label
-                  >
+                  <label for="blockNumber">Select Block</label>
                   <select
                     id="blockNumber"
-                    class="form-select p-2 mt-2 ms-3"
+                    class="select"
                     aria-label="Select Block"
                   >
                     <option selected>Block 1</option>
@@ -52,14 +48,10 @@
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label
-                    for="blockMember"
-                    class="settings-form-label form-label"
-                    >Select Block Member</label
-                  >
+                  <label for="blockMember">Select Block Member</label>
                   <select
                     id="blockMember"
-                    class="form-select p-2 mt-2 ms-3"
+                    class="select"
                     aria-label="Select Block Member"
                   >
                     <option selected>Member 1</option>
@@ -69,20 +61,17 @@
                 </div>
               </div>
             </div>
-            <div class="mb-3 ms-3">
-              <label
-                for="contributionAmount"
-                class="settings-form-label form-label"
+            <div class="mb-3">
+              <label for="contributionAmount" class="d-block"
                 >Contribution Amount</label
               >
               <input
                 type="number"
-                class="settings-form-control form-control"
                 id="contributionAmount"
                 placeholder="Kes 5,000"
               />
             </div>
-            <button type="submit" class="btn submit-btn">SUBMIT</button>
+            <button type="submit" class="submit-btn">SUBMIT</button>
             <p class="success-message mt-3">Success Message</p>
           </form>
         </div>
@@ -90,17 +79,13 @@
         <!-- SEND TO BANK -->
         <div id="Send-to-Bank" class="tab-pane fade">
           <form>
-            <div class="row p-4">
+            <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label
-                    for="blockNumber"
-                    class="settings-form-label form-label"
-                    >Select Block</label
-                  >
+                  <label for="blockNumber">Select Block</label>
                   <select
                     id="blockNumber"
-                    class="form-select p-2 mt-2 ms-3"
+                    class="select"
                     aria-label="Select Block"
                   >
                     <option selected>Block 1</option>
@@ -111,14 +96,10 @@
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label
-                    for="blockMember"
-                    class="settings-form-label form-label"
-                    >Select Block Member</label
-                  >
+                  <label for="blockMember">Select Block Member</label>
                   <select
                     id="blockMember"
-                    class="form-select p-2 mt-2 ms-3"
+                    class="select"
                     aria-label="Select Block Member"
                   >
                     <option selected>Member 1</option>
@@ -128,58 +109,32 @@
                 </div>
               </div>
             </div>
-            <div class="row p-4">
+            <div class="row mt-5">
               <div class="col-md-6">
-                <div class="mb-3 ms-3">
-                  <label
-                    for="contributionAmount"
-                    class="settings-form-label form-label"
-                    >Amount to Send</label
-                  >
+                <div class="mb-3">
+                  <label for="contributionAmount">Amount to Send</label>
                   <input
                     type="number"
-                    class="settings-form-control form-control"
                     id="contributionAmount"
                     placeholder="Kes 200,000"
                   />
                 </div>
               </div>
               <div class="col-md-6">
-                <div class="mb-3 ms-3">
-                  <div class="mb-3">
-                    <label
-                      for="accountNumber"
-                      class="settings-form-label form-label"
-                      >Members A/C No:</label
-                    >
+                <div class="mb-3 bank">
+                  <p>Members A/C No:</p>
+                  <div class="d-flex">
+                    <label for="bankName">Bank:</label>
                     <input
                       type="text"
-                      class="form-input"
-                      id="accountNumber"
-                      placeholder="Enter account number"
-                    />
-                  </div>
-                  <div class="mb-3">
-                    <label for="bankName" class="settings-form-label form-label"
-                      >Bank:</label
-                    >
-                    <input
-                      type="text"
-                      class="form-input"
                       id="bankName"
                       value="Equity Bank"
                       readonly
                     />
-                  </div>
-                  <div class="mb-3">
-                    <label
-                      for="accountDetails"
-                      class="settings-form-label form-label"
-                      >A/C:</label
-                    >
+
+                    <label for="accountDetails">A/C:</label>
                     <input
                       type="text"
-                      class="form-input"
                       id="accountDetails"
                       value="xxxxxxxxxx"
                       readonly
@@ -188,12 +143,13 @@
                 </div>
               </div>
             </div>
-            <button type="submit" class="btn submit-btn">SUBMIT</button>
+
+            <button type="submit" class="submit-btn">SUBMIT</button>
             <p class="success-message mt-3">Success Message</p>
           </form>
         </div>
-        <!--/ SEND TO BANK -->
       </div>
+      <!--/ SEND TO BANK -->
     </div>
   </div>
 </div>
