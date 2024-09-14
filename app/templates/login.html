@@ -1,37 +1,43 @@
-{% extends 'auth.html' %}
+{% extends 'auth.html' %} {% block content %}
+<div class="container-fluid">
+  <div class="main-container">
+    <div class="row">
+      <div class="col-lg-6">
+        <div class="image-section"></div>
+      </div>
+      <div class="col-lg-6">
+        <div class="head-form">
+          <div class="p-4">
+            <h1>Login</h1>
+            <p>Sign in to continue</p>
+          </div>
+            <hr />
+            <div class="form-section">
+              <div>
+                <label for="email">Please enter Email</label>
+                <input
+                  type="email"
+                  id="email"
+                  placeholder="hello@reallygreatsite.com"
+                  required
+                />
+              </div>
+              <div>
+                <label for="password">Please enter password</label>
+                <input
+                  type="password"
+                  id="password"
+                  placeholder="********"
+                  required
+                />
+              </div>
+              <button type="submit">LOGIN</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-{% block content %}
-<main class="my-body">  
-  <div class="login-container d-flex w-100 h-100 flex-column flex-md-row">  
-
-    <!-- Left Image Section (100% height) -->  
-    <div class="col-md-6 image-section p-0 d-flex align-items-center">  
-      <div class="my-image-section w-100 h-100">  
-        <img src="{{ url_for('static', filename='images/tabpay.png') }}" alt="Image description" class="img-fluid h-100">  
-      </div>  
-    </div>  
-
-    <!-- Right Form Section (50% width) -->  
-    <div class="col-md-6 d-flex flex-column align-items-center justify-content-center form-section-area">  
-      <h1 class="hi-login text-green-600">Login</h1>  
-      <p class="my-sign-in text-green-600">Sign in to continue</p>  
-      <hr class="login-hr">  
-
-      <!-- Login Form -->  
-      <form>  
-        <div class="form-group mb-3">  
-          <label for="email" class="email-label">Please enter Email</label>  
-          <input type="email" id="email" placeholder="hello@reallygreatsite.com" required class="rop-input form-control border border-gray-300 p-2 rounded" />  
-        </div>  
-        <div class="form-group mb-3">  
-          <label for="password" class="password-center">Please enter password</label>  
-          <input type="password" id="password" placeholder="****" required class="rop-input form-control border border-gray-300 p-2 rounded" />  
-        </div>  
-        <button type="submit" class="btn login-button w-100 bg-green-600 text-white p-2 rounded">LOGIN</button>  
-      </form>  
-
-    </div>  
-
-  </div>  
-</main>  
 {% endblock %}

@@ -2,7 +2,7 @@
 endblock %} {% block content %}
 
 <!-- Dashboard Content -->
-<div class="dashboard-content">
+<div class="dashboard mt-2">
   <div class="container">
     <div class="dashboard-paragraph">
       <p class="mb-4 fs-6">
@@ -13,7 +13,7 @@ endblock %} {% block content %}
       </p>
     </div>
 
-    <div class="settings-container">
+    <div class="dashboard-content">
       <!-- Tab Navigation -->
       <ul class="nav nav-tabs p-3">
         <li class="nav-item">
@@ -49,18 +49,16 @@ endblock %} {% block content %}
       </ul>
 
       <!-- Tab Panes -->
-      <div class="tab-content d-flex justify-content-around">
+      <div class="tab-content d-flex justify-content-center">
+        <!-- PROFIILE -->
         <div id="profile" class="tab-pane fade show active">
           <form>
             <div class="row mb-5 mt-2">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="fullName" class="settings-form-label form-label"
-                    >Update Your Full Names</label
-                  >
+                  <label for="fullName">Update Your Full Names</label>
                   <input
                     type="text"
-                    class="settings-form-label form-control"
                     id="fullName"
                     placeholder="Patrick Cheruiyot"
                   />
@@ -68,15 +66,8 @@ endblock %} {% block content %}
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="userId" class="settings-form-label form-label"
-                    >Update Your ID</label
-                  >
-                  <input
-                    type="number"
-                    class="settings-form-label form-control"
-                    id="userId"
-                    placeholder="xxxxxxx"
-                  />
+                  <label for="userId">Update Your ID</label>
+                  <input type="number" id="userId" placeholder="xxxxxxx" />
                 </div>
               </div>
             </div>
@@ -84,14 +75,9 @@ endblock %} {% block content %}
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label
-                    for="newPassword"
-                    class="settings-form-label form-label"
-                    >New Password</label
-                  >
+                  <label for="newPassword">New Password</label>
                   <input
                     type="password"
-                    class="settings-form-label form-control"
                     id="newPassword"
                     placeholder="*********"
                   />
@@ -99,38 +85,31 @@ endblock %} {% block content %}
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label
-                    for="confirmPassword"
-                    class="settings-form-label form-label"
-                    >Confirm Password</label
-                  >
+                  <label for="confirmPassword">Confirm Password</label>
                   <input
                     type="password"
-                    class="settings-form-label form-control"
                     id="confirmPassword"
                     placeholder="*********"
                   />
                 </div>
               </div>
             </div>
-            <button type="submit" class="btn submit-btn">SUBMIT</button>
+
+            <button type="submit" class="submit-btn">SUBMIT</button>
             <p class="success-message mt-3">Success Message</p>
           </form>
         </div>
+        <!-- END OF PROFIILE -->
+
         <!-- COMMITTEE TAB -->
         <div id="committee" class="tab-pane fade">
           <form>
             <div class="row mb-5 mt-2">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label
-                    for="committeeName"
-                    class="settings-form-label form-label"
-                    >Committee Full Name</label
-                  >
+                  <label for="committeeName">Committee Full Name</label>
                   <input
                     type="text"
-                    class="settings-form-label form-control"
                     id="committeeName"
                     placeholder="Patrick Cheruiyot"
                   />
@@ -138,13 +117,10 @@ endblock %} {% block content %}
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="idNumber" class="settings-form-label form-label"
-                    >Their ID Number</label
-                  >
+                  <label for="idNumber">Their ID Number</label>
                   <input
                     type="number"
                     id="idNumber"
-                    class="settings-form-label form-control"
                     id="idNumber"
                     placeholder="xxxxxxx"
                   />
@@ -155,15 +131,9 @@ endblock %} {% block content %}
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="role" class="settings-form-label form-label"
-                    >Role</label
-                  >
+                  <label for="role" class="d-block">Role</label>
 
-                  <select
-                    id="role"
-                    class="form-select p-2 mt-2 ms-3"
-                    aria-label="Role"
-                  >
+                  <select id="role" class="select" aria-label="Role">
                     <option selected>Committee Member</option>
                     <option>Chairperson</option>
                     <option>Secretary</option>
@@ -172,14 +142,9 @@ endblock %} {% block content %}
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label
-                    for="phoneNumber"
-                    class="settings-form-label form-label"
-                    >Phone Number</label
-                  >
+                  <label for="phoneNumber">Phone Number</label>
                   <input
                     type="number"
-                    class="settings-form-label form-control"
                     id="phoneNumber"
                     placeholder="0714513252"
                   />
@@ -187,7 +152,7 @@ endblock %} {% block content %}
               </div>
             </div>
 
-            <button type="submit" class="btn submit-btn">SUBMIT</button>
+            <button type="submit" class="submit-btn">SUBMIT</button>
             <p class="success-message mt-3">Success Message</p>
           </form>
         </div>
@@ -206,32 +171,22 @@ endblock %} {% block content %}
             <div class="row p-2 d-flex justify-content-center">
               <div class="col-md-4">
                 <div class="mb-3">
-                  <label for="fullName" class="settings-form-label form-label"
-                    >Umbrella Name</label
-                  >
+                  <label for="umbrellaName">Umbrella Name</label>
                   <input
                     type="text"
-                    class="settings-form-label form-control"
-                    id="fullName"
+                    id="umbrellaName"
                     placeholder="Nyangores"
                   />
                 </div>
               </div>
               <div class="col-md-4">
                 <div class="mb-3">
-                  <label for="location" class="settings-form-label form-label"
-                    >Location</label
-                  >
-                  <input
-                    type="text"
-                    class="settings-form-label form-control"
-                    id="location"
-                    placeholder="xxxxxxx"
-                  />
+                  <label for="location">Location</label>
+                  <input type="text" id="location" placeholder="xxxxxxx" />
                 </div>
               </div>
             </div>
-            <button type="submit" class="btn submit-btn">SUBMIT</button>
+            <button type="submit" class="submit-btn">SUBMIT</button>
             <p class="success-message mt-3">Success Message</p>
           </form>
         </div>
@@ -247,27 +202,16 @@ endblock %} {% block content %}
             <div class="row p-4">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="blockName" class="settings-form-label form-label"
-                    >Block Name</label
-                  >
-                  <input
-                    type="text"
-                    class="settings-form-label form-control"
-                    id="blockName"
-                    placeholder="Block 5"
-                  />
+                  <label for="blockName">Block Name</label>
+                  <input type="text" id="blockName" placeholder="Block 5" />
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label
-                    for="parentUmbrella"
-                    class="settings-form-label form-label"
-                    >Parent Umbrella</label
-                  >
+                  <label for="parentUmbrella">Parent Umbrella</label>
                   <select
                     id="parentUmbrella"
-                    class="form-select p-2 mt-2 ms-3"
+                    class="select"
                     aria-label="Parent Umbrella"
                   >
                     <option selected>Nyangores</option>
@@ -277,7 +221,7 @@ endblock %} {% block content %}
                 </div>
               </div>
             </div>
-            <button type="submit" class="btn submit-btn">SUBMIT</button>
+            <button type="submit" class="submit-btn">SUBMIT</button>
             <p class="success-message mt-3">Success Message</p>
           </form>
         </div>
@@ -293,12 +237,9 @@ endblock %} {% block content %}
             <div class="row p-4">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="zoneName" class="settings-form-label form-label"
-                    >Zone Name</label
-                  >
+                  <label for="zoneName">Zone Name</label>
                   <input
                     type="text"
-                    class="settings-form-label form-control"
                     id="zoneName"
                     placeholder="Meja Estate Zone"
                   />
@@ -306,14 +247,10 @@ endblock %} {% block content %}
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label
-                    for="parentBlock"
-                    class="settings-form-label form-label"
-                    >Parent Block</label
-                  >
+                  <label for="parentBlock">Parent Block</label>
                   <select
                     id="parentBlock"
-                    class="form-select p-2 mt-2"
+                    class="select"
                     aria-label="Parent Block"
                   >
                     <option selected>Block 5</option>
@@ -325,7 +262,7 @@ endblock %} {% block content %}
                 </div>
               </div>
             </div>
-            <button type="submit" class="btn submit-btn">SUBMIT</button>
+            <button type="submit" class="submit-btn">SUBMIT</button>
             <p class="success-message mt-3">Success Message</p>
           </form>
         </div>
@@ -341,14 +278,9 @@ endblock %} {% block content %}
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label
-                    for="memberfullName"
-                    class="settings-form-label form-label"
-                    >Member Full Name</label
-                  >
+                  <label for="memberfullName">Member Full Name</label>
                   <input
                     type="text"
-                    class="settings-form-label form-control"
                     id="memberfullName"
                     placeholder="Patrick Cheruiyot"
                   />
@@ -356,31 +288,17 @@ endblock %} {% block content %}
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label
-                    for="phoneNumber"
-                    class="settings-form-label form-label"
-                    >Member Phone Number</label
-                  >
-                  <input
-                    type="number"
-                    class="settings-form-label form-control"
-                    id="phoneNumber"
-                    placeholder="0700223344"
-                  />
+                  <label for="phoneNo">Member Phone Number</label>
+                  <input type="number" id="phoneNo" placeholder="0700223344" />
                 </div>
               </div>
             </div>
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label
-                    for="member-id-number"
-                    class="settings-form-label form-label"
-                    >Member ID Number
-                  </label>
+                  <label for="member-id-number">Member ID Number </label>
                   <input
                     type="number"
-                    class="settings-form-label form-control"
                     id="member-id-number"
                     placeholder="xxxxxxx"
                   />
@@ -388,14 +306,10 @@ endblock %} {% block content %}
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label
-                    for="member-zone"
-                    class="settings-form-label form-label"
-                    >Member Zone</label
-                  >
+                  <label for="member-zone">Member Zone</label>
                   <select
                     id="member-zone"
-                    class="form-select p-2 mt-2 ms-3"
+                    class="select"
                     aria-label="Member Zone"
                   >
                     <option selected>Meja Estate</option>
@@ -410,14 +324,8 @@ endblock %} {% block content %}
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="bank" class="settings-form-label form-label"
-                    >Select Bank</label
-                  >
-                  <select
-                    id="bank"
-                    class="form-select p-2 mt-2 ms-3"
-                    aria-label="Member Zone"
-                  >
+                  <label for="bank">Select Bank</label>
+                  <select id="bank" class="select" aria-label="Member Zone">
                     <option selected>Equity</option>
                     <option>DTB</option>
                     <option>Cooperative</option>
@@ -427,19 +335,12 @@ endblock %} {% block content %}
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="acc_number" class="settings-form-label form-label"
-                    >Bank Account Number</label
-                  >
-                  <input
-                    type="number"
-                    class="settings-form-label form-control"
-                    id="acc_number"
-                    placeholder="xxxxxxx"
-                  />
+                  <label for="acc_number">Bank Account Number</label>
+                  <input type="number" id="acc_number" placeholder="xxxxxxx" />
                 </div>
               </div>
             </div>
-            <button type="submit" class="btn submit-btn">SAVE</button>
+            <button type="submit" class="submit-btn">SAVE</button>
             <p class="success-message mt-3">Success Message</p>
           </form>
         </div>

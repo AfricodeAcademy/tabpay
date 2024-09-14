@@ -116,115 +116,119 @@ body {
 }
 /* END OF FORGOT_PASSWORD.HTML */
 
-/* LOGIN TO YOUR ACCOUNT STYLING */  
-.my-body {  
-  margin: 0;  
-  font-family: 'Arial', sans-serif;  
-  background-color: hsl(216, 33%, 97%); /* Lighter background color for better contrast */  
-  display: flex;  
-  justify-content: center;  
-  align-items: center;  
-  height: 100vh;  
-}  
-
-.login-container {  
-  display: flex;  
-  width: 100%;  
-  height: 100%;  
-  flex-direction: column; /* Stack vertically on small screens */  
-}  
-
-.my-image-section {  
-  background-image: url('./styles.css/images/tabpay.png'); /* Ensure the correct image path */  
-  background-size: cover; /* Cover entire area */  
-  background-position: center;  
-  background-repeat: no-repeat;  
-  width: 120%; /* Full width */  
-  height: 110%; /* Full height */  
-}  
-
-.image-section img {  
-  object-fit: cover; /* Ensure the image covers the area */  
-  width: 100%; /* Make the image responsive */  
-  height: 100%; /* Full height */  
-}  
-
-.form-section-area {  
-  display: flex;  
-  flex-direction: column;  
-  justify-content: center;  
-  align-items: center;  
-  background-color: transparent; /* Make background transparent */  
-  padding: 20px; /* Adjust padding */  
-  margin: auto;  
-}  
-
-.hi-login {  
-  color: #64ca3c;  
-  font-size: 2rem;  
-  text-align: center;  
-  margin-bottom: 9px;  
-  letter-spacing: 0.15em; /* Slightly reduced letter spacing for readability */  
-}  
-
-.my-sign-in {  
-  color: #64ca3c;  
-  font-size: 1.2rem;  
-  text-align: center;  
-  margin-bottom: 10px;  
-  letter-spacing: 0.1em; /* Reduced letter spacing */  
-}  
-
-.email-label,  
-.password-center {  
-  margin-top: 50px;  
-  width: 100%; /* Increased width to 100% for better alignment */  
-  max-width: 470px; /* Limit max width */  
-  text-align: left; /* Align labels to the left for better UX */  
-  color: #34495e;  
-}  
-
-/* Test Styling for Inputs */  
-input[type="email"],  
-input[type="password"] {  
-  width: 140% !important; /* Force full width */  
-  max-width: 470px !important; /* Set a maximum width */  
-  box-sizing: border-box; /* Include padding and border in width */  
-  padding: 23px; /* Consistent padding */  
-  border: 1px solid #bdc3c7; /* Border style */  
-  border-radius: 4px; /* Rounded corners */  
-  margin-top: 15px; /* Space between inputs */  
-}  
-
-.rop-input:focus {  
-  border-color: #07c455;  
-  outline: none;  
-  box-shadow: 0 0 5px rgba(7, 196, 85, 0.5); /* Add focus shadow */  
-}  
-
-.rop-input::placeholder {  
-  font-size: 1.5rem; /* Adjusted placeholder font size for consistency */  
-}  
-
-.login-button {  
-  display: block; /* Make the button a block element */  
-  margin: 20px auto 0; /* Center the button horizontally */  
-  padding: 12px;  
-  background-color: #64ca3c;  
-  color: white;  
-  border: none;  
-  border-radius: 10px;  
-  cursor: pointer;  
-  font-size: 1rem;  
-  width: 100%;  
-  max-width: 220px;  
-  transition: background-color 0.3s, transform 0.2s; /* Add transform transition */  
+/* LOGIN TO YOUR ACCOUNT STYLING */
+.my-body {
+  margin: 0;
+  font-family: "Arial", sans-serif;
+  background-color: hsl(
+    216,
+    33%,
+    97%
+  ); /* Lighter background color for better contrast */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
 }
 
-.login-button:hover {  
-  background-color: #27ae60;  
-  transform: scale(1.05); /* Slightly scale up on hover */  
-}  
+.login-container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: column; /* Stack vertically on small screens */
+}
+
+.my-image-section {
+  background-image: url("./styles.css/images/tabpay.png"); /* Ensure the correct image path */
+  background-size: cover; /* Cover entire area */
+  background-position: center;
+  background-repeat: no-repeat;
+  width: 120%; /* Full width */
+  height: 110%; /* Full height */
+}
+
+.image-section img {
+  object-fit: cover; /* Ensure the image covers the area */
+  width: 100%; /* Make the image responsive */
+  height: 100%; /* Full height */
+}
+
+.form-section-area {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: transparent; /* Make background transparent */
+  padding: 20px; /* Adjust padding */
+  margin: auto;
+}
+
+.hi-login {
+  color: #64ca3c;
+  font-size: 2rem;
+  text-align: center;
+  margin-bottom: 9px;
+  letter-spacing: 0.15em; /* Slightly reduced letter spacing for readability */
+}
+
+.my-sign-in {
+  color: #64ca3c;
+  font-size: 1.2rem;
+  text-align: center;
+  margin-bottom: 10px;
+  letter-spacing: 0.1em; /* Reduced letter spacing */
+}
+
+.email-label,
+.password-center {
+  margin-top: 50px;
+  width: 100%; /* Increased width to 100% for better alignment */
+  max-width: 470px; /* Limit max width */
+  text-align: left; /* Align labels to the left for better UX */
+  color: #34495e;
+}
+
+/* Test Styling for Inputs */
+input[type="email"],
+input[type="password"] {
+  width: 140% !important; /* Force full width */
+  max-width: 470px !important; /* Set a maximum width */
+  box-sizing: border-box; /* Include padding and border in width */
+  padding: 23px; /* Consistent padding */
+  border: 1px solid #bdc3c7; /* Border style */
+  border-radius: 4px; /* Rounded corners */
+  margin-top: 15px; /* Space between inputs */
+}
+
+.rop-input:focus {
+  border-color: #07c455;
+  outline: none;
+  box-shadow: 0 0 5px rgba(7, 196, 85, 0.5); /* Add focus shadow */
+}
+
+.rop-input::placeholder {
+  font-size: 1.5rem; /* Adjusted placeholder font size for consistency */
+}
+
+.login-button {
+  display: block; /* Make the button a block element */
+  margin: 20px auto 0; /* Center the button horizontally */
+  padding: 12px;
+  background-color: #64ca3c;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 1rem;
+  width: 100%;
+  max-width: 220px;
+  transition: background-color 0.3s, transform 0.2s; /* Add transform transition */
+}
+
+.login-button:hover {
+  background-color: #27ae60;
+  transform: scale(1.05); /* Slightly scale up on hover */
+}
 
 .login-hr {
   width: 237%; /* Extend beyond the normal width of the parent container */
@@ -234,28 +238,27 @@ input[type="password"] {
   left: 26%; /* Move the line slightly to the left to extend more to the right */
 }
 
+/* Responsive Adjustments */
+@media (min-width: 768px) {
+  .login-container {
+    flex-direction: row;
+    height: 100%;
+  }
 
-/* Responsive Adjustments */  
-@media (min-width: 768px) {  
-  .login-container {  
-    flex-direction: row;  
-    height: 100%;  
-  }  
+  .my-image-section {
+    display: block;
+  }
+}
 
-  .my-image-section {  
-    display: block;  
-  }  
-}  
+@media (max-width: 768px) {
+  .my-image-section {
+    height: 300px; /* Adjust image height for small screens */
+  }
 
-@media (max-width: 768px) {  
-  .my-image-section {  
-    height: 300px; /* Adjust image height for small screens */  
-  }  
-
-  .form-section-area {  
-    padding: 20px;  
-  }  
-}  
+  .form-section-area {
+    padding: 20px;
+  }
+}
 
 /* END OF LOGIN TO YOUR ACCOUNT STYLING */
 
@@ -350,13 +353,13 @@ input[type="password"] {
   transition: background-color 0.3s;
 }
 
-.acc-hr {  
-  border: none;                      /* Remove default border */  
-  border-top: 2px solid #5d5f61;    /* Solid border on top */  
-  width: 100%;                       /* Adjust width appropriately */  
-  position: relative;                /* Use a valid position */  
-  left: -30%;                         /* Adjust as needed */  
-  margin-top: 30px;                 /* Use margin for spacing */  
+.acc-hr {
+  border: none; /* Remove default border */
+  border-top: 2px solid #5d5f61; /* Solid border on top */
+  width: 100%; /* Adjust width appropriately */
+  position: relative; /* Use a valid position */
+  left: -30%; /* Adjust as needed */
+  margin-top: 30px; /* Use margin for spacing */
 }
 
 /* For tablets */
@@ -594,13 +597,11 @@ input[type="password"] {
   margin: 15px;
 }
 
-
 .settings-form-control {
   width: calc(100% - 40px); /* Set a fixed width matching the screenshot */
   padding: 10px;
   margin: 10px 20px; /* Adjust margin for better alignment */
 }
-
 
 .submit-btn {
   background-color: #28a745;
@@ -667,7 +668,6 @@ input[type="password"] {
 
 /*END OF TEMPLATE NUMBER 18 STYLINGG */
 
-
 /*START OF REPORT.HTML STYLING */
 /* Main Content Container */
 .main-content {
@@ -688,7 +688,6 @@ input[type="password"] {
   padding-bottom: 0.5rem; /* Padding below the title */
   margin-bottom: 1rem; /* Margin below the title */
 }
-
 
 /* Filter and Total Contributed Section */
 .flex {
@@ -723,40 +722,39 @@ input[type="password"] {
 /* Member Contribution Table Styling */
 /* Member Contribution Table Styling */
 table {
-    width: 100%; /* Full width */
-    border-collapse: collapse; /* Collapse borders */
-    margin-top: 1rem; /* Top margin */
-    background-color: #fff; /* White background */
+  width: 100%; /* Full width */
+  border-collapse: collapse; /* Collapse borders */
+  margin-top: 1rem; /* Top margin */
+  background-color: #fff; /* White background */
 }
 
-th, td {
-    border: 2px solid #000; /* Solid black border for table cells */
-    padding: 1.5rem; /* Padding inside cells */
-    text-align: center; /* Center align text */
-    font-size: 1rem; /* Consistent font size */
-    vertical-align: middle; /* Center vertically */
+th,
+td {
+  border: 2px solid #000; /* Solid black border for table cells */
+  padding: 1.5rem; /* Padding inside cells */
+  text-align: center; /* Center align text */
+  font-size: 1rem; /* Consistent font size */
+  vertical-align: middle; /* Center vertically */
 }
 
 th {
-    background-color: #fff; /* White background for headers */
-    font-weight: bold; /* Bold text for headers */
+  background-color: #fff; /* White background for headers */
+  font-weight: bold; /* Bold text for headers */
 }
 
 td {
-    background-color: #fff; /* White background for table data */
-    font-weight: normal; /* Normal weight for data cells */
+  background-color: #fff; /* White background for table data */
+  font-weight: normal; /* Normal weight for data cells */
 }
 
 /* Additional Styles for Specific Appearance */
 tr {
-    height: 100px; /* Fixed height for each row */
+  height: 100px; /* Fixed height for each row */
 }
 
 tbody tr td {
-    height: 80px; /* Fixed height for tbody cells */
-    padding: 0; /* Remove extra padding */
+  height: 80px; /* Fixed height for tbody cells */
+  padding: 0; /* Remove extra padding */
 }
 
-
 /*END OF REPORT.HTML STYLING */
-
