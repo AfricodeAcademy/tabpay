@@ -1,38 +1,43 @@
 {% extends 'auth.html' %} {% block content %}
-<body class="my-body">
-  <div class="login-container flex flex-col md:flex-row w-full h-full">
-    <div class="my-image-section w-full md:w-1/2 h-64 md:h-auto"></div>
-    <div
-      class="form-section-area w-full md:w-1/2 flex flex-col items-center justify-center p-6"
-    >
-      <div class="tabpay-logo m-2">
-        <a href="{{url_for('main.home')}}"
-          ><img src="../static/images/logo.png" alt=""
-        /></a>
+<div class="container-fluid">
+  <div class="main-container">
+    <div class="row">
+      <div class="col-lg-6">
+        <div class="image-section"></div>
       </div>
-      <h1 class="hi-login">Login</h1>
-      <p class="my-sign-in">Sign in to continue</p>
-      <hr class="login-hr w-8/4" />
-      <label for="email" class="email-label">Please enter Email</label>
-      <input
-        type="email"
-        id="email"
-        placeholder="hello@reallygreatsite.com"
-        required
-        class="rop-input"
-      />
-      <label for="password" class="password-center"
-        >Please enter password</label
-      >
-      <input
-        type="password"
-        id="password"
-        placeholder="********"
-        required
-        class="rop-input"
-      />
-      <button type="submit" class="login-button">LOGIN</button>
+      <div class="col-lg-6">
+        <div class="head-form">
+          <div class="p-4">
+            <h1>Login</h1>
+            <p>Sign in to continue</p>
+          </div>
+            <hr />
+            <div class="form-section">
+              <div>
+                <label for="email">Please enter Email</label>
+                <input
+                  type="email"
+                  id="email"
+                  placeholder="hello@reallygreatsite.com"
+                  required
+                />
+              </div>
+              <div>
+                <label for="password">Please enter password</label>
+                <input
+                  type="password"
+                  id="password"
+                  placeholder="********"
+                  required
+                />
+              </div>
+              <button type="submit">LOGIN</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-  {% endblock %}
-</body>
+</div>
+
+{% endblock %}

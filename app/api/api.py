@@ -1,4 +1,3 @@
-from flask import request
 from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.exceptions import HTTPException
 from flask_restful import Resource, marshal_with,abort,fields,reqparse, fields
@@ -6,74 +5,47 @@ from app.extensions import db
 from app.models.models import UserModel, CommunicationModel, UmbrellaModel, PaymentModel, BlockModel, ZoneModel
 
 
+umbrella_args = reqparse.RequestParser()
+umbrella_args.add_argument('name', type=str, required=True, help='Umbrella Name is required')
+
+block_args = reqparse.RequestParser()
+block_args.add_argument('name', type=str, required=True, help='Block Name is required')
+block_args.add_argument('parent_umbrella_id', type=int, required=True, help='Parent Umbrella is required')
+
+zone_args = reqparse.RequestParser()
+zone_args.add_argument('name', type=str, required=True, help='Zone Name is required')
+zone_args.add_argument('parent_block_id', type=int, required=True, help='Parent Block is required')
+
 
 user_args = reqparse.RequestParser()
-user_args.add_argument('fname', type=str, required=True, help='Name is required')
-user_args.add_argument('lname', type=str, required=True, help='Last Name is required')
-# user_args.add_argument('username', type=str, required=True, help="Username is required")
-# user_args.add_argument('email', type=str, required=True, help='Email is required')
-# user_args.add_argument('password', type=str, required=True, help='Password is required')
-# user_args.add_argument('id_number', type=int, required=True, help='Id Number is required')
-# user_args.add_argument('age', type=int, required=True, help='Age is required')
-# user_args.add_argument('phone', type=int, required=True, help='Phone is required')
-# user_args.add_argument('location', type=str, required=True, help='Location is required')
-# user_args.add_argument('gender', type=str, required=True, help='Gender is required')
+user_args.add_argument('full_name', type=str, required=True, help='Name is required')
+user_args.add_argument('email', type=str, required=True, help='Email is required')
+user_args.add_argument('password', type=str, required=True, help='Password is required')
+user_args.add_argument('id_number', type=int, required=True, help='Id Number is required')
+user_args.add_argument('age', type=int, required=True, help='Age is required')
+user_args.add_argument('phone', type=int, required=True, help='Phone is required')
+user_args.add_argument('village', type=str, required=True, help='Village is required')
+user_args.add_argument('gender', type=str, required=True, help='Gender is required')
+user_args.add_argument('zone_id', type=int, required=True, help='Zone is required')
+
 
 
 communication_args = reqparse.RequestParser()
-communication_args.add_argument('title', type=str, required=True, help='Title is required')
-communication_args.add_argument('description', type=str, required=True, help='Description is required')
-# communication_args.add_argument('user_id', type=int, required=True, help='User ID is required')
+communication_args.add_argument('content', type=str, required=True, help='Content is required')
+communication_args.add_argument('user_id', type=int, required=True, help='Author is required')
 
 
 payment_args = reqparse.RequestParser()
-# payment_args.add_argument('payee_id', type=int, required=True, help='Payee ID is required')
+payment_args.add_argument('payer_id', type=int, required=True, help='Payer is required')
 payment_args.add_argument('amount', type=float, required=True, help='Amount is required')
-# payment_args.add_argument('bank', type=str, help='Bank')
-# payment_args.add_argument('acc_number', type=int, required=True, help='Account Number is required')
 
 
-block_args = reqparse.RequestParser()
-block_args.add_argument('block_name', type=str, required=True, help='Block Name is required')
-# block_args.add_argument('member_count', type=int, required=True, help='Member Count is required')
-
-umbrella_args = reqparse.RequestParser()
-# umbrella_args.add_argument('umbrella_member', type=int, required=True, help='Umbrella Member ID is required')
-# umbrella_args.add_argument('umbrella_block', type=int, required=True, help='Umbrella Block ID is required')
-umbrella_args.add_argument('umbrella_name', type=str, required=True, help='Umbrella Name is required')
-# umbrella_args.add_argument('location', type=str, required=True, help='Location is required')
-
-zone_args = reqparse.RequestParser()
-zone_args.add_argument('zone_name', type=str, required=True, help='Zone Name is required')
-# zone_args.add_argument('parent_block_id', type=int, required=True, help='Parent Block ID is required')
-# zone_args.add_argument('blocks', type=str, required=True, help='Blocks in the Zone is required')
-
-
-
-
-# user_fields = {"id" : fields.Integer, "fname" : fields.String, "lname" : fields.String, "username": fields.String, "email" : fields.String, "password" : fields.String, "id_number" : fields.Integer, "age" : fields.Integer, "phone" : fields.Integer, "location" : fields.String, "gender" : fields.String, "user_type" : fields.String,"block_membership" : fields.String,"registered_at" : fields.DateTime,"updated_at" : fields.DateTime,"message" : fields.String(attribute="author.fname")}
-
-
-# communication_fields = {"id": fields.Integer,"title": fields.String,"description": fields.String,"user_id": fields.Integer,"created_at": fields.DateTime,"updated_at": fields.DateTime}
-
-
-# payment_fields = {"id": fields.Integer,"payee_id": fields.Integer,"amount": fields.Float,"payment_date": fields.DateTime,"bank": fields.String,"acc_number": fields.Integer,"payment_method": fields.String,"created_at": fields.DateTime,"paid_at": fields.DateTime,"updated_at": fields.DateTime,"status": fields.Boolean}
-
-
-# block_fields = {"id": fields.Integer,"block_name": fields.String,"member_count": fields.Integer,"block_leader_id": fields.Integer,"umbrella_id": fields.Integer,"created_at": fields.DateTime,"updated_at": fields.DateTime,"member_id": fields.Integer,"block_transactions": fields.Float,"zone_name": fields.String}
-
-
-# umbrella_fields = {"id": fields.Integer,"umbrella_block": fields.String,"umbrella_name": fields.String,"location": fields.String}
-
-
-# zone_fields = {"id": fields.Integer,"zone_name": fields.String,"parent_block_id": fields.Integer,"blocks": fields.String}
-
-user_fields = {"id" : fields.Integer, "fname" : fields.String, "lname" : fields.String }
-communication_fields = {"id": fields.Integer,"title": fields.String,"description": fields.String}
-payment_fields = {"id": fields.Integer,"amount": fields.Float}
-block_fields = {"id": fields.Integer,"block_name": fields.String}
-umbrella_fields = {"id": fields.Integer,"umbrella_name": fields.String}
-zone_fields = {"id": fields.Integer,"zone_name": fields.String}
+user_fields = {"id" : fields.Integer, "full_name" : fields.String,  "email" : fields.String, "password" : fields.String, "id_number" : fields.Integer, "age" : fields.Integer, "phone" : fields.Integer, "village" : fields.String, "zone_id" : fields.Integer,"gender" : fields.String, "registered_at" : fields.DateTime,"updated_at" : fields.DateTime,"message" : fields.String(attribute="author.full_name")}
+communication_fields = {"id": fields.Integer,"content": fields.String,"user_id": fields.Integer,"created_at": fields.DateTime,"updated_at": fields.DateTime}
+payment_fields = {"id": fields.Integer,"payee_id": fields.Integer,"amount": fields.Float,"payment_date": fields.DateTime,"bank": fields.String,"acc_number": fields.Integer,"payment_method": fields.String,"updated_at": fields.DateTime,"status": fields.Boolean}
+block_fields = {"id": fields.Integer,"name": fields.String,"umbrella_id": fields.Integer}
+umbrella_fields = {"id": fields.Integer,"name": fields.String}
+zone_fields = {"id": fields.Integer,"name": fields.String,"parent_block_id": fields.Integer}
 
 
 class Users(Resource):
@@ -104,7 +76,7 @@ class Users(Resource):
     def post(self):
         try:
             args = user_args.parse_args()
-            existing_user = UserModel.query.filter_by(fname=args['fname']).first()
+            existing_user = UserModel.query.filter_by(email=args['email']).first()
             
             if existing_user:
                 abort(409, message='User already exists')
@@ -247,7 +219,7 @@ class Communications(Resource):
     def post(self):
         try:
             args = communication_args.parse_args()
-            existing_communication = CommunicationModel.query.filter_by(title=args['title']).first()
+            existing_communication = CommunicationModel.query.filter_by(content=args['content']).first()
             if existing_communication:
                 return abort(409, message='Communication already exists')
             new_communication = CommunicationModel(**args)
@@ -374,7 +346,7 @@ class Payments(Resource):
     def post(self):
         try:
             args = payment_args.parse_args()
-            exiting_payment = PaymentModel.query.filter_by(amount=args['amount']).first()
+            exiting_payment = PaymentModel.query.filter_by(payer_id=args['payer_id']).first()
             if exiting_payment:
                 return abort(409, message='Payment already exists')
             new_payment = PaymentModel(**args)
@@ -501,7 +473,7 @@ class Blocks(Resource):
     def post(self):
         try:
             args = block_args.parse_args()
-            existing_block = BlockModel.query.filter_by(block_name=args['block_name']).first()
+            existing_block = BlockModel.query.filter_by(name=args['name']).first()
             if existing_block:
                 return abort(409, message='Block already exists')
             new_block = BlockModel(**args)
@@ -626,7 +598,7 @@ class Umbrellas(Resource):
     def post(self):
         try:
             args = umbrella_args.parse_args()
-            existing_umbrella = UmbrellaModel.query.filter_by(umbrella_name=args['umbrella_name']).first()
+            existing_umbrella = UmbrellaModel.query.filter_by(name=args['name']).first()
             if existing_umbrella:
                 return abort(409, message='Umbrella already exists')
             new_umbrella = UmbrellaModel(**args)
@@ -752,7 +724,7 @@ class Zones(Resource):
     def post(self):
         try:
             args = zone_args.parse_args()
-            existing_zone = ZoneModel.query.filter_by(zone_name=args['zone_name']).first()
+            existing_zone = ZoneModel.query.filter_by(name=args['name']).first()
             if existing_zone:
                 return abort(409, message='Zone already exists')
             new_zone = ZoneModel(**args)

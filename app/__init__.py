@@ -9,7 +9,7 @@ def create_app():
 
     # Configure SQLAlchemy
     # app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:1816@localhost:5432/tabpay'
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tab.db'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tabpay.db'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     db.init_app(app)
     # migrate = Migrate(app,db)

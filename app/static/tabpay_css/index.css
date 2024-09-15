@@ -1,0 +1,54 @@
+* {
+  box-sizing: border-box;
+}
+body,
+html {
+  font-family: "Roboto";
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+.feature-card {
+  position: relative; /* Needed for absolute positioning of the icon */
+  text-align: left; /* Text aligned to the left */
+  padding: 20px;
+  padding-right: 80px; /* Additional padding to accommodate the icon */
+  margin: 10px;
+
+  border-radius: 30px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 4px solid rgb(9, 36, 18);
+  max-width: 400px;
+}
+
+.feature-icon {
+  position: absolute; /* Absolute position */
+  top: 50%; /* Center vertically */
+  right: -60px; /* Partially outside the right boundary */
+  transform: translateY(-50%); /* Center align vertically */
+  height: 150px; /* Fixed height */
+  width: auto; /* Maintain aspect ratio */
+  z-index: 10; /* Ensure it's above other elements */
+}
+
+.feature-title {
+  font-size: 20px;
+  color: #0d2d08;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.feature-description {
+  font-size: 14px;
+  color: #0d2d08;
+}
+.arrow {
+  border: 3px solid black;
+  border-radius: 15px;
+  height: 30px;
+  width: 30px;
+  padding: 2px;
+}
+.arrow i {
+  color: black;
+}
