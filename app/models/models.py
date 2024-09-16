@@ -14,7 +14,7 @@ class UmbrellaModel(db.Model):
     name = db.Column(db.String(255), nullable=False)
    
      # Relationship with block
-    blocks = db.relationship('BlockModel', backref='parent_umbrella', lazy=True)
+    blocks = db.relationship('BlockModel', backref='umbrella', lazy=True)
 
     def __repr__(self):
         return f"<Umbrella {self.name}>"
@@ -29,7 +29,7 @@ class BlockModel(db.Model):
     parent_umbrella_id = db.Column(db.Integer, db.ForeignKey('umbrellas.id'), nullable=False)
 
     # Relationship with zone
-    zones = db.relationship('ZoneModel', backref='parent_block', lazy=True)
+    zones = db.relationship('ZoneModel', backref='block', lazy=True)
 
     
     def __repr__(self):
