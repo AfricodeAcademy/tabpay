@@ -1,0 +1,61 @@
+{# djlint:off H030,H031 #}
+{% block doc -%}
+<!DOCTYPE html>
+<html{% block html_attribs %}{% endblock html_attribs %}>
+  {%- block html %}
+  <head>
+    {%- block head %}
+    {% if title %}
+    <title>{{ title }}</title>
+    {% else %}
+    <title>TabPay</title>
+    {% endif %}
+
+      {%- block metas %}
+      <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      {%- endblock metas %}
+
+      {%- block head_scripts %}
+      <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="../static/tabpay_css/auth.css" />
+      {%- endblock head_scripts %}
+
+      {%- block styles %}
+        <style>
+          .fs-center { text-align: center }
+          .fs-important { font-size: larger; font-weight: bold }
+          .fs-gap { margin-top: 20px; }
+          .fs-div { margin: 4px; }
+          .fs-error-msg { color: darkred; }
+        </style>
+      {%- endblock styles %}
+    {%- endblock head %}
+  </head>
+  <body{% block body_attribs %}{% endblock body_attribs %}>
+    {% block body -%}
+      {% block navbar %}
+      {%- endblock navbar %}
+      {% block content -%}
+      {%- endblock content %}
+
+      {% block scripts %}
+      <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+      {%- endblock scripts %}
+    {%- endblock body %}
+  </body>
+  {%- endblock html %}
+</html>
+{% endblock doc -%}
