@@ -41,12 +41,12 @@ p {
   font-family: "Montserrat";
 }
 
-label {
+.label {
   color: #777b80d0;
   font-size: 16px;
 }
 
-input {
+.input {
   padding: 12px;
   margin-top: 5px;
   margin-bottom: 18px;
@@ -55,11 +55,17 @@ input {
   width: 100%;
   transition: border-color 0.3s;
 }
-input::placeholder {
+.input::placeholder {
   font-size: 14px;
   color: rgba(0, 0, 0, 0.731);
 }
-button {
+.input:focus {
+  border-color: #12b93178;
+  outline: 0;
+  box-shadow: inset 0 1px 1px rgba(0, 123, 255, 0.075),
+    0 0 8px rgba(65, 216, 80, 0.6);
+}
+.button {
   margin-top: 20px;
   padding: 10px;
   background-color: #317c13;

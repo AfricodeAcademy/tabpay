@@ -52,7 +52,7 @@ endblock %} {% block content %}
       <div class="tab-content d-flex justify-content-center">
         <!-- PROFIILE -->
         <div id="profile" class="tab-pane fade show active">
-          <form>
+          <form method="post" action="{{url_for('settings')}}">
             <div class="row mb-5 mt-2">
               <div class="col-md-6">
                 <div class="mb-3">

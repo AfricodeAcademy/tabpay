@@ -31,7 +31,7 @@
         <div class="container-fluid" style="background-color: whitesmoke">
           <!-- Logo: Always stays on the left -->
           <a class="navbar-brand order-1" href="#">
-            <img src="../static/images/logo.png" alt="TabPay Logo" />
+            <img src="{{url_for('static',filename='images/logo.png')}}" alt="TabPay Logo" />
           </a>
 
           <!-- Navbar toggler for mobile, next to the logo -->
@@ -72,7 +72,7 @@
 
               <!-- Login Button on the far right -->
               <li class="nav-item ms-auto">
-                <a class="nav-link" href="{{url_for('main.login')}}">
+                <a class="nav-link" href="{{url_for('security.login')}}">
                   <button
                     class="btn btn-danger"
                     style="
@@ -122,7 +122,7 @@
                 seamless experience for community leaders, members and
                 contributors alike.
               </p>
-              <a href="{{url_for('main.register')}}">
+              <a href="{{url_for('security.register')}}">
                 <button
                   class="btn"
                   style="

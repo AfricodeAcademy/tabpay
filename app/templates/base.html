@@ -43,9 +43,9 @@
       </button>
 
       <div class="tabpay-logo text-center">
-        <img src="../static/images/logo.png" alt="TabPay Logo" />
+        <img src="{{url_for('static', filename='images/logo')}}" alt="TabPay Logo" />
       </div>
-      <a href="{{ url_for('main.home') }}" class="text-dark">
+      <a href="{{ url_for('home') }}" class="text-dark">
         <i
           class="bi bi-box-arrow-right"
           style="color: red; font-size: larger"
@@ -72,11 +72,11 @@
       </div>
       <div class="offcanvas-body">
         <div class="tabpay-logo mb-2">
-          <img src="../static/images/logo.png" alt="TabPay Logo" />
+          <img src="{{url_for('static',filename='images/logo')}}" alt="TabPay Logo" />
         </div>
 
         <a
-          href="{{url_for('main.dashboard_stats')}}"
+          href="{{url_for('statistics')}}"
           style="background-color: {% if 'Dashboard' in title %} rgb(76, 147, 35) {% endif %}; 
                border-radius: 5px; 
                color: white;"
@@ -84,46 +84,45 @@
           <i class="bi bi-grid-fill"></i> Dashboard
         </a>
         <a
-          href="{{ url_for('main.manage_contribution') }}"
-          class="{% if request.endpoint == 'main.manage_contribution' %}active{% endif %}"
+          href="{{ url_for('manage_contribution') }}"
+          class="{% if request.endpoint == 'manage_contribution' %}active{% endif %}"
           ><i class="bi bi-currency-exchange"></i> Contribute</a
         >
         <a
-          href="{{ url_for('main.host') }}"
-          class="{% if request.endpoint == 'main.host' %}active{% endif %}"
+          href="{{ url_for('host') }}"
+          class="{% if request.endpoint == 'host' %}active{% endif %}"
           ><i class="bi bi-house-fill"></i> Host</a
         >
         <a
-          href="{{ url_for('main.block_reports') }}"
-          class="{% if request.endpoint == 'main.block_reports' %}active{% endif %}"
+          href="{{ url_for('block_reports') }}"
+          class="{% if request.endpoint == 'block_reports' %}active{% endif %}"
           ><i class="bi bi-bar-chart-fill"></i> Reports</a
         >
         <div class="sidebar-bottom">
           <a
-            href="{{ url_for('main.dashboard_settings') }}"
-            class="{% if request.endpoint == 'main.dashboard_settings' %}active{% endif %}"
+            href="{{ url_for('settings') }}"
+            class="{% if request.endpoint == 'settings' %}active{% endif %}"
             ><i class="bi bi-gear-fill"></i> Settings</a
           >
-          <a href="{{ url_for('main.home') }}"
+          <a href="{{ url_for('home') }}"
             ><i class="bi bi-box-arrow-left"></i> Logout</a
           >
         </div>
       </div>
     </div>
 
-    <!-- Main Content Area -->
     <div class="container-fluid">
       <div class="row">
         <div class="col-lg-2 d-flex -flex-column">
           <!-- Sidebar for larger screens -->
           <div class="glass-sidebar">
             <div class="tabpay-logo mb-3">
-              <img src="../static/images/logo.png" alt="TabPay Logo" />
+              <img src="{{url_for('static', filename='images/logo.png')}}" alt="TabPay Logo" />
             </div>
             <!-- Sidebar contents -->
             <div class="links mt-3">
               <a
-                href="{{url_for('main.dashboard_stats')}}"
+                href="{{url_for('statistics')}}"
                 style="background-color: {% if 'Dashboard' in title %} rgb(3, 185, 3) {% endif %}; 
                    border-radius: 5px; 
                    color: white;"
@@ -131,28 +130,28 @@
                 <i class="bi bi-grid-fill"></i> Dashboard
               </a>
               <a
-                href="{{ url_for('main.manage_contribution') }}"
-                class="{% if request.endpoint == 'main.manage_contribution' %}active{% endif %}"
+                href="{{ url_for('manage_contribution') }}"
+                class="{% if request.endpoint == 'manage_contribution' %}active{% endif %}"
                 ><i class="bi bi-currency-exchange"></i> Contribute</a
               >
               <a
-                href="{{ url_for('main.host') }}"
-                class="{% if request.endpoint == 'main.host' %}active{% endif %}"
+                href="{{ url_for('host') }}"
+                class="{% if request.endpoint == 'host' %}active{% endif %}"
                 ><i class="bi bi-house-fill"></i> Host</a
               >
               <a
-                href="{{ url_for('main.block_reports') }}"
-                class="{% if request.endpoint == 'main.block_reports' %}active{% endif %}"
+                href="{{ url_for('block_reports') }}"
+                class="{% if request.endpoint == 'block_reports' %}active{% endif %}"
                 ><i class="bi bi-bar-chart-fill"></i> Reports</a
               >
             </div>
             <div class="sidebar-bottom">
               <a
-                href="{{ url_for('main.dashboard_settings') }}"
-                class="{% if request.endpoint == 'main.dashboard_settings' %}active{% endif %}"
+                href="{{ url_for('settings') }}"
+                class="{% if request.endpoint == 'settings' %}active{% endif %}"
                 ><i class="bi bi-gear-fill"></i> Settings</a
               >
-              <a href="{{ url_for('main.home') }}"
+              <a href="{{ url_for('home') }}"
                 ><i class="bi bi-box-arrow-left"></i> Logout</a
               >
             </div>
