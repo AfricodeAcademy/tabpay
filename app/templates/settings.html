@@ -52,22 +52,20 @@ endblock %} {% block content %}
       <div class="tab-content d-flex justify-content-center">
         <!-- PROFIILE -->
         <div id="profile" class="tab-pane fade show active">
-          <form method="post" action="{{url_for('settings')}}">
+          <form method="post" action="{{url_for('update_profile')}}">
+            {{ profile_form.hidden_tag() }}
             <div class="row mb-5 mt-2">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="fullName">Update Your Full Names</label>
-                  <input
-                    type="text"
-                    id="fullName"
-                    placeholder="Patrick Cheruiyot"
-                  />
+                    {{ profile_form.full_name.label }} {{ profile_form.full_name(class="input") }}  
+                   
+                
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="userId">Update Your ID</label>
-                  <input type="number" id="userId" placeholder="xxxxxxx" />
+                  {{ profile_form.id_number.label }} {{ profile_form.id_number(class="input") }}     
+          
                 </div>
               </div>
             </div>
@@ -75,55 +73,55 @@ endblock %} {% block content %}
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="newPassword">New Password</label>
-                  <input
-                    type="password"
-                    id="newPassword"
-                    placeholder="*********"
-                  />
+                  {{ profile_form.password.label }} {{ profile_form.password(class="input") }}      
+          
+
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="confirmPassword">Confirm Password</label>
-                  <input
-                    type="password"
-                    id="confirmPassword"
-                    placeholder="*********"
-                  />
+                  {{ profile_form.confirm_password.label }} {{ profile_form.confirm_password(class="input") }}
+                  
+          
                 </div>
               </div>
             </div>
 
-            <button type="submit" class="submit-btn">SUBMIT</button>
-            <p class="success-message mt-3">Success Message</p>
+          {{ profile_form.submit(class="submit-btn") }}            
+          <p class="success-message mt-3">{% with messages = get_flashed_messages() %}
+              {% if messages %}
+                  <ul>
+                  {% for message in messages %}
+                      <li>{{ message }}</li>
+                  {% endfor %}
+                  </ul>
+              {% endif %}
+          {% endwith %}</p>
           </form>
         </div>
         <!-- END OF PROFIILE -->
 
         <!-- COMMITTEE TAB -->
         <div id="committee" class="tab-pane fade">
-          <form>
+          <form method="post" action="{{url_for('add_committee')}}">
+            {{ committee_form.hidden_tag() }}
             <div class="row mb-5 mt-2">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="committeeName">Committee Full Name</label>
-                  <input
-                    type="text"
-                    id="committeeName"
-                    placeholder="Patrick Cheruiyot"
-                  />
+                  {{ committee_form.full_name.label }} {{ committee_form.full_name(class="input") }}
+                  <div class="invalid-feedback">
+                    {{ committee_form.full_name.errors[0] }}
+  
+                  </div>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="idNumber">Their ID Number</label>
-                  <input
-                    type="number"
-                    id="idNumber"
-                    id="idNumber"
-                    placeholder="xxxxxxx"
-                  />
+                  {{ committee_form.id_number.label }} {{ committee_form.id_number(class="input") }}
+                  <div class="invalid-feedback">
+                    {{ committee_form.id_number.errors[0] }}
+  
+                  </div>
                 </div>
               </div>
             </div>
@@ -131,29 +129,32 @@ endblock %} {% block content %}
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="role" class="d-block">Role</label>
-
-                  <select id="role" class="select" aria-label="Role">
-                    <option selected>Committee Member</option>
-                    <option>Chairperson</option>
-                    <option>Secretary</option>
-                  </select>
+                  {{ committee_form.role.label }} {{ committee_form.role(class="select d-block") }}
+                  <div class="invalid-feedback">
+                    {{ committee_form.role.errors[0] }}
+                  </div>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="phoneNumber">Phone Number</label>
-                  <input
-                    type="number"
-                    id="phoneNumber"
-                    placeholder="0714513252"
-                  />
+                  {{ committee_form.phone_number.label }} {{ committee_form.phone_number(class="input") }}
+                  <div class="invalid-feedback">
+                    {{ committee_form.phone_number.errors[0] }}
+                  </div>
                 </div>
               </div>
             </div>
 
-            <button type="submit" class="submit-btn">SUBMIT</button>
-            <p class="success-message mt-3">Success Message</p>
+            {{ committee_form.submit(class="submit-btn") }}            
+            <p class="success-message mt-3">{% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <ul>
+                    {% for message in messages %}
+                        <li>{{ message }}</li>
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+            {% endwith %}</p>
           </form>
         </div>
         <!--/ COMMITTEE TAB -->
@@ -167,181 +168,198 @@ endblock %} {% block content %}
             top-level umbrella, under which you can create distinct blocks,
             fostering collaboration and organization at the local level.
           </p>
-          <form>
+          <form method="post" action="{{url_for('create_umbrella')}}">
+            {{ umbrella_form.hidden_tag() }}
+
             <div class="row p-2 d-flex justify-content-center">
               <div class="col-md-4">
                 <div class="mb-3">
-                  <label for="umbrellaName">Umbrella Name</label>
-                  <input
-                    type="text"
-                    id="umbrellaName"
-                    placeholder="Nyangores"
-                  />
+                  {{ umbrella_form.umbrella_name.label }} {{ umbrella_form.umbrella_name(class="input") }}
+                  <div class="invalid-feedback">
+                    {{ umbrella_form.umbrella_name.errors[0] }}
+  
+                  </div>
                 </div>
               </div>
               <div class="col-md-4">
                 <div class="mb-3">
-                  <label for="location">Location</label>
-                  <input type="text" id="location" placeholder="xxxxxxx" />
+                  {{ umbrella_form.location.label }} {{ umbrella_form.location(class="input") }}
+                  <div class="invalid-feedback">
+                    {{ umbrella_form.location.errors[0] }}
+                  </div>
                 </div>
               </div>
             </div>
-            <button type="submit" class="submit-btn">SUBMIT</button>
-            <p class="success-message mt-3">Success Message</p>
+            {{ umbrella_form.submit(class="submit-btn") }}            
+            <p class="success-message mt-3">{% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <ul>
+                    {% for message in messages %}
+                        <li>{{ message }}</li>
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+            {% endwith %}</p>
           </form>
         </div>
 
         <!-- COMMUNITY UMBRELLA TAB -->
+
         <!-- BLOCK DEFINITION -->
         <div id="block" class="tab-pane fade">
           <p>
             Organize your community's structure by defining distinct blocks
             within each umbrella.
           </p>
-          <form>
+          <form method="post" action="{{url_for('create_block')}}">
+            {{ block_form.hidden_tag() }}
             <div class="row p-4">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="blockName">Block Name</label>
-                  <input type="text" id="blockName" placeholder="Block 5" />
+                  {{ block_form.block_name.label }} {{ block_form.block_name(class="input") }}
+                  <div class="invalid-feedback">
+                    {{ block_form.block_name.errors[0] }}
+                  </div>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="parentUmbrella">Parent Umbrella</label>
-                  <select
-                    id="parentUmbrella"
-                    class="select"
-                    aria-label="Parent Umbrella"
-                  >
-                    <option selected>Nyangores</option>
-                    <option>Tuiyobei</option>
-                    <option>Metipso</option>
-                  </select>
+                  {{ block_form.parent_umbrella.label }} {{ block_form.parent_umbrella(class="select") }}
+                  <div class="invalid-feedback">
+                    {{ block_form.parent_umbrella.errors[0] }}
+                  </div>
                 </div>
               </div>
             </div>
-            <button type="submit" class="submit-btn">SUBMIT</button>
-            <p class="success-message mt-3">Success Message</p>
+            {{ block_form.submit(class="submit-btn") }}            
+            <p class="success-message mt-3">{% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <ul>
+                    {% for message in messages %}
+                        <li>{{ message }}</li>
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+            {% endwith %}</p>
           </form>
         </div>
 
         <!--/ BLOCK DEFINITION -->
+
         <!--ZONE DEFINITION -->
         <div id="zone" class="tab-pane fade">
           <p>
             Define zones within each block to make it easier when allocating
             block event to zone members.
           </p>
-          <form>
+          <form method="post" action="{{url_for('create_zone')}}">
+            {{ zone_form.hidden_tag() }}
             <div class="row p-4">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="zoneName">Zone Name</label>
-                  <input
-                    type="text"
-                    id="zoneName"
-                    placeholder="Meja Estate Zone"
-                  />
+                  {{ zone_form.zone_name.label }} {{ zone_form.zone_name(class="input") }}
+                  <div class="invalid-feedback">
+                    {{ zone_form.zone_name.errors[0] }}
+                  </div>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="parentBlock">Parent Block</label>
-                  <select
-                    id="parentBlock"
-                    class="select"
-                    aria-label="Parent Block"
-                  >
-                    <option selected>Block 5</option>
-                    <option>Block 4</option>
-                    <option>Block 3</option>
-                    <option>Block 2</option>
-                    <option>Block 1</option>
-                  </select>
+                  {{ zone_form.parent_block.label }} {{ zone_form.parent_block(class="select") }}
+                  <div class="invalid-feedback">
+                    {{ zone_form.parent_block.errors[0] }}
                 </div>
               </div>
             </div>
-            <button type="submit" class="submit-btn">SUBMIT</button>
-            <p class="success-message mt-3">Success Message</p>
+            </div>
+            {{ zone_form.submit(class="submit-btn") }}            
+            <p class="success-message mt-3">{% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <ul>
+                    {% for message in messages %}
+                        <li>{{ message }}</li>
+                    {% endfor %}
+                    </ul>
+                {% endif %}
+            {% endwith %}</p>
           </form>
         </div>
 
         <!--/ ZONE DEFINITION -->
+
         <!--ADD MEMBERS -->
         <div id="members" class="tab-pane fade">
-          <p>
+          <p class="text-center">
             Each zone has distinct members, please add the different members of
             the zone.
           </p>
-          <form>
+          <form action="{{url_for('add_member')}}" method="post">
+            {{ member_form.hidden_tag() }}            
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="memberfullName">Member Full Name</label>
-                  <input
-                    type="text"
-                    id="memberfullName"
-                    placeholder="Patrick Cheruiyot"
-                  />
+                  {{ member_form.full_name.label }} {{ member_form.full_name(class="input") }}
+                  <div class="invalid-feedback">
+                    {{ member_form.full_name.errors[0] }}
                 </div>
+              </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="phoneNo">Member Phone Number</label>
-                  <input type="number" id="phoneNo" placeholder="0700223344" />
+
+                {{ member_form.phone_number.label }} {{ member_form.phone_number(class="input") }}
+                <div class="invalid-feedback">
+                  {{ member_form.phone_number.errors[0] }}
+              </div>
                 </div>
               </div>
             </div>
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="member-id-number">Member ID Number </label>
-                  <input
-                    type="number"
-                    id="member-id-number"
-                    placeholder="xxxxxxx"
-                  />
+                  {{ member_form.id_number.label }} {{ member_form.id_number(class="input") }}
+                  <div class="invalid-feedback">
+                    {{ member_form.id_number.errors[0] }}
+                  </div>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="member-zone">Member Zone</label>
-                  <select
-                    id="member-zone"
-                    class="select"
-                    aria-label="Member Zone"
-                  >
-                    <option selected>Meja Estate</option>
-                    <option>Zone 4</option>
-                    <option>Zone 3</option>
-                    <option>Zone 2</option>
-                    <option>Zone 1</option>
-                  </select>
+                  {{ member_form.member_zone.label }} {{ member_form.member_zone(class="select") }}
+                  <div class="invalid-feedback">
+                    {{ member_form.member_zone.errors[0] }}
+
                 </div>
               </div>
             </div>
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="bank">Select Bank</label>
-                  <select id="bank" class="select" aria-label="Member Zone">
-                    <option selected>Equity</option>
-                    <option>DTB</option>
-                    <option>Cooperative</option>
-                    <option>KCB</option>
-                  </select>
+                  {{ member_form.bank.label }} {{ member_form.bank(class="select") }}
+                  <div class="invalid-feedback">
+                    {{ member_form.bank.errors[0] }}
+                  </div>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="acc_number">Bank Account Number</label>
-                  <input type="number" id="acc_number" placeholder="xxxxxxx" />
+                  {{ member_form.acc_number.label }} {{ member_form.acc_number(class="input") }}
+                  <div class="invalid-feedback">
+                    {{ member_form.acc_number.errors[0] }}
+
                 </div>
               </div>
             </div>
-            <button type="submit" class="submit-btn">SAVE</button>
-            <p class="success-message mt-3">Success Message</p>
+            {{ member_form.submit(class="submit-btn") }} 
+                        <p class="success-message mt-3">{% with messages = get_flashed_messages() %}
+                          {% if messages %}
+                              <ul>
+                              {% for message in messages %}
+                                  <li>{{ message }}</li>
+                              {% endfor %}
+                              </ul>
+                          {% endif %}
+                      {% endwith %}</p>
           </form>
         </div>
 
@@ -350,4 +368,14 @@ endblock %} {% block content %}
     </div>
   </div>
 </div>
+<script>
+  setTimeout(function () {
+    const messages = document.querySelectorAll(".success-message ul");
+    if (messages.length > 0) {
+      messages.forEach(
+        (message) => (message.parentElement.style.display = "none")
+      );
+    }
+  }, 5000); // 5 seconds
+</script>
 {% endblock %}
