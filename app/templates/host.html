@@ -53,7 +53,7 @@
           <p class="text-center mb-2 p-3 fs-4">
             Schedule the Weekly Block Meeting
           </p>
-          <form>
+          <form method="POST" action="/schedule_meeting">
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
@@ -125,6 +125,14 @@
                 </div>
               </div>
             </div>
+            <script>
+              function copyToClipboard() {
+                  const paymentText = document.querySelector('.payment-text').innerText.split(': ')[1];
+                  navigator.clipboard.writeText(paymentText).then(() => {
+                      alert('Payment link copied to clipboard!');
+                  });
+              }
+          </script>
 
             <!-- Communicate & Send Payment Link Section -->
             <div class="col-md-6 d-flex justify-content-center">
