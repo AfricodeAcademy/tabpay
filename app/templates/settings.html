@@ -174,19 +174,29 @@ endblock %} {% block content %}
             <div class="row p-2 d-flex justify-content-center">
               <div class="col-md-4">
                 <div class="mb-3">
-                  {{ umbrella_form.umbrella_name.label }} {{ umbrella_form.umbrella_name(class="input") }}
-                  <div class="invalid-feedback">
-                    {{ umbrella_form.umbrella_name.errors[0] }}
-  
-                  </div>
+                  {{ umbrella_form.umbrella_name.label }}{% if
+                    umbrella_form.umbrella_name.errors %}  {{ umbrella_form.umbrella_name(class="input is-invalid") }}
+                    <div class="invalid-feedback">
+                      {% for error in umbrella_form.umbrella_name.errors %}
+                      <span>{{ error }}</span>
+                      {% endfor %}
+                    </div>
+                    {% else %} {{ umbrella_form.umbrella_name(class="input") }} {%
+                      endif %}
+                 
                 </div>
               </div>
               <div class="col-md-4">
                 <div class="mb-3">
-                  {{ umbrella_form.location.label }} {{ umbrella_form.location(class="input") }}
-                  <div class="invalid-feedback">
-                    {{ umbrella_form.location.errors[0] }}
-                  </div>
+                  {{ umbrella_form.location.label }}{% if
+                    umbrella_form.location.errors %} {{ umbrella_form.location(class="input is-invalid") }}
+                    <div class="invalid-feedback">
+                      {% for error in umbrella_form.location.errors %}
+                      <span>{{ error }}</span>
+                      {% endfor %}
+                    </div>
+                    {% else %} {{ umbrella_form.location(class="input") }} {%
+                      endif %}
                 </div>
               </div>
             </div>
