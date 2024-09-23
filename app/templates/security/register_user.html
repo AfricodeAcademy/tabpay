@@ -1,17 +1,14 @@
-<!-- {% extends 'security/base.html' %}
-{% from "security/_macros.html" import render_field_with_errors, render_field, render_form_errors, render_field_errors %}
-
-{% block content %}
-{% include "security/_messages.html" %}
-<div>{% with messages = get_flashed_messages() %}
-  {% if messages %}
-      <ul>
-      {% for message in messages %}
-          <li>{{ message }}</li>
-      {% endfor %}
-      </ul>
-  {% endif %}
-{% endwith %}
+{% extends 'security/base.html' %} {% from "security/_macros.html" import
+render_field_with_errors, render_field, render_form_errors, render_field_errors
+%} {% block content %} {% include "security/_messages.html" %}
+<div>
+  {% with messages = get_flashed_messages() %} {% if messages %}
+  <ul>
+    {% for message in messages %}
+    <li>{{ message }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %} {% endwith %}
 </div>
 <div class="container-fluid">
   <div class="main-container">
@@ -28,31 +25,38 @@
             </h1>
             <p>
               Already Registered?
-              <a href="{{ url_for('security.login') }}" style="text-decoration: none; color: #3fb411">Login</a>
+              <a
+                href="{{ url_for('security.login') }}"
+                style="text-decoration: none; color: #3fb411"
+                >Login</a
+              >
             </p>
           </div>
           <div class="hr"><hr /></div>
 
-          <form action="{{ url_for('security.register') }}" method="post" name="register_user_form">
-            {{ register_user_form.hidden_tag() }}
-            {{ render_form_errors(register_user_form) }}
+          <form
+            action="{{ url_for('security.register') }}"
+            method="post"
+            name="form"
+          >
+            {{ form.hidden_tag() }} {{ render_form_errors(form) }}
             <div class="form-section">
               <div>
-                {{ render_field_with_errors(register_user_form.full_name, class="input") }}
+                {{ render_field_with_errors(form.full_name, class="input") }}
               </div>
               <div>
-                {{ render_field_with_errors(register_user_form.email, class="input") }}
+                {{ render_field_with_errors(form.email, class="input") }}
               </div>
               <div>
-                {{ render_field_with_errors(register_user_form.password, class="input") }}
+                {{ render_field_with_errors(form.password, class="input") }}
               </div>
               <div>
-                {{ render_field_with_errors(register_user_form.id_number, class="input") }}
+                {{ render_field_with_errors(form.id_number, class="input") }}
               </div>
-             <div>{{ render_field_errors(register_user_form.csrf_token) }}
-              {{ render_field(register_user_form.submit, class="button") }}
-            </div>
-              
+              <div>
+                {{ render_field_errors(form.csrf_token) }} {{
+                render_field(form.submit, class="button") }}
+              </div>
             </div>
           </form>
         </div>
@@ -60,4 +64,4 @@
     </div>
   </div>
 </div>
-{% endblock %} -->
+{% endblock %}

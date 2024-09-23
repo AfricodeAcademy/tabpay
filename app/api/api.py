@@ -1,8 +1,164 @@
 from sqlalchemy.exc import SQLAlchemyError
+from flask import Blueprint
 from werkzeug.exceptions import HTTPException
-from flask_restful import Resource, marshal_with, abort, fields, reqparse
-from app.extensions import db
-from app.models.models import UserModel, CommunicationModel, UmbrellaModel, PaymentModel, BlockModel, ZoneModel
+from flask_restful import Api,Resource, marshal_with, abort, fields, reqparse
+from ..utils import db
+from flask_security import UserMixin, RoleMixin, SQLAlchemyUserDatastore
+from flask_security.utils import hash_password
+import uuid
+
+
+api_bp = Blueprint('api', __name__)
+api = Api(api_bp)
+
+# Association table for many-to-many relationship between User and Block
+member_blocks = db.Table('member_blocks',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('block_id', db.Integer, db.ForeignKey('blocks.id'), primary_key=True)
+)
+
+# Association table for many-to-many relationship between User and Role
+roles_users = db.Table('roles_users',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('role_id', db.Integer, db.ForeignKey('roles.id'), primary_key=True)
+)
+
+class Role(db.Model, RoleMixin):
+    __tablename__ = 'roles'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(80), unique=True, nullable=False)
+    description = db.Column(db.String(255), nullable=True)
+    
+  
+    def __repr__(self):
+        return f"<Role {self.name}>"
+
+class UserModel(db.Model, UserMixin):
+    __tablename__ = 'users'
+
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(255), unique=True, nullable=True)  # Email may be null for non-login members
+    password = db.Column(db.String(255), nullable=True)  # Auto-generated password can be nullable
+    full_name = db.Column(db.String(255))
+    id_number = db.Column(db.Integer, index=True,unique=True)  
+    phone_number = db.Column(db.String(80), unique=True, index=True)
+    active = db.Column(db.Boolean, default=True)
+    bank = db.Column(db.String(50))
+    acc_number = db.Column(db.String(50))
+    registered_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+    fs_uniquifier = db.Column(db.String(64), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
+    zone = db.Column(db.String(100))
+    confirmed_at = db.Column(db.DateTime)
+    webauth = db.relationship('WebAuth', backref='user', uselist=False)
+
+
+    # Relationships
+    roles = db.relationship('Role', secondary=roles_users, backref=db.backref('users', lazy='dynamic'))
+    messages = db.relationship('CommunicationModel', backref='author', lazy=True)
+    payments = db.relationship('PaymentModel', backref='payer', lazy=True)
+    
+    # Many-to-many relationship with blocks
+    block_memberships = db.relationship('BlockModel', secondary=member_blocks, backref=db.backref('users', lazy=True))
+
+    # Password auto-generation method
+    def generate_auto_password(self):
+        import random, string
+        password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+        self.password = hash_password(password) 
+        return password  
+    
+    def __repr__(self):
+        return f"<Member {self.full_name}>"
+
+class WebAuth(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    auth_token = db.Column(db.String(255), unique=True, nullable=False)
+
+class UmbrellaModel(db.Model):
+    __tablename__ = 'umbrellas'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False, unique=True)
+    location = db.Column(db.String(255), nullable=False)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))  
+    blocks = db.relationship('BlockModel', backref='parent_umbrella', lazy=True)
+
+    def __repr__(self):
+        return f"<Umbrella {self.name}>"
+    
+class BlockModel(db.Model):
+    __tablename__ = 'blocks'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    parent_umbrella_id = db.Column(db.Integer, db.ForeignKey('umbrellas.id'), nullable=False)
+    zones = db.relationship('ZoneModel', backref='parent_block', lazy=True)
+    payments = db.relationship('PaymentModel', backref='block_payments', lazy=True)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    
+
+   
+class ZoneModel(db.Model):
+    __tablename__ = 'zones'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(20), nullable=False)
+    parent_block_id = db.Column(db.Integer, db.ForeignKey("blocks.id"), nullable=False)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+    
+    def __repr__(self):
+        return f"<Zone {self.name}>"
+
+class PaymentModel(db.Model):
+    __tablename__ = 'payments'
+
+    id = db.Column(db.Integer, primary_key=True)
+    mpesa_id = db.Column(db.String(255), nullable=False)  
+    account_number = db.Column(db.String(80), nullable=False)
+    source_phone_number = db.Column(db.String(80), nullable=False)
+    amount = db.Column(db.Integer, nullable=False)
+    payment_date = db.Column(db.DateTime, default=db.func.current_timestamp())
+    transaction_status = db.Column(db.Boolean, default=False)
+
+    # Payment association with a specific block
+    block_id = db.Column(db.Integer, db.ForeignKey('blocks.id'), nullable=False)
+    
+    # Payment association with a specific user (payer)
+    payer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    def __repr__(self):
+        return f"<Payment {self.amount} by Member {self.payer_id}>"
+
+    @classmethod
+    def get_contributions_by_member(cls, user_id):
+        """Get all contributions made by a specific member."""
+        return cls.query.filter_by(payer_id=user_id).all()
+
+    @classmethod
+    def get_contributions_by_block(cls, block_id):
+        """Get all contributions for a specific block."""
+        return cls.query.filter_by(block_id=block_id).all()
+
+
+
+class CommunicationModel(db.Model):
+    __tablename__ = 'communications'
+
+    id = db.Column(db.Integer, primary_key=True)
+    content = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    member_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    def __repr__(self):
+        return f"<Message from Member {self.member_id}>"
+
+# Setup Flask-Security
+user_datastore = SQLAlchemyUserDatastore(db, UserModel, Role)
+
 
 # Argument parsers for different resources
 umbrella_args = reqparse.RequestParser()
@@ -850,36 +1006,15 @@ class Zone(Resource):
             db.session.close()
 
 
-
-
-    # # Register Route (API)
-    # @app.route('/api/v1/register', methods=['POST'])
-    # def api_register():
-    #     email = request.json.get('email')
-    #     password = request.json.get('password')
-    #     hashed_password = generate_password_hash(password)
-    #     user = UserModel.query.filter_by(email=email).first()
-    #     if user:
-    #         return jsonify({"message": "User already exists"}), 409
-    #     new_user = UserModel(email=email, password=hashed_password)
-    #     db.session.add(new_user)
-    #     db.session.commit()
-    #     return jsonify({"message": "User created"}), 201
-
-    # # Login Route (API)
-    # @app.route('/api/v1/login', methods=['POST'])
-    # def api_login():
-    #     email = request.json.get('email')
-    #     password = request.json.get('password')
-    #     user = UserModel.query.filter_by(email=email).first()
-    #     if user and check_password_hash(user.password, password):
-    #         login_user(user)
-    #         return jsonify({"message": "Logged in"}), 200
-    #     return jsonify({"message": "Invalid credentials"}), 401
-
-    # # Logout Route (API)
-    # @app.route('/api/v1/logout', methods=['POST'])
-    # @login_required
-    # def api_logout():
-    #     logout_user()
-    #     return jsonify({"message": "Logged out"}), 200
+api.add_resource(Users, '/api/v1/users/')
+api.add_resource(User, '/api/v1/users/<int:id>/')
+api.add_resource(Communications, '/api/v1/communications/')
+api.add_resource(Communication, '/api/v1/communications/<int:id>/')
+api.add_resource(Payments, '/api/v1/payments/')
+api.add_resource(Payment, '/api/v1/payments/<int:id>/')
+api.add_resource(Blocks, '/api/v1/blocks/')
+api.add_resource(Block, '/api/v1/blocks/<int:id>/')
+api.add_resource(Umbrellas, '/api/v1/umbrellas/')
+api.add_resource(Umbrella, '/api/v1/umbrellas/<int:id>/')
+api.add_resource(Zones, '/api/v1/zones/')
+api.add_resource(Zone, '/api/v1/zones/<int:id>/')
