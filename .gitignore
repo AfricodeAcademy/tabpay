@@ -25,7 +25,6 @@ venv.bak/
 
 # Flask configuration files
 instance/
-config.py
 *.ini
 *.cfg
 
