@@ -33,14 +33,14 @@ def settings():
 
 
     # Render the settings page
-    return render_template('settings.html', 
+    return render_template('settings.html', title='Dashboard | Settings',
                            profile_form=profile_form, 
                            umbrella_form=umbrella_form,
                            committee_form=committee_form,
                            block_form=block_form,
                            zone_form=zone_form,
                            member_form=member_form,
-                           user=current_user, 
+                           user=current_user
                            )
 
 # Profile Update Route
@@ -101,6 +101,8 @@ def create_umbrella():
         umbrella = UmbrellaModel.query.filter_by(name=umbrella_form.umbrella_name.data).first()
         if umbrella:
             flash('An umbrella with that name already exists', 'danger')
+            
+
         else:
             new_umbrella = UmbrellaModel(
                 name=umbrella_form.umbrella_name.data,
@@ -195,6 +197,7 @@ def home():
 
 @app.route('/statistics', methods=['GET'])
 @login_required
+@roles_required('Umbrella_creator')
 def statistics():
     # Get total number of members
     total_members = UserModel.query.count()
@@ -203,12 +206,13 @@ def statistics():
     total_blocks = BlockModel.query.count()
 
     return render_template('statistics.html', title='Dashboard | Statistics',  total_members=total_members,
-        total_blocks=total_blocks
+        total_blocks=total_blocks, user=current_user
     )
 
 
 @app.route('/manage_contribution', methods=['GET'])
 def manage_contribution():
+    
     return render_template('manage_contribution.html', title='Dashboard | Manage Contributions')
 
 
@@ -241,7 +245,7 @@ with app.app_context():
         hashed_password = hash_password('123456')
         user_datastore.create_user(email='enockbett427@gmail.com',password=hashed_password,roles=[user_datastore.find_role('Umbrella_creator')])
         db.session.commit()
-        print('Admin created successfully')
+        print('Umbrella_creator created successfully')
 
     #Create Chairman
     if not user_datastore.find_user(email='captain@example.com'):

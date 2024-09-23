@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SelectField, IntegerField, SubmitField
-from wtforms.validators import DataRequired, Length, ValidationError
+from wtforms.validators import DataRequired, Length, ValidationError,EqualTo
 from app.models.models import UserModel
 
 class AddMemberForm(FlaskForm):
@@ -28,11 +28,11 @@ class ProfileForm(FlaskForm):
     full_name = StringField('Update Your Full Names',validators=[DataRequired(), Length(max=100,min=10)],render_kw={'placeholder':'Patrick Cheruiyot'})
     id_number = IntegerField('Update Your ID',validators=[DataRequired()],render_kw={'placeholder':'xxxxxxxx'})
     password = PasswordField('Password',validators=[DataRequired(), Length(max=100,min=6)],render_kw={'placeholder':'******'})
-    confirm_password = PasswordField('Confirm Password',validators=[DataRequired(), Length(max=100,min=6)],render_kw={'placeholder':'******'})
+    confirm_password = PasswordField('Confirm Password',validators=[DataRequired(), Length(max=100,min=6),EqualTo('password',message="Passwords do not match!")],render_kw={'placeholder':'******'})
     submit = SubmitField('SUBMIT')
 
     def validate_id_number(self,id_number):
-        user = UserModel.query.filter_by(id_number=id_number.data).first()
+        user = UserModel.query.filter_by(id_number=id_number.form.data).first()
         if user:
             raise ValidationError('Member ID already exists')
     
@@ -46,7 +46,7 @@ class AddCommitteForm(FlaskForm):
     submit = SubmitField('SUBMIT')
 
     def validate_id_number(self,id_number):
-        user = UserModel.query.filter_by(id_number=id_number.data).first()
+        user = UserModel.query.filter_by(id_number=id_number.form.data).first()
         if user:
             raise ValidationError('Member ID already exists')
     
