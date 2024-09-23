@@ -44,11 +44,11 @@
 
       <div class="tabpay-logo text-center">
         <img
-          src="{{url_for('static', filename='images/logo')}}"
+          src="{{url_for('static', filename='images/logo.png')}}"
           alt="TabPay Logo"
         />
       </div>
-      <a href="{{ url_for('home') }}" class="text-dark">
+      <a href="{{ url_for('main.home') }}" class="text-dark">
         <i
           class="bi bi-box-arrow-right"
           style="color: red; font-size: larger"
@@ -76,13 +76,13 @@
       <div class="offcanvas-body">
         <div class="tabpay-logo mb-2">
           <img
-            src="{{url_for('static',filename='images/logo')}}"
+            src="{{url_for('static',filename='images/logo.png')}}"
             alt="TabPay Logo"
           />
         </div>
 
         <a
-          href="{{url_for('statistics')}}"
+          href="{{url_for('main.statistics')}}"
           style="background-color: {% if 'Dashboard' in title %} rgb(76, 147, 35) {% endif %}; 
                border-radius: 5px; 
                color: white;"
@@ -90,27 +90,27 @@
           <i class="bi bi-grid-fill"></i> Dashboard
         </a>
         <a
-          href="{{ url_for('manage_contribution') }}"
+          href="{{ url_for('main.manage_contribution') }}"
           class="{% if request.endpoint == 'manage_contribution' %}active{% endif %}"
           ><i class="bi bi-currency-exchange"></i> Contribute</a
         >
         <a
-          href="{{ url_for('host') }}"
+          href="{{ url_for('main.host') }}"
           class="{% if request.endpoint == 'host' %}active{% endif %}"
           ><i class="bi bi-house-fill"></i> Host</a
         >
         <a
-          href="{{ url_for('block_reports') }}"
+          href="{{ url_for('main.block_reports') }}"
           class="{% if request.endpoint == 'block_reports' %}active{% endif %}"
           ><i class="bi bi-bar-chart-fill"></i> Reports</a
         >
         <div class="sidebar-bottom">
           <a
-            href="{{ url_for('settings') }}"
+            href="{{ url_for('main.settings') }}"
             class="{% if request.endpoint == 'settings' %}active{% endif %}"
             ><i class="bi bi-gear-fill"></i> Settings</a
           >
-          <a href="{{ url_for('home') }}"
+          <a href="{{ url_for('main.home') }}"
             ><i class="bi bi-box-arrow-left"></i> Logout</a
           >
         </div>
@@ -131,7 +131,7 @@
             <!-- Sidebar contents -->
             <div class="links mt-3">
               <a
-                href="{{url_for('statistics')}}"
+                href="{{url_for('main.statistics')}}"
                 style="background-color: {% if 'Dashboard' in title %} rgb(3, 185, 3) {% endif %}; 
                    border-radius: 5px; 
                    color: white;"
@@ -139,28 +139,28 @@
                 <i class="bi bi-grid-fill"></i> Dashboard
               </a>
               <a
-                href="{{ url_for('manage_contribution') }}"
+                href="{{ url_for('main.manage_contribution') }}"
                 class="{% if request.endpoint == 'manage_contribution' %}active{% endif %}"
                 ><i class="bi bi-currency-exchange"></i> Contribute</a
               >
               <a
-                href="{{ url_for('host') }}"
+                href="{{ url_for('main.host') }}"
                 class="{% if request.endpoint == 'host' %}active{% endif %}"
                 ><i class="bi bi-house-fill"></i> Host</a
               >
               <a
-                href="{{ url_for('block_reports') }}"
+                href="{{ url_for('main.block_reports') }}"
                 class="{% if request.endpoint == 'block_reports' %}active{% endif %}"
                 ><i class="bi bi-bar-chart-fill"></i> Reports</a
               >
             </div>
             <div class="sidebar-bottom">
               <a
-                href="{{ url_for('settings') }}"
+                href="{{ url_for('main.settings') }}"
                 class="{% if request.endpoint == 'settings' %}active{% endif %}"
                 ><i class="bi bi-gear-fill"></i> Settings</a
               >
-              <a href="{{ url_for('home') }}"
+              <a href="{{ url_for('main.home') }}"
                 ><i class="bi bi-box-arrow-left"></i> Logout</a
               >
             </div>
@@ -181,7 +181,7 @@
                   <i class="bi bi-search me-2"></i>
                   <i class="bi bi-bell"></i>
                   <img
-                    src="../static/images/profile_image.png"
+                    src="{{url_for('static',filename='images/image.png')}}"
                     alt="Profile Picture"
                   />
                   <span>Cheruiyot</span>
@@ -203,7 +203,10 @@
         <input type="text" class="form-control ps-4" placeholder="Search" />
       </div>
 
-      <img src="../static/images/profile_image.png" alt="Profile Picture" />
+      <img
+        src="{{url_for('static',filename='images/image.png')}}"
+        alt="Profile Picture"
+      />
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>

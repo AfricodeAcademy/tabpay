@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SelectField, IntegerField, SubmitField
 from wtforms.validators import DataRequired, Length, ValidationError,EqualTo
-from app.models.models import UserModel
+from ..api.api import UserModel
 
 class AddMemberForm(FlaskForm):
     full_name = StringField('Member Full Name',validators=[DataRequired(), Length(max=100,min=10)],render_kw={'placeholder':'Patrick Cheruiyot'})
