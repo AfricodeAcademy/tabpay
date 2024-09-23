@@ -1,5 +1,5 @@
-{% extends "base.html" %} {% block heading %} Welcome back, {{ current_user.full_name }}{%
-endblock %} {% block content %}
+{% extends "base.html" %} {% block heading %} Welcome back, {{
+current_user.full_name }}{% endblock %} {% block content %}
 <main class="temp-5-body">
   <!-- Dashboard Content -->
   <div class="dashboard">
@@ -18,7 +18,7 @@ endblock %} {% block content %}
             style="background-color: #abf7b13f"
           >
             <p>All Members</p>
-            <h2>890</h2>
+            <h2>{{total_members}}</h2>
           </div>
         </div>
         <div class="col-lg-3 col-md-6 mb-3">
@@ -27,7 +27,7 @@ endblock %} {% block content %}
             style="background-color: #f9e79f18"
           >
             <p>Total Number of Blocks</p>
-            <h2>10</h2>
+            <h2>{{total_blocks}}</h2>
           </div>
         </div>
         <div class="col-lg-3 col-md-6 mb-3">
@@ -36,7 +36,7 @@ endblock %} {% block content %}
             style="background-color: #a9cce369"
           >
             <p>Total Value to Date</p>
-            <h3>Kes 1,000,000</h3>
+            <h3>{{total_contribution}}</h3>
           </div>
         </div>
         <div class="col-lg-3 col-md-6 mb-3">
@@ -45,7 +45,7 @@ endblock %} {% block content %}
             style="background-color: #f3b9b249"
           >
             <p>Members Yet to Host</p>
-            <h2>123</h2>
+            <h2>{{members_to_host}}</h2>
           </div>
         </div>
       </div>
