@@ -37,25 +37,30 @@ render_field_with_errors, render_field, render_form_errors, render_field_errors
           <form
             action="{{ url_for('security.register') }}"
             method="post"
-            name="form"
+            name="register_user_form"
           >
-            {{ form.hidden_tag() }} {{ render_form_errors(form) }}
+            {{ register_user_form.hidden_tag() }} {{
+            render_form_errors(register_user_form) }}
             <div class="form-section">
               <div>
-                {{ render_field_with_errors(form.full_name, class="input") }}
+                {{ render_field_with_errors(register_user_form.full_name,
+                class="input") }}
               </div>
               <div>
-                {{ render_field_with_errors(form.email, class="input") }}
+                {{ render_field_with_errors(register_user_form.email,
+                class="input") }}
               </div>
               <div>
-                {{ render_field_with_errors(form.password, class="input") }}
+                {{ render_field_with_errors(register_user_form.password,
+                class="input") }}
               </div>
               <div>
-                {{ render_field_with_errors(form.id_number, class="input") }}
+                {{ render_field_with_errors(register_user_form.id_number,
+                class="input") }}
               </div>
               <div>
-                {{ render_field_errors(form.csrf_token) }} {{
-                render_field(form.submit, class="button") }}
+                {{ render_field_errors(register_user_form.csrf_token) }} {{
+                render_field(register_user_form.submit, class="button") }}
               </div>
             </div>
           </form>

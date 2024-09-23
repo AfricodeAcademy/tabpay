@@ -52,7 +52,7 @@ endblock %} {% block content %}
       <div class="tab-content d-flex justify-content-center">
         <!-- PROFIILE -->
         <div id="profile" class="tab-pane fade show active">
-          <form method="post" action="{{url_for('update_profile')}}">
+          <form method="post" action="{{url_for('main.update_profile')}}">
             {{ profile_form.hidden_tag() }}
             <div class="row mb-5 mt-2">
               <div class="col-md-6">
@@ -103,7 +103,7 @@ endblock %} {% block content %}
 
         <!-- COMMITTEE TAB -->
         <div id="committee" class="tab-pane fade">
-          <form method="post" action="{{url_for('add_committee')}}">
+          <form method="post" action="{{url_for('main.add_committee')}}">
             {{ committee_form.hidden_tag() }}
             <div class="row mb-5 mt-2">
               <div class="col-md-6">
@@ -168,7 +168,7 @@ endblock %} {% block content %}
             top-level umbrella, under which you can create distinct blocks,
             fostering collaboration and organization at the local level.
           </p>
-          <form method="post" action="{{url_for('create_umbrella')}}">
+          <form method="post" action="{{url_for('main.create_umbrella')}}">
             {{ umbrella_form.hidden_tag() }}
 
             <div class="row p-2 d-flex justify-content-center">
@@ -221,7 +221,7 @@ endblock %} {% block content %}
             Organize your community's structure by defining distinct blocks
             within each umbrella.
           </p>
-          <form method="post" action="{{url_for('create_block')}}">
+          <form method="post" action="{{url_for('main.create_block')}}">
             {{ block_form.hidden_tag() }}
             <div class="row p-4">
               <div class="col-md-6">
@@ -262,7 +262,7 @@ endblock %} {% block content %}
             Define zones within each block to make it easier when allocating
             block event to zone members.
           </p>
-          <form method="post" action="{{url_for('create_zone')}}">
+          <form method="post" action="{{url_for('main.create_zone')}}">
             {{ zone_form.hidden_tag() }}
             <div class="row p-4">
               <div class="col-md-6">
@@ -303,7 +303,7 @@ endblock %} {% block content %}
             Each zone has distinct members, please add the different members of
             the zone.
           </p>
-          <form action="{{url_for('add_member')}}" method="post">
+          <form action="{{url_for('main.add_member')}}" method="post">
             {{ member_form.hidden_tag() }}            
             <div class="row">
               <div class="col-md-6">
