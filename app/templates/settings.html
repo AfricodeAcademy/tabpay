@@ -88,15 +88,25 @@ endblock %} {% block content %}
             </div>
 
           {{ profile_form.submit(class="submit-btn") }}            
-          <p class="success-message mt-3">{% with messages = get_flashed_messages() %}
-              {% if messages %}
-                  <ul>
-                  {% for message in messages %}
-                      <li>{{ message }}</li>
-                  {% endfor %}
-                  </ul>
-              {% endif %}
-          {% endwith %}</p>
+          {% with messages =
+            get_flashed_messages(with_categories=true) %} {% if messages %}
+            <div class="container mt-3">
+              {% for category, message in messages %}
+              <div
+                class="alert alert-{{ category }} alert-dismissible fade show d-flex justify-content-between"
+                role="alert"
+              >
+                {{ message }}
+                <button
+                  type="button"
+                  class="btn-close"
+                  data-bs-dismiss="alert"
+                  aria-label="Close"
+                ></button>
+              </div>
+              {% endfor %}
+            </div>
+            {% endif %} {% endwith %}
           </form>
         </div>
         <!-- END OF PROFIILE -->
@@ -108,20 +118,18 @@ endblock %} {% block content %}
             <div class="row mb-5 mt-2">
               <div class="col-md-6">
                 <div class="mb-3">
-                  {{ committee_form.full_name.label }} {{ committee_form.full_name(class="input") }}
-                  <div class="invalid-feedback">
-                    {{ committee_form.full_name.errors[0] }}
-  
-                  </div>
+                  {{ committee_form.full_name.label }}
+                   {{ committee_form.full_name(class="input", readonly=True) }}
+                
+                
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  {{ committee_form.id_number.label }} {{ committee_form.id_number(class="input") }}
-                  <div class="invalid-feedback">
-                    {{ committee_form.id_number.errors[0] }}
-  
-                  </div>
+                  {{ committee_form.id_number.label }} 
+                  {{ committee_form.id_number(class="input") }}
+                
+
                 </div>
               </div>
             </div>
@@ -129,32 +137,41 @@ endblock %} {% block content %}
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  {{ committee_form.role.label }} {{ committee_form.role(class="select d-block") }}
-                  <div class="invalid-feedback">
-                    {{ committee_form.role.errors[0] }}
-                  </div>
+                  {{ committee_form.role.label }}
+                   {{ committee_form.role(class="select d-block") }}
+                
+                
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  {{ committee_form.phone_number.label }} {{ committee_form.phone_number(class="input") }}
-                  <div class="invalid-feedback">
-                    {{ committee_form.phone_number.errors[0] }}
-                  </div>
+                  {{ committee_form.phone_number.label }} {{ committee_form.phone_number(class="input",readonly=True) }}
+              
+
                 </div>
               </div>
             </div>
 
             {{ committee_form.submit(class="submit-btn") }}            
-            <p class="success-message mt-3">{% with messages = get_flashed_messages() %}
-                {% if messages %}
-                    <ul>
-                    {% for message in messages %}
-                        <li>{{ message }}</li>
-                    {% endfor %}
-                    </ul>
-                {% endif %}
-            {% endwith %}</p>
+            {% with messages =
+get_flashed_messages(with_categories=true) %} {% if messages %}
+<div class="container mt-3">
+  {% for category, message in messages %}
+  <div
+    class="alert alert-{{ category }} alert-dismissible fade show d-flex justify-content-between"
+    role="alert"
+  >
+    {{ message }}
+    <button
+      type="button"
+      class="btn-close"
+      data-bs-dismiss="alert"
+      aria-label="Close"
+    ></button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %} {% endwith %}
           </form>
         </div>
         <!--/ COMMITTEE TAB -->
@@ -201,15 +218,25 @@ endblock %} {% block content %}
               </div>
             </div>
             {{ umbrella_form.submit(class="submit-btn") }}            
-            <p class="success-message mt-3">{% with messages = get_flashed_messages() %}
-                {% if messages %}
-                    <ul>
-                    {% for message in messages %}
-                        <li>{{ message }}</li>
-                    {% endfor %}
-                    </ul>
-                {% endif %}
-            {% endwith %}</p>
+            {% with messages =
+get_flashed_messages(with_categories=true) %} {% if messages %}
+<div class="container mt-3">
+  {% for category, message in messages %}
+  <div
+    class="alert alert-{{ category }} alert-dismissible fade show d-flex justify-content-between"
+    role="alert"
+  >
+    {{ message }}
+    <button
+      type="button"
+      class="btn-close"
+      data-bs-dismiss="alert"
+      aria-label="Close"
+    ></button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %} {% endwith %}
           </form>
         </div>
 
@@ -242,15 +269,25 @@ endblock %} {% block content %}
               </div>
             </div>
             {{ block_form.submit(class="submit-btn") }}            
-            <p class="success-message mt-3">{% with messages = get_flashed_messages() %}
-                {% if messages %}
-                    <ul>
-                    {% for message in messages %}
-                        <li>{{ message }}</li>
-                    {% endfor %}
-                    </ul>
-                {% endif %}
-            {% endwith %}</p>
+            {% with messages =
+get_flashed_messages(with_categories=true) %} {% if messages %}
+<div class="container mt-3">
+  {% for category, message in messages %}
+  <div
+    class="alert alert-{{ category }} alert-dismissible fade show d-flex justify-content-between"
+    role="alert"
+  >
+    {{ message }}
+    <button
+      type="button"
+      class="btn-close"
+      data-bs-dismiss="alert"
+      aria-label="Close"
+    ></button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %} {% endwith %}
           </form>
         </div>
 
@@ -283,15 +320,25 @@ endblock %} {% block content %}
             </div>
             </div>
             {{ zone_form.submit(class="submit-btn") }}            
-            <p class="success-message mt-3">{% with messages = get_flashed_messages() %}
-                {% if messages %}
-                    <ul>
-                    {% for message in messages %}
-                        <li>{{ message }}</li>
-                    {% endfor %}
-                    </ul>
-                {% endif %}
-            {% endwith %}</p>
+            {% with messages =
+get_flashed_messages(with_categories=true) %} {% if messages %}
+<div class="container mt-3">
+  {% for category, message in messages %}
+  <div
+    class="alert alert-{{ category }} alert-dismissible fade show d-flex justify-content-between"
+    role="alert"
+  >
+    {{ message }}
+    <button
+      type="button"
+      class="btn-close"
+      data-bs-dismiss="alert"
+      aria-label="Close"
+    ></button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %} {% endwith %}
           </form>
         </div>
 

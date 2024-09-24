@@ -2,16 +2,6 @@
 {% from "security/_macros.html" import render_field_with_errors, render_field, render_form_errors, render_field_errors, prop_next %}
 
 {% block content %}
-  {% include "security/_messages.html" %}
-  <div>{% with messages = get_flashed_messages() %}
-    {% if messages %}
-        <ul>
-        {% for message in messages %}
-            <li>{{ message }}</li>
-        {% endfor %}
-        </ul>
-    {% endif %}
-{% endwith %}
 </div>
   <div class="container-fluid">
     <div class="main-container">
@@ -26,6 +16,25 @@
               <p>Sign in to continue</p>
             </div>
             <hr />
+            {% with messages =
+              get_flashed_messages(with_categories=true) %} {% if messages %}
+              <div class="container mt-3">
+                {% for category, message in messages %}
+                <div
+                  class="alert alert-{{ category }} alert-dismissible fade show d-flex justify-content-between bg-info "
+                  role="alert"
+                >
+                  {{ message }}
+                  <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Close"
+                  ></button>
+                </div>
+                {% endfor %}
+              </div>
+              {% endif %} {% endwith %}
             <form action="{{ url_for_security('login') }}{{ prop_next() }}" method="post" name="login_user_form">
               {{ login_user_form.hidden_tag() }}
               {{ render_form_errors(login_user_form) }}
@@ -49,13 +58,22 @@
                   <div>
                     {{ render_field_with_errors(login_user_form.password, class="input") }}
                   </div>
+                <div class="d-flex justify-content-between">
+                  {{ render_field_with_errors(login_user_form.remember) }}
+                  <a href="{{ url_for_security('forgot_password') }}" style="color: green;">{{ _fsdomain('Forgot password') }}</a>
+                </div>
                 
-                
-                {{ render_field_with_errors(login_user_form.remember) }}
-              </div>
-                {{ render_field_errors(login_user_form.csrf_token) }}
+               </div>
+               <div class="d-flex justify-content-center">  
+                 {{ render_field_errors(login_user_form.csrf_token) }}
                 {{ render_field(login_user_form.submit, class="button") }}
               </div>
+             
+              </div>
+              <div class="d-flex justify-content-center">              
+                  <a href="{{ url_for_security('send_confirmation') }}" style="color: green ;">{{ _fsdomain('Confirm account') }}</a>
+              </div>
+              
             </form>
 
             {% if security.webauthn %}

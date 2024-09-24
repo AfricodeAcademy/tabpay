@@ -1,15 +1,6 @@
 {% extends 'security/base.html' %} {% from "security/_macros.html" import
 render_field_with_errors, render_field, render_form_errors, render_field_errors
-%} {% block content %} {% include "security/_messages.html" %}
-<div>
-  {% with messages = get_flashed_messages() %} {% if messages %}
-  <ul>
-    {% for message in messages %}
-    <li>{{ message }}</li>
-    {% endfor %}
-  </ul>
-  {% endif %} {% endwith %}
-</div>
+%} {% block content %}
 <div class="container-fluid">
   <div class="main-container">
     <div class="row">
@@ -32,8 +23,26 @@ render_field_with_errors, render_field, render_form_errors, render_field_errors
               >
             </p>
           </div>
-          <div class="hr"><hr /></div>
-
+          <hr />
+          {% with messages = get_flashed_messages(with_categories=true) %} {% if
+          messages %}
+          <div class="container mt-3">
+            {% for category, message in messages %}
+            <div
+              class="alert alert-{{ category }} alert-dismissible fade show d-flex justify-content-between"
+              role="alert"
+            >
+              {{ message }}
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Close"
+              ></button>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %} {% endwith %}
           <form
             action="{{ url_for('security.register') }}"
             method="post"
@@ -59,8 +68,10 @@ render_field_with_errors, render_field, render_form_errors, render_field_errors
                 class="input") }}
               </div>
               <div>
-                {{ render_field_errors(register_user_form.csrf_token) }} {{
-                render_field(register_user_form.submit, class="button") }}
+                <div class="d-flex justify-content-center">
+                  {{ render_field_errors(register_user_form.csrf_token) }} {{
+                  render_field(register_user_form.submit, class="button") }}
+                </div>
               </div>
             </div>
           </form>

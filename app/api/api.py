@@ -38,14 +38,15 @@ class UserModel(db.Model, UserMixin):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(255), unique=True, nullable=True)  # Email may be null for non-login members
-    password = db.Column(db.String(255), nullable=True)  # Auto-generated password can be nullable
+    email = db.Column(db.String(255), unique=True) 
+    password = db.Column(db.String(255)) 
     full_name = db.Column(db.String(255))
     id_number = db.Column(db.Integer, index=True,unique=True)  
-    phone_number = db.Column(db.String(80), unique=True, index=True)
+    phone_number = db.Column(db.String(80), unique=True)
     active = db.Column(db.Boolean, default=True)
     bank = db.Column(db.String(50))
     acc_number = db.Column(db.String(50))
+    image_file = db.Column(db.String(20), nullable=False, default = 'profile.png')
     registered_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
     fs_uniquifier = db.Column(db.String(64), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
@@ -83,7 +84,7 @@ class UmbrellaModel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False, unique=True)
     location = db.Column(db.String(255), nullable=False)
-    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))  
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'),nullable=False)  
     blocks = db.relationship('BlockModel', backref='parent_umbrella', lazy=True)
 
     def __repr__(self):
