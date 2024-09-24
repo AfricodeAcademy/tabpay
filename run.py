@@ -3,16 +3,14 @@ from app.extensions import db
 from app.models.models import user_datastore
 from flask_security.utils import hash_password
 
-
-
-
 app = create_app()
-
-
-
 
 with app.app_context():
     db.create_all()
+
+if __name__ == '__main__':  
+    app.run(debug=True)
+
 
     #Create roles
     user_datastore.find_or_create_role(name='admin',description='system developer')

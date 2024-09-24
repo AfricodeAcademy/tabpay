@@ -1,13 +1,14 @@
-from flask import Flask,redirect, url_for, flash, render_template
+from flask import Flask,redirect, url_for, flash, render_template, request, jsonify
 from flask_restful import Api
 from app import config
 from flask_restful import Api
 from app.api.api import Users,User,Communications,Communication,Payments,Payment,Blocks,Block,Umbrellas,Umbrella,Zones,Zone
 from flask_security import  SQLAlchemyUserDatastore
 from flask_security.utils import hash_password,verify_password,login_user,logout_user
-from app.models.models import UserModel, Role
+from app.models.models import UserModel, Role,BlockModel,ZoneModel
 from app.extensions import security, db
 from app.forms.auth import ExtendedRegisterForm
+from datetime import datetime 
 
 def create_app():
     app = Flask(__name__)
@@ -95,9 +96,79 @@ def create_app():
         return render_template('manage_contribution.html', title='Dashboard | Manage Contributions')
 
 
-    @app.route('/host', methods=['GET'])
+    @app.route('/host', methods=['GET', 'POST'])
     def host():
-        return render_template('host.html', title='Dashboard | Host')
+        block_meeting = Schedule_block_meeting()  
+        blocks = UpcomingBlock()  
+        member_id = BlockMember()  
+        contribution = ContributionStatus()  
+        analytics = Analytics()  
+
+       
+        return render_template(
+            'host.html',
+            block_meeting=block_meeting,
+            block_form=blocks,
+            member_form=member_id,
+            contribution=contribution,
+            analytics=analytics
+        )
+ 
+
+
+    @app.route('/schedule_meeting', methods=['POST'])  
+    def schedule_meeting():  
+         
+        block_number = request.form.get('blockNumber')  
+        zone = request.form.get('zone')  
+        member = request.form.get('member')  
+        date = request.form.get('date')  
+
+    
+        print(f'Scheduled Meeting - Block: {block_number}, Zone: {zone}, Member: {member}, Date: {date}')  
+        
+        # Respond with success message  
+        return jsonify({"message": "Meeting scheduled successfully!"}) 
+    
+    @app.route('/upcoming_blocks')
+    def upcoming_blocks():
+        upcoming_meetings = Meeting.query.filter(Meeting.date > datetime.now()).all()
+        return render_template('host.html', upcoming_meetings=upcoming_meetings)
+
+    @app.route('/block_members', methods=['GET', 'POST'])
+    def block_members():
+        if request.method == 'POST':
+            action = request.form.get('action')
+            member_id = request.form.get('member_id')
+
+            if action == 'edit':
+                # Handle editing logic
+                pass
+            elif action == 'remove':
+                member = member_id.query.get(member_id)
+                db.session.delete(member)
+                db.session.commit()
+                flash('Member removed successfully!', 'success')
+
+        members = member_id.query.all()
+        return render_template('host.html', members=members)
+
+    @app.route('/contribution_status')
+    def contribution_status():
+        contributions = Contribution.query.all()
+        return render_template('host.html', contributions=contributions)
+
+    @app.route('/analytics')
+    def analytics():
+        contributions = Contribution.query.all()
+        total_contributed = sum(contribution.amount for contribution in contributions)
+        return render_template('host.html', total_contributed=total_contributed)
+
+    
+    
+
+    
+    return render_template('host.html', title='Dashboard | Host')
 
 
     @app.route('/settings', methods=['GET'])
