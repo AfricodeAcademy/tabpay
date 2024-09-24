@@ -1,13 +1,58 @@
-{% extends "security/base.html" %}
-{% from "security/_macros.html" import render_field_with_errors, render_field %}
+{% extends 'security/base.html' %} {% from "security/_macros.html" import
+render_field_with_errors, render_field %} {% block content %}
+<div class="container-fluid">
+  <div class="main-container">
+    <div class="row">
+      <div class="col-lg-6">
+        <div class="image-section"></div>
+      </div>
+      <div class="col-lg-6">
+        <div class="head-form">
+          <div class="p-4">
+            <h1>{{ _fsdomain('Resend confirmation instructions') }}</h1>
+          </div>
+          <hr />
+          {% with messages = get_flashed_messages(with_categories=true) %} {% if
+          messages %}
+          <div class="container mt-3">
+            {% for category, message in messages %}
+            <div
+              class="alert alert-{{ category }} alert-dismissible fade show d-flex justify-content-between"
+              role="alert"
+            >
+              {{ message }}
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Close"
+              ></button>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %} {% endwith %}
+          <form
+            action="{{ url_for_security('send_confirmation') }}"
+            method="post"
+            name="send_confirmation_form"
+          >
+            {{ send_confirmation_form.hidden_tag() }}
 
-{% block content %}
-  {% include "security/_messages.html" %}
-  <h1>{{ _fsdomain('Resend confirmation instructions') }}</h1>
-  <form action="{{ url_for_security('send_confirmation') }}" method="post" name="send_confirmation_form">
-    {{ send_confirmation_form.hidden_tag() }}
-    {{ render_field_with_errors(send_confirmation_form.email) }}
-    {{ render_field(send_confirmation_form.submit) }}
-  </form>
-  {% include "security/_menu.html" %}
-{% endblock content %}
+            <div class="form-section">
+              <div>
+                {{ render_field_with_errors(send_confirmation_form.email,
+                class="input") }}
+              </div>
+              <div class="d-flex justify-content-center">
+                {{ render_field(send_confirmation_form.submit,
+                class="confirm-button") }}
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

@@ -12,13 +12,13 @@ class AddMemberForm(FlaskForm):
     acc_number = IntegerField('Bank Account Number',validators=[DataRequired()],render_kw={'placeholder':'xxxxxx'})
     submit = SubmitField('SAVE')
     
-    def validate_id_number(self,id_number):
-        user = UserModel.query.filter_by(id_number=id_number.data).first()
+    def validate_id_number(self,field):
+        user = UserModel.query.filter_by(id_number=field.data).first()
         if user:
             raise ValidationError('Member ID already exists')
     
-    def validate_phone_number(self, phone_number):
-        user = UserModel.query.filter_by(phone_number=phone_number.data).first()
+    def validate_phone_number(self, field):
+        user = UserModel.query.filter_by(phone_number=field.data).first()
         if user:
             raise ValidationError('Member phone number already exists')
         
@@ -31,8 +31,8 @@ class ProfileForm(FlaskForm):
     confirm_password = PasswordField('Confirm Password',validators=[DataRequired(), Length(max=100,min=6),EqualTo('password',message="Passwords do not match!")],render_kw={'placeholder':'******'})
     submit = SubmitField('SUBMIT')
 
-    def validate_id_number(self,id_number):
-        user = UserModel.query.filter_by(id_number=id_number.form.data).first()
+    def validate_id_number(self,field):
+        user = UserModel.query.filter_by(id_number=field.data).first()
         if user:
             raise ValidationError('Member ID already exists')
     
@@ -45,13 +45,13 @@ class AddCommitteForm(FlaskForm):
     phone_number = IntegerField('Phone Number',validators=[DataRequired()],render_kw={'placeholder':'0798543234'}) 
     submit = SubmitField('SUBMIT')
 
-    def validate_id_number(self,id_number):
-        user = UserModel.query.filter_by(id_number=id_number.form.data).first()
+    def validate_id_number(self,field):
+        user = UserModel.query.filter_by(id_number=field.data).first()
         if user:
             raise ValidationError('Member ID already exists')
     
-    def validate_phone_number(self, phone_number):
-        user = UserModel.query.filter_by(phone_number=phone_number.data).first()
+    def validate_phone_number(self, field):
+        user = UserModel.query.filter_by(phone_number=field.data).first()
         if user:
             raise ValidationError('Member phone number already exists')
         

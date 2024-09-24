@@ -36,35 +36,16 @@ def create_app(config_name):
         db.create_all()
 
         #Create roles
-        user_datastore.find_or_create_role(name='Umbrella_creator',description='Account owner')
-        user_datastore.find_or_create_role(name='Chairman',description='Head of block')
-        user_datastore.find_or_create_role(name='Secretary',description='block secretary')
-        user_datastore.find_or_create_role(name='Member',description='Regular member')
-    
+        user_datastore.find_or_create_role(name='SuperUser',description='Account owner')
+      
 
-        #Create Admin
+        #Create SuperUser
         if not user_datastore.find_user(email='enockbett427@gmail.com'):
             hashed_password = hash_password('123456')
-            user_datastore.create_user(email='enockbett427@gmail.com',password=hashed_password,roles=[user_datastore.find_role('Umbrella_creator')])
+            user_datastore.create_user(email='enockbett427@gmail.com',password=hashed_password,full_name='Captain Bett',roles=[user_datastore.find_role('SuperUser')])
             db.session.commit()
-            print('Umbrella_creator created successfully')
+            print('Superuser created successfully')
 
-        #Create Chairman
-        if not user_datastore.find_user(email='captain@example.com'):
-            hashed_password = hash_password('123456')
-            user_datastore.create_user(email='captain@example.com',password=hashed_password,roles=[user_datastore.find_role('Chairman')])
-            db.session.commit()
-
-        #Create Secretary
-        if not user_datastore.find_user(email='secretary@example.com'):
-            hashed_password = hash_password('123456')
-            user_datastore.create_user(email='secretary@example.com',password=hashed_password,roles=[user_datastore.find_role('Secretary')])
-            db.session.commit()
-
-        #Create Members
-        if not user_datastore.find_user(email='member1@example.com'):
-            hashed_password = hash_password('123456')
-            user_datastore.create_user(email='member1@example.com',password=hashed_password,roles=[user_datastore.find_role('Member')])
-            db.session.commit()
+ 
 
     return app

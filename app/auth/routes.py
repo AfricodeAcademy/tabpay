@@ -1,30 +1,34 @@
-from flask import Blueprint, render_template, redirect, url_for
-from flask_security import login_required, logout_user
-from app.auth.forms import ExtendedRegisterForm
+from flask import Blueprint, render_template, redirect, url_for,request
+from flask_security import login_required, logout_user, roles_required
+from flask_security.utils import hash_password
+from ..api.api import user_datastore,db
 
+
+# Blueprint for authentication routes
 auth = Blueprint('auth', __name__)
 
-@auth.route('/login', methods=['GET', 'POST'])
-def login():
-    # Implement login logic
-    pass
 
-@auth.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for('main.home'))
 
 @auth.route('/register', methods=['GET', 'POST'])
-def register():
-    form = ExtendedRegisterForm()
-    if form.validate_on_submit():
-        # Implement registration logic
-        pass
-    return render_template('auth/register.html', form=form)
+@roles_required('SuperUser')
+def register_user():
+    if request.method == 'POST':
+        full_name = request.form.get('full_name')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        id_number = request.form.get('id_number')
 
+        # Automatically assign the Umbrella_creator role
+        umbrella_creator_role = user_datastore.find_or_create_role('Umbrella_creator')
 
+        # Create the new user with the "Umbrella_creator" role
+        hashed_password = hash_password(password)
+        user_datastore.create_user(full_name=full_name, id_number=id_number, email=email, password=hashed_password, roles=[umbrella_creator_role])
+        db.session.commit()
 
+        return redirect(url_for('security.login'))
+
+    return render_template('security/register_user.html')
 
 
 
