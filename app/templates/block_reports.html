@@ -1,10 +1,15 @@
-{% extends "base.html" %} {% block heading %} Block Reports{% endblock %} {%
-block content %}
+{% extends "base.html" %}
+
+{% block heading %}
+  Block Reports
+{% endblock %}
+
+{% block content %}
 <div class="dashboard">
   <div class="container">
     <p class="mt-2 text-gray-600 fs-5">
       Reports showing insights into block dynamics such as, contribution by
-      members, overall performance etc.
+      members, overall performance, etc.
     </p>
 
     <div class="dashboard-content">
@@ -15,7 +20,7 @@ block content %}
             class="nav-link active"
             data-bs-toggle="tab"
             href="#member-contribution"
-            style="color: black"
+            style="color:lightgreen"
           >
             Member Contribution
           </a>
@@ -37,26 +42,29 @@ block content %}
         <div class="flex-container mt-4">
           <div class="row">
             <div class="col-md-3">
-              <select id="block">
-                <option>BLOCK 5</option>
+              <select id="block" name="block">
+                {% for block in blocks %}
+                  <option value="{{ block.name }}">{{ block.name }}</option>
+                {% endfor %}
               </select>
             </div>
             <div class="col-md-3">
-              <select id="member">
-                <option>PATRICK</option>
+              <select id="member" name="member">
+                {% for member in members %}
+                  <option value="{{ member.full_name }}">{{ member.full_name }}</option>
+                {% endfor %}
               </select>
             </div>
             <div class="col-md-3">
-              <select id="date">
-                <option>DATE FILTER</option>
-              </select>
+              <input type="date" id="date" name="date" />
             </div>
             <div class="col-md-3 tt-contributed">
               Total Contributed:
-              <span style="color: rgb(14, 169, 14)"> Kes 200,000</span>
+              <span style="color: rgb(14, 169, 14)"> Kes {{ total_contributed }}</span>
             </div>
           </div>
         </div>
+
         <table class="table table-responsive text-center mt-5">
           <thead>
             <tr>
@@ -66,16 +74,13 @@ block content %}
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>Meja Estate</td>
-              <td>Francis Ronoh</td>
-              <td>Kes 20,000</td>
-            </tr>
-            <tr>
-              <td>Another Zone</td>
-              <td>Another Host</td>
-              <td>Kes 15,000</td>
-            </tr>
+            {% for contribution in contributions %}
+              <tr>
+                <td>{{ contribution.payer.zone.name }}</td>
+                <td>{{ contribution.payer.full_name }}</td>
+                <td>Kes {{ contribution.amount }}</td>
+              </tr>
+            {% endfor %}
           </tbody>
         </table>
       </div>
