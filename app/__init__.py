@@ -98,10 +98,10 @@ def create_app():
 
     @app.route('/host', methods=['GET', 'POST'])
     def host():
-        block_meeting = Schedule_block_meeting()  
-        blocks = UpcomingBlock()  
-        member_id = BlockMember()  
-        contribution = ContributionStatus()  
+        block_meeting = BlockModel()  
+        blocks = Block()  
+        member_id = UserModel()  
+        contribution = Payments()  
         analytics = Analytics()  
 
        
@@ -155,7 +155,7 @@ def create_app():
 
     @app.route('/contribution_status')
     def contribution_status():
-        contributions = Contribution.query.all()
+        contributions =Contribution.query.all()
         return render_template('host.html', contributions=contributions)
 
     @app.route('/analytics')
