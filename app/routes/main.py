@@ -1,5 +1,6 @@
-from flask import render_template
-from flask_security import roles_accepted,login_required
-# from run import owner,admin
-# from ..extensions import main_blueprint
+# from flask import Blueprint, render_template, redirect, url_for, flash
+# from app.models import UserModel  # Assuming UserModel is defined in models
+# from flask_login import logout_user  # For handling user logout
+
+# main = Blueprint('main', __name__)
 
