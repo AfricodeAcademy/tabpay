@@ -1,3 +1,6 @@
+:root {
+  --background-color: rgba(70, 162, 16, 0.873);
+}
 * {
   box-sizing: border-box;
 }
@@ -61,7 +64,7 @@ html {
 }
 
 .glass-sidebar a.active {
-  color: rgb(3, 185, 3);
+  color: var(--background-color);
 }
 
 .glass-sidebar a i {
@@ -99,7 +102,7 @@ html {
 }
 
 .offcanvas-body a.active {
-  color: rgb(3, 185, 3);
+  color: var(--background-color);
 }
 
 .offcanvas-body a i {
@@ -161,7 +164,7 @@ html {
 }
 /* END OF DASHBOARD STYLING */
 label {
-  color: #777b80d0;
+  color: black;
   font-size: 16px;
 }
 
@@ -197,7 +200,7 @@ input:focus {
     0 0 8px rgba(65, 216, 80, 0.6);
 }
 .submit-btn {
-  background-color: rgb(76, 147, 35);
+  background-color: var(--background-color);
   color: white;
   width: 30%;
   border: none;
@@ -212,16 +215,7 @@ input:focus {
 .submit-btn:hover {
   border: 2px solid green;
 }
-.success-message {
-  border: 1px solid #28a745;
-  color: #28a745;
-  padding: 10px;
-  border-radius: 5px;
-  text-align: center;
-  width: 50%;
-  margin: 0 auto;
-  display: none;
-}
+
 .card {
   border: 2px solid black;
   height: 100%;
@@ -439,7 +433,7 @@ table {
     bottom: 0;
     left: 0;
     width: 100%;
-    background-color: #4fc410; /* Adjust background as needed */
+    background-color: rgb(76, 147, 35); /* Adjust background as needed */
     box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
   }
 

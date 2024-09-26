@@ -46,7 +46,7 @@ render_field_with_errors, render_field, render_form_errors, render_field_errors
           <form
             action="{{ url_for('security.register') }}"
             method="post"
-            name="register_user_form"
+            name="form"
           >
             {{ register_user_form.hidden_tag() }} {{
             render_form_errors(register_user_form) }}

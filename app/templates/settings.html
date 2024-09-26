@@ -64,7 +64,7 @@ endblock %} {% block content %}
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  {{ profile_form.id_number.label }} {{ profile_form.id_number(class="input") }}     
+                  {{ profile_form.id_number.label }} {{ profile_form.id_number(class="input",readonly=True) }}     
           
                 </div>
               </div>
@@ -88,25 +88,20 @@ endblock %} {% block content %}
             </div>
 
           {{ profile_form.submit(class="submit-btn") }}            
-          {% with messages =
-            get_flashed_messages(with_categories=true) %} {% if messages %}
-            <div class="container mt-3">
-              {% for category, message in messages %}
-              <div
-                class="alert alert-{{ category }} alert-dismissible fade show d-flex justify-content-between"
-                role="alert"
-              >
-                {{ message }}
-                <button
-                  type="button"
-                  class="btn-close"
-                  data-bs-dismiss="alert"
-                  aria-label="Close"
-                ></button>
-              </div>
-              {% endfor %}
+          {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+          <div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
+            {% for category, message in messages %}
+            <div
+              class="alert alert-{{ category }} alert-dismissible fade show"
+              role="alert"
+            >
+              {{ message }}
             </div>
-            {% endif %} {% endwith %}
+            {% endfor %}
+          </div>
+          {% endif %}
+          {% endwith %}
           </form>
         </div>
         <!-- END OF PROFIILE -->
@@ -137,10 +132,15 @@ endblock %} {% block content %}
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  {{ committee_form.role.label }}
-                   {{ committee_form.role(class="select d-block") }}
-                
-                
+                  <label for="role">{{ committee_form.role.label }}</label>
+                  <select class="select" id="role" name="role">
+                      <option value="" disabled selected>Please select a role</option>  <!-- Disabled, placeholder option -->
+                      {% for value, label in committee_form.role.choices %}
+                          <option value="{{ value }}" {% if committee_form.role.data == value %} selected {% endif %}>
+                              {{ label }}
+                          </option>
+                      {% endfor %}
+                  </select>
                 </div>
               </div>
               <div class="col-md-6">
@@ -153,25 +153,20 @@ endblock %} {% block content %}
             </div>
 
             {{ committee_form.submit(class="submit-btn") }}            
-            {% with messages =
-get_flashed_messages(with_categories=true) %} {% if messages %}
-<div class="container mt-3">
+     {% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
   {% for category, message in messages %}
   <div
-    class="alert alert-{{ category }} alert-dismissible fade show d-flex justify-content-between"
+    class="alert alert-{{ category }} alert-dismissible fade show"
     role="alert"
   >
     {{ message }}
-    <button
-      type="button"
-      class="btn-close"
-      data-bs-dismiss="alert"
-      aria-label="Close"
-    ></button>
   </div>
   {% endfor %}
 </div>
-{% endif %} {% endwith %}
+{% endif %}
+{% endwith %}
           </form>
         </div>
         <!--/ COMMITTEE TAB -->
@@ -218,25 +213,20 @@ get_flashed_messages(with_categories=true) %} {% if messages %}
               </div>
             </div>
             {{ umbrella_form.submit(class="submit-btn") }}            
-            {% with messages =
-get_flashed_messages(with_categories=true) %} {% if messages %}
-<div class="container mt-3">
+     {% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
   {% for category, message in messages %}
   <div
-    class="alert alert-{{ category }} alert-dismissible fade show d-flex justify-content-between"
+    class="alert alert-{{ category }} alert-dismissible fade show"
     role="alert"
   >
     {{ message }}
-    <button
-      type="button"
-      class="btn-close"
-      data-bs-dismiss="alert"
-      aria-label="Close"
-    ></button>
   </div>
   {% endfor %}
 </div>
-{% endif %} {% endwith %}
+{% endif %}
+{% endwith %}
           </form>
         </div>
 
@@ -261,7 +251,7 @@ get_flashed_messages(with_categories=true) %} {% if messages %}
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  {{ block_form.parent_umbrella.label }} {{ block_form.parent_umbrella(class="select") }}
+                  {{ block_form.parent_umbrella.label }} {{ block_form.parent_umbrella(class="select",readonly=True) }}
                   <div class="invalid-feedback">
                     {{ block_form.parent_umbrella.errors[0] }}
                   </div>
@@ -269,25 +259,20 @@ get_flashed_messages(with_categories=true) %} {% if messages %}
               </div>
             </div>
             {{ block_form.submit(class="submit-btn") }}            
-            {% with messages =
-get_flashed_messages(with_categories=true) %} {% if messages %}
-<div class="container mt-3">
+     {% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
   {% for category, message in messages %}
   <div
-    class="alert alert-{{ category }} alert-dismissible fade show d-flex justify-content-between"
+    class="alert alert-{{ category }} alert-dismissible fade show"
     role="alert"
   >
     {{ message }}
-    <button
-      type="button"
-      class="btn-close"
-      data-bs-dismiss="alert"
-      aria-label="Close"
-    ></button>
   </div>
   {% endfor %}
 </div>
-{% endif %} {% endwith %}
+{% endif %}
+{% endwith %}
           </form>
         </div>
 
@@ -320,25 +305,20 @@ get_flashed_messages(with_categories=true) %} {% if messages %}
             </div>
             </div>
             {{ zone_form.submit(class="submit-btn") }}            
-            {% with messages =
-get_flashed_messages(with_categories=true) %} {% if messages %}
-<div class="container mt-3">
+     {% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+<div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
   {% for category, message in messages %}
   <div
-    class="alert alert-{{ category }} alert-dismissible fade show d-flex justify-content-between"
+    class="alert alert-{{ category }} alert-dismissible fade show"
     role="alert"
   >
     {{ message }}
-    <button
-      type="button"
-      class="btn-close"
-      data-bs-dismiss="alert"
-      aria-label="Close"
-    ></button>
   </div>
   {% endfor %}
 </div>
-{% endif %} {% endwith %}
+{% endif %}
+{% endwith %}
           </form>
         </div>
 
@@ -425,14 +405,13 @@ get_flashed_messages(with_categories=true) %} {% if messages %}
     </div>
   </div>
 </div>
+<!-- JavaScript to automatically hide flash messages after 5 seconds -->
 <script>
-  setTimeout(function () {
-    const messages = document.querySelectorAll(".success-message ul");
-    if (messages.length > 0) {
-      messages.forEach(
-        (message) => (message.parentElement.style.display = "none")
-      );
+  setTimeout(function() {
+    const flashContainer = document.getElementById('flash-container');
+    if (flashContainer) {
+      flashContainer.style.display = 'none';  // Hide the container after 5 seconds
     }
-  }, 5000); // 5 seconds
+  }, 5000);  // 5000 milliseconds = 5 seconds
 </script>
 {% endblock %}
