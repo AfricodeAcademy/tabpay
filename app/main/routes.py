@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash
+from flask import Blueprint, render_template, redirect, url_for, flash,request
 from flask_security import login_required, roles_required, current_user, logout_user,roles_accepted
 from flask_security.utils import hash_password
 from ..utils import db
@@ -43,23 +43,29 @@ def settings():
                            )
 
 # Profile Update Route
-@main.route('/settings/update_profile',  methods=['GET','POST'])
-@roles_accepted('Umbrella_creator','SuperUser')
+@main.route('/settings/update_profile', methods=['GET', 'POST'])
+@roles_required('Umbrella_creator')
 def update_profile():
-    user = UserModel.query.filter_by(id=current_user.id).first()
-    profile_form = ProfileForm(obj=user)  # Populate form with user data
-    
+    profile_form = ProfileForm()
+
+    # Handle GET request - populate form with current user info
+    if request.method == 'GET':
+        user = UserModel.query.filter_by(id=current_user.id).first()
+
+        if user:
+            # Autofill form fields with user data
+            profile_form.full_name.data = user.full_name
+            profile_form.id_number.data = user.id_number  # The id_number is read-only in the form
+        else:
+            flash('User not found!', 'danger')
+            return redirect(url_for('main.settings'))
+
+    # Handle POST request - update profile
     if profile_form.validate_on_submit():
+        user = UserModel.query.filter_by(id=current_user.id).first()
         
         if user:
-            # Check if id_number is unique
-            if UserModel.query.filter_by(id_number=profile_form.id_number.data).first() and profile_form.id_number.data != user.id_number:
-                flash('ID number already exists for another user!', 'danger')
-                return redirect(url_for('main.settings'))
-
-            # Update user information
             user.full_name = profile_form.full_name.data
-            user.id_number = profile_form.id_number.data
             
             # Update password only if provided
             if profile_form.password.data:
@@ -69,15 +75,12 @@ def update_profile():
             flash('Profile updated successfully!', 'success')
         else:
             flash('User not found!', 'danger')
-    else:
-        # Collect all error messages from the form
+    
+    elif request.method == 'POST':  # If form validation fails
         error_messages = [f"{field.capitalize()}: {error}" for field, errors in profile_form.errors.items() for error in errors]
-        
-        # Flash all error messages
         for message in error_messages:
             flash(message, 'danger')
     
-    return redirect(url_for('main.settings'))
 
 
 # Committee Addition Route
@@ -91,9 +94,15 @@ def add_committee():
         user = UserModel.query.filter_by(id_number=committee_form.id_number.data).first()
 
         if not user:
-            flash('No member found with that ID! A committee member must first be a member.', 'danger')
+            flash('No member found with that ID! ', 'danger')
             return redirect(url_for('main.settings'))
         else:
+            # Check if the user has the "Member" role
+            member_role = Role.query.filter_by(name='Member').first()
+            if member_role not in user.roles:
+                flash(f'{user.full_name} must first have the "Member" role before being assigned a committee role.', 'danger')
+                return redirect(url_for('main.settings'))
+        
             # Check if the user is already a committee member
             role_name = committee_form.role.data  
             existing_role = Role.query.filter_by(name=role_name).first()
@@ -101,9 +110,9 @@ def add_committee():
             if existing_role in user.roles:
                 flash(f'{user.full_name} is already a {role_name}!', 'danger')
             else:
-                # Dynamically populate the form fields with the user's data
-                committee_form.full_name.data = user.full_name
-                committee_form.phone_number.data = user.phone_number
+                # # Dynamically populate the form fields with the user's data
+                # committee_form.full_name.data = user.full_name
+                # committee_form.phone_number.data = user.phone_number
 
                 # Assign the committee role to the user
                 role = user_datastore.find_or_create_role(committee_form.role.data)
@@ -111,7 +120,18 @@ def add_committee():
                 db.session.commit()
                 flash(f'{user.full_name} added as {committee_form.role.data}', 'success')
 
-        return redirect(url_for('main.settings'))
+            return redirect(url_for('main.settings'))
+    # Handle GET method to pre-fill form based on the user's input (ID number)
+    elif request.method == 'GET' and 'id_number' in request.args:
+        user = UserModel.query.filter_by(id_number=request.args.get('id_number')).first()
+
+        if user:
+            committee_form.full_name.data = user.full_name
+            committee_form.phone_number.data = user.phone_number
+        else:
+            flash('No member found with that ID!', 'danger')
+
+
 
     flash('Form validation failed, please check your input', 'danger')
     return redirect(url_for('main.settings'))
@@ -150,37 +170,40 @@ def create_umbrella():
 
 
 #Block Creation Route
-@main.route('/settings/create_block',  methods=['GET','POST'])
-@roles_accepted('Umbrella_creator','SuperUser')
+@main.route('/settings/create_block', methods=['GET', 'POST'])
+@roles_accepted('Umbrella_creator', 'SuperUser')
 def create_block():
     block_form = BlockForm()
-    
+
+    # Automatically retrieve the umbrella created by the current user
+    umbrella = UmbrellaModel.query.filter_by(created_by=current_user.id).first()
+
+    if not umbrella:
+        flash('You need to create an umbrella before adding a block!', 'danger')
+        return redirect(url_for('main.settings'))
+
+    # Pre-fill the umbrella field with the current user's umbrella and make it read-only
+    if request.method == 'GET':
+        block_form.parent_umbrella.data = umbrella.id  # Pre-fill hidden umbrella field
+
     if block_form.validate_on_submit():
-         # Check if the user has created an umbrella
-        umbrella = UmbrellaModel.query.filter_by(created_by=current_user.id).first()
-        if not umbrella:
-            flash('You need to create an umbrella before adding a block!', 'danger')
-            return redirect(url_for('main.settings'))
         # Check if a block with the same name exists within the parent umbrella
         existing_block = BlockModel.query.filter_by(
             name=block_form.block_name.data,
-            parent_umbrella_id=block_form.parent_umbrella.data
+            parent_umbrella_id=umbrella.id
         ).first()
-        
+
         if existing_block:
             flash('A block with that name already exists in this umbrella.', 'danger')
         else:
             new_block = BlockModel(
                 name=block_form.block_name.data,
-                parent_umbrella_id=block_form.parent_umbrella.data,
+                parent_umbrella_id=umbrella.id,
                 created_by=current_user.id
             )
             db.session.add(new_block)
             db.session.commit()
             flash('Block created successfully!', 'success')
-        return redirect(url_for('main.settings'))
-    else:
-        flash('Form validation failed', 'danger')
         return redirect(url_for('main.settings'))
 
 
@@ -208,6 +231,13 @@ def create_zone():
         
         
         else:
+
+            # Dynamically fetch the blocks from the database
+            blocks = BlockModel.query.all()
+
+            # Populate the SelectField with block choices
+            zone_form.parent_block.choices = [(str(block.id), block.name) for block in blocks]
+
             new_zone = ZoneModel(
                 name=zone_form.zone_name.data,
                 parent_block_id=zone_form.parent_block.data,
@@ -223,7 +253,7 @@ def create_zone():
 
 #Member Creation Route
 @main.route('/settings/add_member',  methods=['GET','POST'])
-@roles_required('Umbrella_creator','Chairman','Secretary')
+@roles_required('Umbrella_creator','SuperUser','Chairman','Secretary')
 def add_member():
     member_form = AddMemberForm()
     if member_form.validate_on_submit():
@@ -237,6 +267,12 @@ def add_member():
         if existing_user:
             flash('User with that ID already exists', 'danger')
         else:
+            # Dynamically fetch the zones from the database
+            zones = ZoneModel.query.all()
+
+            # Populate the SelectField with block choices
+            AddMemberForm.member_zone.choices = [(str(zone.id), zone.name) for zone in zones]
+
             new_user = UserModel(
                 full_name=member_form.full_name.data,
                 id_number=member_form.id_number.data,
@@ -247,7 +283,13 @@ def add_member():
             )
             db.session.add(new_user)
             db.session.commit()
-            flash('Member added successfully', 'success')
+
+              # Assign the 'Member' role to the new user
+        member_role = user_datastore.find_or_create_role('Member')
+        user_datastore.add_role_to_user(new_user, member_role)
+        db.session.commit()
+
+        flash('Member added successfully', 'success')
         return redirect(url_for('main.settings'))
     else:
         flash('Form validation failed', 'danger')
@@ -291,15 +333,18 @@ def save_picture(form_picture):
 
 @main.route('/statistics', methods=['GET'])
 @login_required
-@roles_accepted('Umbrella_creator','SuperUser')
+@roles_accepted('Umbrella_creator', 'SuperUser')
 def statistics():
-    # Get total number of members
-    total_members = UserModel.query.count()
+    # Define the roles to include
+    included_roles = ['Member', 'Chairman', 'Secretary','Umbrella_creator']
+
+    # Query the users who have any of the roles in the included_roles list
+    total_members = UserModel.query.join(UserModel.roles).filter(Role.name.in_(included_roles)).count()
 
     # Get total number of blocks
     total_blocks = BlockModel.query.count()
 
-    return render_template('statistics.html', title='Dashboard | Statistics',  total_members=total_members,
+    return render_template('statistics.html', title='Dashboard | Statistics', total_members=total_members,
         total_blocks=total_blocks, user=current_user
     )
 
@@ -331,7 +376,7 @@ def block_reports():
     members = UserModel.query.all()
 
     
-    contributions_query = PaymentModel.query
+    contributions_query = PaymentModel.query.all()
 
    
     if block_filter:
@@ -342,7 +387,7 @@ def block_reports():
 
    
     if member_filter:
-        member = Member.query.filter_by(name=member_filter).first()
+        member = UserModel.query.filter_by(name=member_filter).first()
         if member:
             contributions_query = contributions_query.filter_by(member_id=member.id)
 

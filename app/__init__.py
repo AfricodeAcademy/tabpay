@@ -4,7 +4,7 @@ from app.api.api import UserModel, Role
 from flask_security import SQLAlchemyUserDatastore
 from flask_security.utils import hash_password
 from config import config
-from app.auth.forms import ExtendedRegisterForm, ExtendedConfirmRegisterForm
+from app.auth.forms import ExtendedConfirmRegisterForm,ExtendedLoginForm,ExtendedRegisterForm
 
 
 def create_app(config_name):
@@ -19,7 +19,7 @@ def create_app(config_name):
 
     # Setup Flask-Security
     user_datastore = SQLAlchemyUserDatastore(db, UserModel, Role)
-    security.init_app(app, user_datastore, register_form=ExtendedRegisterForm, confirm_register_form=ExtendedConfirmRegisterForm)
+    security.init_app(app, user_datastore, confirm_register_form=ExtendedConfirmRegisterForm,register_form=ExtendedRegisterForm,login_form=ExtendedLoginForm)
 
     # Register blueprints
     from app.auth import auth as auth_blueprint
@@ -37,14 +37,22 @@ def create_app(config_name):
 
         #Create roles
         user_datastore.find_or_create_role(name='SuperUser',description='Account owner')
+        user_datastore.find_or_create_role(name='Umbrella_creator',description='Umbrella creator')
       
 
         #Create SuperUser
         if not user_datastore.find_user(email='enockbett427@gmail.com'):
             hashed_password = hash_password('123456')
-            user_datastore.create_user(email='enockbett427@gmail.com',password=hashed_password,full_name='Captain Bett',roles=[user_datastore.find_role('SuperUser')])
+            user_datastore.create_user(email='enockbett427@gmail.com',password=hashed_password,id_number=12345678,full_name='Captain Bett',roles=[user_datastore.find_role('SuperUser')])
             db.session.commit()
             print('Superuser created successfully')
+
+        #Create Umbrella_creator
+        if not user_datastore.find_user(email='umbrella_creator@gmail.com'):
+            hashed_password = hash_password('123456')
+            user_datastore.create_user(email='umbrella_creator@gmail.com',password=hashed_password,id_number=87654321,full_name='Umbrella Creator',roles=[user_datastore.find_role('Umbrella_creator')])
+            db.session.commit()
+            print('Umbrella_creator created successfully')
 
  
 
