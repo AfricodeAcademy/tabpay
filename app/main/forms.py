@@ -7,7 +7,7 @@ class AddMemberForm(FlaskForm):
     full_name = StringField('Member Full Name',validators=[DataRequired(), Length(max=100,min=10)],render_kw={'placeholder':'John Doe'})
     id_number = IntegerField('Member ID Number',validators=[DataRequired()],render_kw={'placeholder':'xxxxxxxx'})
     phone_number = IntegerField('Phone Number',validators=[DataRequired()],render_kw={'placeholder':'0700000000'})
-    member_zone = SelectField('Member Zone', choices=[('Zone 1', 'Zone 1'), ('Zone 2', 'Zone 2')],validators=[DataRequired()])
+    member_zone = SelectField('Member Zone', validators=[DataRequired()])
     bank = SelectField('Select Bank', choices=[('Equity', 'Equity'), ('DTB', 'DTB')],validators=[DataRequired()])
     acc_number = IntegerField('Bank Account Number',validators=[DataRequired()],render_kw={'placeholder':'xxxxxx'})
     submit = SubmitField('SAVE')
@@ -65,13 +65,14 @@ class UmbrellaForm(FlaskForm):
 
 class BlockForm(FlaskForm):
     block_name = StringField('Block Name',validators=[DataRequired(), Length(max=100,min=4)],render_kw={'placeholder':'Block 5'})
-    parent_umbrella = SelectField('Parent Umbrella', validators=[DataRequired()])
+    parent_umbrella = StringField('Parent Umbrella', render_kw={'readonly': True}) 
+
     submit = SubmitField('SUBMIT')
 
 
     
 class ZoneForm(FlaskForm):
-    zone_name = StringField('Zone Name',validators=[DataRequired(), Length(max=100,min=4)],render_kw={'placeholder':'Meja Estate zone'})
+    zone_name = StringField('Zone Name',validators=[DataRequired(), Length(max=100,min=1)],render_kw={'placeholder':'Meja Estate zone'})
     parent_block =  SelectField('Parent Block',validators=[DataRequired()])
     submit = SubmitField('SUBMIT')
 

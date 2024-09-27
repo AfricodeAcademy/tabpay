@@ -14,19 +14,13 @@ render_field_with_errors, render_field %} {% block content %}
           <hr />
           {% with messages = get_flashed_messages(with_categories=true) %} {% if
           messages %}
-          <div class="container mt-3">
+          <div class="container mt-3" id="flash-container">
             {% for category, message in messages %}
             <div
-              class="alert alert-{{ category }} alert-dismissible fade show d-flex justify-content-between"
+              class="alert alert-{{ category }} alert-dismissible fade show"
               role="alert"
             >
               {{ message }}
-              <button
-                type="button"
-                class="btn-close"
-                data-bs-dismiss="alert"
-                aria-label="Close"
-              ></button>
             </div>
             {% endfor %}
           </div>
@@ -54,5 +48,13 @@ render_field_with_errors, render_field %} {% block content %}
     </div>
   </div>
 </div>
-
+<!-- JavaScript to automatically hide flash messages after 5 seconds -->
+<script>
+  setTimeout(function () {
+    const flashContainer = document.getElementById("flash-container");
+    if (flashContainer) {
+      flashContainer.style.display = "none"; // Hide the container after 5 seconds
+    }
+  }, 5000); // 5000 milliseconds = 5 seconds
+</script>
 {% endblock %}
