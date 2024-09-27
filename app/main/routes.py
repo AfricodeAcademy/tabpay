@@ -40,7 +40,7 @@ def settings():
     blocks = BlockModel.query.filter_by(created_by=current_user.id).all()
     zone_form.parent_block.choices = [(str(block.id), block.name) for block in blocks]
 
-    # Dynamically fetch blocks created by the current user
+    # Dynamically fetch zones created by the current user
     zones = ZoneModel.query.filter_by(created_by=current_user.id).all()
     member_form.member_zone.choices = [(str(zone.id), zone.name) for zone in zones]
     
@@ -52,7 +52,7 @@ def settings():
                            block_form=block_form,
                            zone_form=zone_form,
                            member_form=member_form,
-                           user=current_user,blocks=blocks                   
+                           user=current_user,blocks=blocks ,zones=zones                  
                                  )
 
 # Profile Update Route
@@ -253,7 +253,7 @@ def create_zone():
         else:
 
             # Dynamically fetch the blocks from the database
-            blocks = BlockModel.query.all()
+            blocks = BlockModel.query.filter_by(created_by=current_user.id).all()
 
             # Populate the SelectField with block choices
             zone_form.parent_block.choices = [(str(block.id), block.name) for block in blocks]
@@ -273,14 +273,14 @@ def create_zone():
 
 #Member Creation Route
 @main.route('/settings/add_member',  methods=['GET','POST'])
-@roles_required('SuperUser','Admin','Chairman','Secretary')
+@roles_accepted('SuperUser','Admin','Chairman','Secretary')
 def add_member():
-    member_form = AddMemberForm()
+    member_form = AddMemberForm()    
+
+    zones = ZoneModel.query.filter_by(created_by=current_user.id).all()
+    member_form.member_zone.choices = [(str(zone.id), zone.name) for zone in zones]
+
     if member_form.validate_on_submit():
-
-        zones = ZoneModel.query.filter_by(created_by=current_user.id).all()
-        AddCommitteForm.member_zone.choices = [(str(zone.id), zone.name) for zone in zones]
-
         if not zones:
             flash('You need to create a zone before adding a member!', 'danger')
             return redirect(url_for('main.settings'))
@@ -288,23 +288,21 @@ def add_member():
         existing_user = UserModel.query.filter_by(id_number=member_form.id_number.data,zone=member_form.member_zone.data).first()
         if existing_user:
             flash('User with that ID already exists', 'danger')
-        else:
-            # Dynamically fetch the zones from the database
-            zones = ZoneModel.query.all()
+        
+        # Dynamically fetch zones created by the current user
+        zones = ZoneModel.query.filter_by(created_by=current_user.id).all()
+        member_form.member_zone.choices = [(str(zone.id), zone.name) for zone in zones]
 
-            # Populate the SelectField with block choices
-            AddMemberForm.member_zone.choices = [(str(zone.id), zone.name) for zone in zones]
-
-            new_user = UserModel(
-                full_name=member_form.full_name.data,
-                id_number=member_form.id_number.data,
-                phone_number=member_form.phone_number.data,
-                zone=member_form.member_zone.data,
-                bank=member_form.bank.data,
-                acc_number=member_form.acc_number.data
-            )
-            db.session.add(new_user)
-            db.session.commit()
+        new_user = UserModel(
+            full_name=member_form.full_name.data,
+            id_number=member_form.id_number.data,
+            phone_number=member_form.phone_number.data,
+            zone=member_form.member_zone.data,
+            bank=member_form.bank.data,
+            acc_number=member_form.acc_number.data
+        )
+        db.session.add(new_user)
+        db.session.commit()
 
               # Assign the 'Member' role to the new user
         member_role = user_datastore.find_or_create_role('Member')
