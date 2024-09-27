@@ -3,11 +3,12 @@ from flask_security import login_required, roles_required, current_user, logout_
 from flask_security.utils import hash_password
 from ..utils import db
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm
-from ..api.api import UserModel, UmbrellaModel, BlockModel, ZoneModel, user_datastore,Role
+from ..api.api import UserModel, UmbrellaModel, BlockModel, ZoneModel, user_datastore,Role,PaymentModel
 from PIL import Image
 import os
 import secrets
 from app import create_app as app
+from sqlalchemy import func
 
 
 main = Blueprint('main', __name__)
@@ -367,50 +368,58 @@ def logout():
 
 @main.route('/block_reports', methods=['GET', 'POST'])
 def block_reports():
-    block_filter = request.args.get('block')
+    block_filter = request.args.get('blocks')
     member_filter = request.args.get('member')
     date_filter = request.args.get('date')
-    
-  
+
     blocks = BlockModel.query.all()
     members = UserModel.query.all()
 
-    
-    contributions_query = PaymentModel.query.all()
+    total_contributed_value = db.session.query(db.func.sum(PaymentModel.amount)).scalar() or 0
 
-   
+    contributions_query = PaymentModel.query
+
     if block_filter:
         block = BlockModel.query.filter_by(name=block_filter).first()
         if block:
             members_in_block = [member.id for member in block.members]
-            contributions_query = contributions_query.filter(Contribution.member_id.in_(members_in_block))
+            contributions_query = contributions_query.filter(PaymentModel.payer_id.in_(members_in_block))  
 
-   
     if member_filter:
-        member = UserModel.query.filter_by(name=member_filter).first()
+        member = UserModel.query.filter_by(full_name=member_filter).first()
         if member:
-            contributions_query = contributions_query.filter_by(member_id=member.id)
+            contributions_query = contributions_query.filter_by(payer_id=member.id)  
 
-   
     if date_filter:
         try:
             from datetime import datetime
             date_obj = datetime.strptime(date_filter, '%Y-%m-%d')
-            contributions_query = contributions_query.filter(Contribution.date >= date_obj)
+            contributions_query = contributions_query.filter(PaymentModel.payment_date >= date_obj)  
         except ValueError:
             pass  
 
-  
     contributions = contributions_query.all()
 
-   
     total_contributed = sum(contribution.amount for contribution in contributions)
 
-    
+    detailed_contributions = (
+    db.session.query(
+        ZoneModel.name.label('zone'),
+        UserModel.full_name.label('host'),
+        PaymentModel.amount.label('contributed_amount')
+    )
+    .join(UserModel, PaymentModel.payer_id == UserModel.id)  
+    .join(ZoneModel, UserModel.zone == ZoneModel.name)  
+    .filter(PaymentModel.id.in_([contribution.id for contribution in contributions]))  
+    .all()
+)
+
     return render_template(
         'block_reports.html',
         blocks=blocks,
         members=members,
         contributions=contributions,
-        total_contributed=total_contributed
-    )    
+        total_contributed=total_contributed,
+        detailed_contributions=detailed_contributions
+    )
+

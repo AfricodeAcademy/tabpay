@@ -48,9 +48,9 @@ def create_app(config_name):
             print('Superuser created successfully')
 
         #Create Umbrella_creator
-        if not user_datastore.find_user(email='umbrella_creator@gmail.com'):
+        if not user_datastore.find_user(email='chelangatgladwel9@gmail.com'):
             hashed_password = hash_password('123456')
-            user_datastore.create_user(email='umbrella_creator@gmail.com',password=hashed_password,id_number=87654321,full_name='Umbrella Creator',roles=[user_datastore.find_role('Umbrella_creator')])
+            user_datastore.create_user(email='chelangatgladwel9@gmail.com',password=hashed_password,id_number=87654321,full_name='Umbrella Creator',roles=[user_datastore.find_role('Umbrella_creator')])
             db.session.commit()
             print('Umbrella_creator created successfully')
 
