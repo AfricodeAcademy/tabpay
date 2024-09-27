@@ -251,7 +251,9 @@ endblock %} {% block content %}
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  {{ block_form.parent_umbrella.label }} {{ block_form.parent_umbrella(class="select",readonly=True) }}
+                  {{ block_form.parent_umbrella.label }} 
+                  {{ block_form.parent_umbrella(class="input") }} 
+
                   <div class="invalid-feedback">
                     {{ block_form.parent_umbrella.errors[0] }}
                   </div>
@@ -297,7 +299,8 @@ endblock %} {% block content %}
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  {{ zone_form.parent_block.label }} {{ zone_form.parent_block(class="select") }}
+                  {{ zone_form.parent_block.label }} 
+                  {{ zone_form.parent_block(class="select") }}
                   <div class="invalid-feedback">
                     {{ zone_form.parent_block.errors[0] }}
                 </div>
@@ -362,7 +365,8 @@ endblock %} {% block content %}
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  {{ member_form.member_zone.label }} {{ member_form.member_zone(class="select") }}
+                  {{ member_form.member_zone.label }}
+                   {{ member_form.member_zone(class="select") }}
                   <div class="invalid-feedback">
                     {{ member_form.member_zone.errors[0] }}
 
@@ -388,15 +392,20 @@ endblock %} {% block content %}
               </div>
             </div>
             {{ member_form.submit(class="submit-btn") }} 
-                        <p class="success-message mt-3">{% with messages = get_flashed_messages() %}
-                          {% if messages %}
-                              <ul>
-                              {% for message in messages %}
-                                  <li>{{ message }}</li>
-                              {% endfor %}
-                              </ul>
-                          {% endif %}
-                      {% endwith %}</p>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="container mt-3" id="flash-container" style="max-width: 500px;">
+              {% for category, message in messages %}
+              <div
+                class="alert alert-{{ category }} alert-dismissible fade show"
+                role="alert"
+              >
+                {{ message }}
+              </div>
+              {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
           </form>
         </div>
 
