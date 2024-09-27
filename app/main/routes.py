@@ -18,7 +18,7 @@ def home():
 
 
 @main.route('/settings', methods=['GET','POST'])
-@roles_accepted('SuperUser','Umbrella_creator','Chairman','Secretary')
+@roles_accepted('Admin','SuperUser','Chairman','Secretary')
 @login_required
 def settings():
    
@@ -31,6 +31,18 @@ def settings():
     zone_form = ZoneForm()
 
 
+    # Dynamically fetch the umbrella created by the current user
+    umbrella = UmbrellaModel.query.filter_by(created_by=current_user.id).first()
+    block_form.parent_umbrella.data = umbrella.name 
+
+    # Dynamically fetch blocks created by the current user
+    blocks = BlockModel.query.filter_by(created_by=current_user.id).all()
+    zone_form.parent_block.choices = [(str(block.id), block.name) for block in blocks]
+
+    # Dynamically fetch blocks created by the current user
+    zones = ZoneModel.query.filter_by(created_by=current_user.id).all()
+    member_form.member_zone.choices = [(str(zone.id), zone.name) for zone in zones]
+    
     # Render the settings page
     return render_template('settings.html', title='Dashboard | Settings',
                            profile_form=profile_form, 
@@ -39,12 +51,12 @@ def settings():
                            block_form=block_form,
                            zone_form=zone_form,
                            member_form=member_form,
-                           user=current_user
-                           )
+                           user=current_user,blocks=blocks                   
+                                 )
 
 # Profile Update Route
 @main.route('/settings/update_profile', methods=['GET', 'POST'])
-@roles_required('Umbrella_creator')
+@roles_required('Admin','SuperUser')
 def update_profile():
     profile_form = ProfileForm()
 
@@ -85,7 +97,7 @@ def update_profile():
 
 # Committee Addition Route
 @main.route('/settings/add_committee',  methods=['GET','POST'])
-@roles_accepted('Umbrella_creator','SuperUser')
+@roles_accepted('SuperUser','Admin')
 def add_committee():
     committee_form = AddCommitteForm()
 
@@ -139,7 +151,7 @@ def add_committee():
               
 #Umbrella Creation Route
 @main.route('/settings/create_umbrella',  methods=['GET','POST'])
-@roles_accepted('Umbrella_creator','SuperUser')
+@roles_accepted('SuperUser','Admin')
 def create_umbrella():
     umbrella_form = UmbrellaForm()
 
@@ -150,7 +162,8 @@ def create_umbrella():
             flash('You can only create one umbrella!', 'danger')
         else:
             # Check if an umbrella with the same name already exists
-            duplicate_umbrella = UmbrellaModel.query.filter_by(name=umbrella_form.umbrella_name.data).first()
+            umbrella_name = umbrella_form.umbrella_name.data
+            duplicate_umbrella = UmbrellaModel.query.filter_by(name=umbrella_name).first()
             if duplicate_umbrella:
                 flash('An umbrella with that name already exists!', 'danger')
             else:
@@ -165,13 +178,17 @@ def create_umbrella():
                 flash('Umbrella created successfully!', 'success')
         return redirect(url_for('main.settings'))
 
-    flash('Form validation failed, please check your input', 'danger')
+     # If we reach this point, the form was not validated
+    for field, errors in umbrella_form.errors.items():
+        for error in errors:
+            flash(f'Error in {field}: {error}', 'danger')
+    
     return redirect(url_for('main.settings'))
 
 
 #Block Creation Route
 @main.route('/settings/create_block', methods=['GET', 'POST'])
-@roles_accepted('Umbrella_creator', 'SuperUser')
+@roles_accepted('SuperUser', 'Admin')
 def create_block():
     block_form = BlockForm()
 
@@ -184,7 +201,7 @@ def create_block():
 
     # Pre-fill the umbrella field with the current user's umbrella and make it read-only
     if request.method == 'GET':
-        block_form.parent_umbrella.data = umbrella.id  # Pre-fill hidden umbrella field
+        block_form.parent_umbrella.data = umbrella.name  # Pre-fill hidden umbrella field
 
     if block_form.validate_on_submit():
         # Check if a block with the same name exists within the parent umbrella
@@ -209,13 +226,15 @@ def create_block():
 
 #Zone Creation Route
 @main.route('/settings/create_zone',  methods=['GET','POST'])
-@roles_accepted('Umbrella_creator','SuperUser')
+@roles_accepted('SuperUser','Admin')
 def create_zone():
     zone_form = ZoneForm()
+
+    # Dynamically fetch the blocks created by the current user
+    blocks = BlockModel.query.filter_by(created_by=current_user.id).all()
+    zone_form.parent_block.choices = [(str(block.id), block.name) for block in blocks]
     
     if zone_form.validate_on_submit():
-
-        blocks = BlockModel.query.filter_by(created_by=current_user.id).all()
         if not blocks:
             flash('You need to create a block before adding a zone!', 'danger')
             return redirect(url_for('main.settings'))
@@ -253,12 +272,14 @@ def create_zone():
 
 #Member Creation Route
 @main.route('/settings/add_member',  methods=['GET','POST'])
-@roles_required('Umbrella_creator','SuperUser','Chairman','Secretary')
+@roles_required('SuperUser','Admin','Chairman','Secretary')
 def add_member():
     member_form = AddMemberForm()
     if member_form.validate_on_submit():
 
         zones = ZoneModel.query.filter_by(created_by=current_user.id).all()
+        AddCommitteForm.member_zone.choices = [(str(zone.id), zone.name) for zone in zones]
+
         if not zones:
             flash('You need to create a zone before adding a member!', 'danger')
             return redirect(url_for('main.settings'))
@@ -310,33 +331,13 @@ def save_picture(form_picture):
     
     return picture_fn
 
-# @app.route("/account",methods=['POST','GET'])
-# @login_required
-# def account():
-#     form = UpdateAccountForm()
-#     if form.validate_on_submit():
-#         if form.picture.data:
-#             picture_file = save_picture(form.picture.data)
-#             current_user.image_file = picture_file
-#         current_user.username = form.username.data
-#         current_user.email = form.email.data
-#         db.session.commit()
-#         flash("Your account has been updated!","success")
-#         return redirect(url_for('account'))
-#     elif request.method == "GET":
-#         form.username.data = current_user.username
-#         form.email.data = current_user.email
-#     image_file = url_for('static',filename='profile_pics/' + current_user.image_file)
-#     return render_template('account.html',title='Account',image_file=image_file,form=form)
-
-
 
 @main.route('/statistics', methods=['GET'])
 @login_required
-@roles_accepted('Umbrella_creator', 'SuperUser')
+@roles_accepted('SuperUser', 'Admin')
 def statistics():
     # Define the roles to include
-    included_roles = ['Member', 'Chairman', 'Secretary','Umbrella_creator']
+    included_roles = ['Member', 'Chairman', 'Secretary','SuperUser']
 
     # Query the users who have any of the roles in the included_roles list
     total_members = UserModel.query.join(UserModel.roles).filter(Role.name.in_(included_roles)).count()
