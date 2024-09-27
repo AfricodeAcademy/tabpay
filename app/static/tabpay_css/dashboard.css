@@ -521,8 +521,3 @@ table {
     width: 100%;
   }
 }
-@media (min-width: 1600px) {
-  .dashboard-h1 {
-    text-align: center;
-  }
-}

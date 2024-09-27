@@ -3,11 +3,12 @@ from flask_security import login_required, roles_required, current_user, logout_
 from flask_security.utils import hash_password
 from ..utils import db
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm
-from ..api.api import UserModel, UmbrellaModel, BlockModel, ZoneModel, user_datastore,Role
+from ..api.api import UserModel, UmbrellaModel, BlockModel, ZoneModel, user_datastore,Role,MeetingModel,PaymentModel
 from PIL import Image
 import os
 import secrets
 from app import create_app as app
+from datetime import datetime
 
 
 main = Blueprint('main', __name__)
@@ -360,10 +361,127 @@ def host():
     return render_template('host.html', title='Dashboard | Host')
 
 
-@main.route('/logout')
-def logout():
-    logout_user()
-    return redirect(url_for('home'))
+# Route to schedule a block meeting
+@main.route('/host/schedule_meeting', methods=['GET', 'POST'])
+@login_required
+def schedule_meeting():
+    if request.method == 'POST':
+        block_id = request.form.get('block_id')
+        member_id = request.form.get('member_id')
+        zone_id = request.form.get('zone_id')
+        meeting_date = request.form.get('meeting_date')
+
+        # Validate form data
+        if not block_id or not member_id or not zone_id or not meeting_date:
+            flash('All fields are required.', 'error')
+            return redirect(url_for('host'))
+
+        try:
+            meeting_date = datetime.strptime(meeting_date, '%Y-%m-%d')
+        except ValueError:
+            flash('Invalid date format.', 'danger')
+            return redirect(url_for('host'))
+
+        # Check for conflicts
+        existing_meeting = MeetingModel.query.filter_by(block_id=block_id, date=meeting_date).first()
+        if existing_meeting:
+            flash('A meeting is already scheduled for this date.', 'danger')
+            return redirect(url_for('host'))
+
+        # Create and save the new meeting
+        new_meeting = MeetingModel(block_id=block_id, member_id=member_id, zone_id=zone_id, date=meeting_date)
+        db.session.add(new_meeting)
+        db.session.commit()
+
+        flash('Meeting successfully scheduled.', 'success')
+        return redirect(url_for('host'))
+
+    zone_id = request.args.get('zone_id')
+    block_id = request.args.get('block_id')
+    blocks = BlockModel.query.all()
+    zones = ZoneModel.query.filter_by(block_id=block_id).all()
+    
+     
+    if zone_id:
+        members = UserModel.query.filter_by(zone_id=zone_id).all()  
+    else:
+        members = UserModel.query.filter_by(block_id=block_id).all()  
+
+    return render_template('host.html', blocks=blocks,zones=zones, members=members)
+
+# Route to fetch upcoming block meetings
+@main.route('/host/upcoming_meetings', methods=['GET'])
+@login_required
+def upcoming_meetings():
+    date = request.form.get('meeting_date')
+    block = MeetingModel.query.filter_by(date=date).first()
+    zone = MeetingModel.query.filter_by(date=date).first()
+    host = MeetingModel.query.filter_by(date=date).first()
+    when = MeetingModel.query.filter_by(date=date).first()
+    return render_template('host.html',block=block, when=when,host=host,zone=zone)
+
+
+@main.route('/host/block_members',methods=['GET', 'POST'])
+@login_required
+def block_members():
+    block_id = request.args.get('block_id')
+    zone_id = request.args.get('zone_id')
+
+    if not block_id:
+        flash('Block is required.', 'danger')
+        return redirect(url_for('host'))
+
+    blocks = BlockModel.query.all()
+    zones = ZoneModel.query.filter_by(id=block_id).all()
+    members = UserModel.query.filter_by(zone=zone_id).all()
+
+    return render_template(
+        'host.html',
+        blocks=blocks,
+        members=members,zones=zones
+    )
+
+# Route to display contribution status of a member
+@main.route('/host/contribution_status', methods=['GET'])
+@login_required
+def contribution_status():
+    member_id = request.args.get('member_id', current_user.id)
+    contributions = PaymentModel.query.filter_by(member_id=member_id).all()
+
+    total_contributed = sum(contribution.amount for contribution in contributions)
+
+    return render_template(
+        'host.html',
+        contributions=contributions,
+        total_contributed=total_contributed
+    )
+
+# Route to display block participation and contribution analytics
+@main.route('/host/block_analytics', methods=['GET'])
+@login_required
+def block_analytics():
+    block_id = request.args.get('block_id')
+
+    if not block_id:
+        flash('Block ID is required.', 'danger')
+        return redirect(url_for('host'))
+
+    block = BlockModel.query.get(block_id)
+
+    total_meetings = MeetingModel.query.filter_by(block_id=block_id).count()
+    successful_meetings = MeetingModel.query.filter_by(block_id=block_id, status='successful').count()
+    average_participation_rate = successful_meetings / total_meetings if total_meetings > 0 else 0
+
+    return render_template(
+        'host.html',
+        block=block,
+        total_meetings=total_meetings,
+        successful_meetings=successful_meetings,
+        average_participation_rate=average_participation_rate
+    )
+
+
+
 
 @main.route('/block_reports', methods=['GET', 'POST'])
 def block_reports():
@@ -414,3 +532,9 @@ def block_reports():
         contributions=contributions,
         total_contributed=total_contributed
     )    
+
+
+@main.route('/logout')
+def logout():
+    logout_user()
+    return redirect(url_for('home'))
