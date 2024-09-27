@@ -18,7 +18,7 @@ def home():
 
 
 @main.route('/settings', methods=['GET','POST'])
-@roles_accepted('SuperUser','Umbrella_creator','Chairman','Secretary')
+@roles_accepted('Admin','SuperUser','Chairman','Secretary')
 @login_required
 def settings():
    
@@ -44,7 +44,7 @@ def settings():
 
 # Profile Update Route
 @main.route('/settings/update_profile', methods=['GET', 'POST'])
-@roles_required('Umbrella_creator')
+@roles_required('SuperUser')
 def update_profile():
     profile_form = ProfileForm()
 
@@ -85,7 +85,7 @@ def update_profile():
 
 # Committee Addition Route
 @main.route('/settings/add_committee',  methods=['GET','POST'])
-@roles_accepted('Umbrella_creator','SuperUser')
+@roles_accepted('SuperUser','Admin')
 def add_committee():
     committee_form = AddCommitteForm()
 
@@ -139,7 +139,7 @@ def add_committee():
               
 #Umbrella Creation Route
 @main.route('/settings/create_umbrella',  methods=['GET','POST'])
-@roles_accepted('Umbrella_creator','SuperUser')
+@roles_accepted('SuperUser','Admin')
 def create_umbrella():
     umbrella_form = UmbrellaForm()
 
@@ -171,7 +171,7 @@ def create_umbrella():
 
 #Block Creation Route
 @main.route('/settings/create_block', methods=['GET', 'POST'])
-@roles_accepted('Umbrella_creator', 'SuperUser')
+@roles_accepted('SuperUser', 'Admin')
 def create_block():
     block_form = BlockForm()
 
@@ -209,7 +209,7 @@ def create_block():
 
 #Zone Creation Route
 @main.route('/settings/create_zone',  methods=['GET','POST'])
-@roles_accepted('Umbrella_creator','SuperUser')
+@roles_accepted('SuperUser','Admin')
 def create_zone():
     zone_form = ZoneForm()
     
@@ -253,7 +253,7 @@ def create_zone():
 
 #Member Creation Route
 @main.route('/settings/add_member',  methods=['GET','POST'])
-@roles_required('Umbrella_creator','SuperUser','Chairman','Secretary')
+@roles_required('SuperUser','Admin','Chairman','Secretary')
 def add_member():
     member_form = AddMemberForm()
     if member_form.validate_on_submit():
@@ -333,10 +333,10 @@ def save_picture(form_picture):
 
 @main.route('/statistics', methods=['GET'])
 @login_required
-@roles_accepted('Umbrella_creator', 'SuperUser')
+@roles_accepted('SuperUser', 'Admin')
 def statistics():
     # Define the roles to include
-    included_roles = ['Member', 'Chairman', 'Secretary','Umbrella_creator']
+    included_roles = ['Member', 'Chairman', 'Secretary','SuperUser']
 
     # Query the users who have any of the roles in the included_roles list
     total_members = UserModel.query.join(UserModel.roles).filter(Role.name.in_(included_roles)).count()

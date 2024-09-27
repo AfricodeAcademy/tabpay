@@ -16,25 +16,20 @@
               <p>Sign in to continue</p>
             </div>
             <hr />
-            {% with messages =
-              get_flashed_messages(with_categories=true) %} {% if messages %}
-              <div class="container mt-3">
-                {% for category, message in messages %}
-                <div
-                  class="alert alert-{{ category }} alert-dismissible fade show d-flex justify-content-between bg-info "
-                  role="alert"
-                >
-                  {{ message }}
-                  <button
-                    type="button"
-                    class="btn-close"
-                    data-bs-dismiss="alert"
-                    aria-label="Close"
-                  ></button>
-                </div>
-                {% endfor %}
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="container mt-3" id="flash-container">
+              {% for category, message in messages %}
+              <div
+                class="alert alert-{{ category }} alert-dismissible fade show"
+                role="alert"
+              >
+                {{ message }}
               </div>
-              {% endif %} {% endwith %}
+              {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
             <form action="{{ url_for_security('login') }}{{ prop_next() }}" method="post" name="login_user_form">
               {{ login_user_form.hidden_tag() }}
               {{ render_form_errors(login_user_form) }}
@@ -106,5 +101,13 @@
       </div>
     </div>
   </div>
-
+<!-- JavaScript to automatically hide flash messages after 5 seconds -->
+<script>
+  setTimeout(function() {
+    const flashContainer = document.getElementById('flash-container');
+    if (flashContainer) {
+      flashContainer.style.display = 'none';  // Hide the container after 5 seconds
+    }
+  }, 5000);  // 5000 milliseconds = 5 seconds
+</script>
 {% endblock content %}

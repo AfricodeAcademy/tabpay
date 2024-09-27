@@ -36,23 +36,15 @@ def create_app(config_name):
         db.create_all()
 
         #Create roles
-        user_datastore.find_or_create_role(name='SuperUser',description='Account owner')
-        user_datastore.find_or_create_role(name='Umbrella_creator',description='Umbrella creator')
+        user_datastore.find_or_create_role(name='Admin',description='System Administrator')
       
 
         #Create SuperUser
         if not user_datastore.find_user(email='enockbett427@gmail.com'):
             hashed_password = hash_password('123456')
-            user_datastore.create_user(email='enockbett427@gmail.com',password=hashed_password,id_number=12345678,full_name='Captain Bett',roles=[user_datastore.find_role('SuperUser')])
+            user_datastore.create_user(email='enockbett427@gmail.com',password=hashed_password,id_number=12345678,full_name='Captain Bett',roles=[user_datastore.find_role('Admin')])
             db.session.commit()
-            print('Superuser created successfully')
-
-        #Create Umbrella_creator
-        if not user_datastore.find_user(email='umbrella_creator@gmail.com'):
-            hashed_password = hash_password('123456')
-            user_datastore.create_user(email='umbrella_creator@gmail.com',password=hashed_password,id_number=87654321,full_name='Umbrella Creator',roles=[user_datastore.find_role('Umbrella_creator')])
-            db.session.commit()
-            print('Umbrella_creator created successfully')
+            print('Admin created successfully')
 
  
 
