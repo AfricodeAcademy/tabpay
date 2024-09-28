@@ -31,10 +31,21 @@ def settings():
     member_form = AddMemberForm()
     zone_form = ZoneForm()
 
+    user = UserModel.query.filter_by(id=current_user.id).first()
+
+    if user:
+        # Autofill form fields with user data
+        profile_form.full_name.data = user.full_name
+        profile_form.id_number.data = user.id_number  
 
     # Dynamically fetch the umbrella created by the current user
     umbrella = UmbrellaModel.query.filter_by(created_by=current_user.id).first()
-    block_form.parent_umbrella.data = umbrella.name 
+
+    if umbrella:
+        # If the umbrella exists, set its name in the block form
+        block_form.parent_umbrella.data = umbrella.name
+    else:
+        flash('You need to create an umbrella before managing settings!', 'danger')
 
     # Dynamically fetch blocks created by the current user
     blocks = BlockModel.query.filter_by(created_by=current_user.id).all()
