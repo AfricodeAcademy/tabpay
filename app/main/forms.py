@@ -25,8 +25,8 @@ class AddMemberForm(FlaskForm):
     
     
 class ProfileForm(FlaskForm):
-    full_name = StringField('Update Your Full Names',validators=[DataRequired(), Length(max=100,min=10)],render_kw={'placeholder':'John Doe'})
-    id_number = IntegerField('Update Your ID',validators=[DataRequired()],render_kw={'placeholder':'xxxxxxxx'})
+    full_name = StringField('Update Your Full Names',validators=[DataRequired(), Length(max=100,min=10)])
+    id_number = IntegerField('Your ID Number',validators=[DataRequired()])
     password = PasswordField('Password',validators=[DataRequired(), Length(max=100,min=6)],render_kw={'placeholder':'******'})
     confirm_password = PasswordField('Confirm Password',validators=[DataRequired(), Length(max=100,min=6),EqualTo('password',message="Passwords do not match!")],render_kw={'placeholder':'******'})
     submit = SubmitField('SUBMIT')
