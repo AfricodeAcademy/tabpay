@@ -103,6 +103,10 @@ class BlockModel(db.Model):
     meetings = db.relationship('MeetingModel', backref='hosting_block', lazy=True)
 
 
+
+    def __repr__(self):
+        return f"<Zone {self.name}>"
+    
     
 
    
