@@ -2,13 +2,13 @@ from flask import Blueprint, render_template, redirect, url_for, flash,request
 from flask_security import login_required, roles_required, current_user, logout_user,roles_accepted
 from flask_security.utils import hash_password
 from ..utils import db
-from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm
-from ..api.api import UserModel, UmbrellaModel, BlockModel, ZoneModel, user_datastore,Role,PaymentModel
+from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm
+from ..api.api import UserModel, UmbrellaModel, BlockModel, ZoneModel, user_datastore,Role,PaymentModel,MeetingModel
 from PIL import Image
 import os
 import secrets
 from app import create_app as app
-from sqlalchemy import func
+from datetime import datetime
 
 
 main = Blueprint('main', __name__)
@@ -366,15 +366,100 @@ def manage_contribution():
     return render_template('manage_contribution.html', title='Dashboard | Manage Contributions')
 
 
-@main.route('/host', methods=['GET'])
+@main.route('/host', methods=['GET','POST'])
 def host():
-    return render_template('host.html', title='Dashboard | Host')
+    schedule_form = ScheduleForm()
+
+     # Dynamically fetch the blocks,zones & members created by the current user
+    blocks = BlockModel.query.filter_by(created_by=current_user.id).all()
+    schedule_form.block.choices = [(str(block.id), block.name) for block in blocks]
+
+    zones = ZoneModel.query.filter_by(created_by=current_user.id).all()
+    schedule_form.zone.choices = [(str(zone.id), zone.name) for zone in zones]
+
+    members = UserModel.query.filter_by(zone=schedule_form.zone.data).all()
+    schedule_form.member.choices = [(str(member.id), member.full_name) for member in members]
+
+    block = schedule_form.block.data
+    
+    block = MeetingModel.query.filter_by(block_id=block).first()
+    zone = MeetingModel.query.filter_by(block_id=block).first()
+    host = MeetingModel.query.filter_by(block_id=block).first()
+    when = MeetingModel.query.filter_by(block_id=block).first()
+    return render_template('host.html', title='Dashboard | Host', user=current_user,schedule_form=schedule_form,zones=zones, members=members,blocks=blocks,block=block, when=when,host=host,zone=zone)
 
 
-@main.route('/logout')
-def logout():
-    logout_user()
-    return redirect(url_for('home'))
+# Route to schedule a block meeting
+@main.route('/host/schedule_meeting', methods=['GET', 'POST'])
+@login_required
+def schedule_meeting():
+    schedule_form = ScheduleForm()
+
+    blocks = BlockModel.query.filter_by(created_by=current_user.id).all()
+    schedule_form.block.choices = [(str(block.id), block.name) for block in blocks]
+
+    zones = ZoneModel.query.filter_by(created_by=current_user.id).all()
+    schedule_form.zone.choices = [(str(zone.id), zone.name) for zone in zones]
+
+    members = UserModel.query.filter_by(zone=schedule_form.zone.data).all()
+    schedule_form.member.choices = [(str(member.id), member.full_name) for member in members]
+    
+    if schedule_form.validate_on_submit():
+
+        # Dynamically fetch the blocks created by the current user
+        blocks = BlockModel.query.filter_by(created_by=current_user.id).all()
+        schedule_form.block.choices = [(str(block.id), block.name) for block in blocks]
+
+        if request.method == 'POST':
+            # Only filter zones if a block has been selected
+            if schedule_form.block.data:
+                zones = ZoneModel.query.filter_by(created_by=current_user.id).all()
+                schedule_form.zone.choices = [(str(zone.id), zone.name) for zone in zones]
+            else:
+                zones = ZoneModel.query.all()
+
+            # Only filter members if a zone has been selected
+            if schedule_form.zone.data:
+                roles = Role.query.filter_by(role='Member').all()
+                members = UserModel.query.filter_by(zone=schedule_form.zone.data,roles=roles).all()
+                schedule_form.member.choices = [(str(member.id), member.full_name) for member in members]
+            else:
+                roles = Role.query.filter_by(name='Member').all()
+                members = UserModel.query.filter_by(roles=roles).all()
+
+     
+            messages = []
+            if not blocks:
+                messages.append('No blocks available. Please go to the settings page to create one.')
+            if not zones:
+                messages.append('No zones available for the selected block. Please add zones in settings.')
+            if not members:
+                messages.append('No members available for the selected zone. Please add members in settings.')
+
+            if messages:
+                flash(' '.join(messages), 'danger')
+                return redirect(url_for('main.settings'))
+
+            new_meeting = MeetingModel(
+                block_id=schedule_form.block.data,
+                zone_id=schedule_form.zone.data,
+                members=schedule_form.members.data,
+                date=schedule_form.date.data,
+            )
+            db.session.add(new_meeting)
+            db.session.commit()
+            flash('Meeting scheduled successfully!', 'success')
+            return redirect(url_for('main.host'))
+    else:
+        # If we reach this point, the form was not validated
+        for field, errors in schedule_form.errors.items():
+            for error in errors:
+                flash(f'Error in {field}: {error}', 'danger')
+        
+        return redirect(url_for('main.host'))
+        
+
+
 
 @main.route('/block_reports', methods=['GET', 'POST'])
 def block_reports():

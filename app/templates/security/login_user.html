@@ -1,5 +1,6 @@
 {% extends "security/base.html" %}
 {% from "security/_macros.html" import render_field_with_errors, render_field, render_form_errors, render_field_errors, prop_next %}
+{% block title %}Tabpay | Login {% endblock %}
 
 {% block content %}
 </div>
@@ -65,10 +66,7 @@
               </div>
              
               </div>
-              <div class="d-flex justify-content-center">              
-                  <a href="{{ url_for_security('send_confirmation') }}" style="color: green ;">{{ _fsdomain('Confirm account') }}</a>
-              </div>
-              
+             
             </form>
 
             {% if security.webauthn %}

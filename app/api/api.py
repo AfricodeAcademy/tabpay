@@ -59,7 +59,8 @@ class UserModel(db.Model, UserMixin):
     roles = db.relationship('Role', secondary=roles_users, backref=db.backref('users', lazy='dynamic'))
     messages = db.relationship('CommunicationModel', backref='author', lazy=True)
     payments = db.relationship('PaymentModel', backref='payer', lazy=True)
-    
+    organized_meetings = db.relationship('MeetingModel', backref='meeting_organizer', lazy=True)
+
     # Many-to-many relationship with blocks
     block_memberships = db.relationship('BlockModel', secondary=member_blocks, backref=db.backref('users', lazy=True))
 
@@ -99,6 +100,13 @@ class BlockModel(db.Model):
     zones = db.relationship('ZoneModel', backref='parent_block', lazy=True)
     payments = db.relationship('PaymentModel', backref='block_payments', lazy=True)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+    meetings = db.relationship('MeetingModel', backref='hosting_block', lazy=True)
+
+
+
+    def __repr__(self):
+        return f"<Zone {self.name}>"
+    
     
 
    
@@ -109,10 +117,28 @@ class ZoneModel(db.Model):
     name = db.Column(db.String(20), nullable=False)
     parent_block_id = db.Column(db.Integer, db.ForeignKey("blocks.id"), nullable=False)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
+                           
+    meetings = db.relationship('MeetingModel', backref='host_zone', lazy=True)
 
     
     def __repr__(self):
         return f"<Zone {self.name}>"
+    
+
+
+    
+class MeetingModel(db.Model):
+     _tablename_ = 'meetings'
+     id = db.Column(db.Integer, primary_key=True)
+     block_id = db.Column(db.Integer, db.ForeignKey('blocks.id'), nullable=False)
+     zone_id = db.Column(db.Integer, db.ForeignKey('zones.id'), nullable=False)
+     organizer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)  # the user who created the meeting
+     date = db.Column(db.DateTime, nullable=False)
+
+        
+     def _repr_(self):
+         return f"<Meeting {self.id} on {self.date}>"
+     
 
 class PaymentModel(db.Model):
     __tablename__ = 'payments'

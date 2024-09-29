@@ -37,14 +37,21 @@ def create_app(config_name):
 
         #Create roles
         user_datastore.find_or_create_role(name='Admin',description='System Administrator')
-      
+        user_datastore.find_or_create_role(name='SuperUser',description='Account Owner')
 
-        #Create SuperUser
+
+        #Create Admin
         if not user_datastore.find_user(email='enockbett427@gmail.com'):
             hashed_password = hash_password('123456')
             user_datastore.create_user(email='enockbett427@gmail.com',password=hashed_password,id_number=12345678,full_name='Captain Bett',roles=[user_datastore.find_role('Admin')])
             db.session.commit()
             print('Admin created successfully')
+
+        if not user_datastore.find_user(email='kiprononicholas131@gmail.com'):
+            hashed_password = hash_password('123456')
+            user_datastore.create_user(email='kiprononicholas131@gmail.com',password=hashed_password,id_number=87654321,full_name='Nick Rono',roles=[user_datastore.find_role('SuperUser')])
+            db.session.commit()
+            print('SuperUser created successfully')
 
  
 

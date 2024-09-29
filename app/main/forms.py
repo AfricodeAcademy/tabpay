@@ -1,10 +1,10 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SelectField, IntegerField, SubmitField
+from wtforms import StringField, PasswordField, SelectField, IntegerField, SubmitField,DateField
 from wtforms.validators import DataRequired, Length, ValidationError,EqualTo
 from ..api.api import UserModel
 
 class AddMemberForm(FlaskForm):
-    full_name = StringField('Member Full Name',validators=[DataRequired(), Length(max=100,min=10)],render_kw={'placeholder':'John Doe'})
+    full_name = StringField('Member Full Name',validators=[DataRequired(), Length(max=100,min=5)],render_kw={'placeholder':'John Doe'})
     id_number = IntegerField('Member ID Number',validators=[DataRequired()],render_kw={'placeholder':'xxxxxxxx'})
     phone_number = IntegerField('Phone Number',validators=[DataRequired()],render_kw={'placeholder':'0700000000'})
     member_zone = SelectField('Member Zone', validators=[DataRequired()])
@@ -66,7 +66,6 @@ class UmbrellaForm(FlaskForm):
 class BlockForm(FlaskForm):
     block_name = StringField('Block Name',validators=[DataRequired(), Length(max=100,min=4)],render_kw={'placeholder':'Block 5'})
     parent_umbrella = StringField('Parent Umbrella', render_kw={'readonly': True}) 
-
     submit = SubmitField('SUBMIT')
 
 
@@ -77,3 +76,14 @@ class ZoneForm(FlaskForm):
     submit = SubmitField('SUBMIT')
 
     
+# END OF SETTINGS FORM
+
+
+# START OF HOST FORM
+class ScheduleForm(FlaskForm):
+    block =  SelectField('Select the relevant Block',validators=[DataRequired()])
+    zone =  SelectField('Select the zone',validators=[DataRequired()])
+    member =  SelectField('Select the member',validators=[DataRequired()])
+    date = DateField('Pick the date',validators=[DataRequired()])
+    submit = SubmitField('Submit')
+
