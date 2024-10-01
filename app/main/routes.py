@@ -3,7 +3,7 @@ from flask_security import login_required, roles_required, current_user, logout_
 from flask_security.utils import hash_password
 from ..utils import db
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm
-from ..api.api import UserModel, UmbrellaModel, BlockModel, ZoneModel, user_datastore,Role,PaymentModel,MeetingModel
+from ..api.api import UserModel, UmbrellaModel, BlockModel, ZoneModel, user_datastore,Role,PaymentModel,MeetingModel,BankModel
 from PIL import Image
 import os
 import secrets
@@ -54,6 +54,10 @@ def settings():
     # Dynamically fetch zones created by the current user
     zones = ZoneModel.query.filter_by(created_by=current_user.id).all()
     member_form.member_zone.choices = [(str(zone.id), zone.name) for zone in zones]
+
+    banks = BankModel.query.all()
+    member_form.bank.choices = [(str(bank.id), bank.name) for bank in banks]
+
     
     # Render the settings page
     return render_template('settings.html', title='Dashboard | Settings',
@@ -68,7 +72,7 @@ def settings():
 
 # Profile Update Route
 @main.route('/settings/update_profile', methods=['GET', 'POST'])
-@roles_required('Admin','SuperUser')
+@roles_accepted('Admin', 'SuperUser')
 def update_profile():
     profile_form = ProfileForm()
 
@@ -82,7 +86,7 @@ def update_profile():
             profile_form.id_number.data = user.id_number  # The id_number is read-only in the form
         else:
             flash('User not found!', 'danger')
-            return redirect(url_for('main.settings'))
+            return redirect(url_for('main.settings')) 
 
     # Handle POST request - update profile
     if profile_form.validate_on_submit():
@@ -97,15 +101,14 @@ def update_profile():
             
             db.session.commit()
             flash('Profile updated successfully!', 'success')
+            return redirect(url_for('main.settings'))  
         else:
             flash('User not found!', 'danger')
-    
-    elif request.method == 'POST':  # If form validation fails
-        error_messages = [f"{field.capitalize()}: {error}" for field, errors in profile_form.errors.items() for error in errors]
-        for message in error_messages:
-            flash(message, 'danger')
-    
+            return redirect(url_for('main.settings')) 
 
+    
+    
+  
 
 # Committee Addition Route
 @main.route('/settings/add_committee',  methods=['GET','POST'])
@@ -134,9 +137,7 @@ def add_committee():
             if existing_role in user.roles:
                 flash(f'{user.full_name} is already a {role_name}!', 'danger')
             else:
-                # # Dynamically populate the form fields with the user's data
-                # committee_form.full_name.data = user.full_name
-                # committee_form.phone_number.data = user.phone_number
+
 
                 # Assign the committee role to the user
                 role = user_datastore.find_or_create_role(committee_form.role.data)
@@ -303,6 +304,10 @@ def add_member():
         # Dynamically fetch zones created by the current user
         zones = ZoneModel.query.filter_by(created_by=current_user.id).all()
         member_form.member_zone.choices = [(str(zone.id), zone.name) for zone in zones]
+
+        banks = BankModel.query.all()
+        member_form.bank.choices = [(str(bank.id), bank.name) for bank in banks]
+
 
         new_user = UserModel(
             full_name=member_form.full_name.data,

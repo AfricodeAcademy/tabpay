@@ -402,7 +402,9 @@ table {
     padding: 0;
     padding-bottom: 100px;
   }
-
+  .logo {
+    width: 150px;
+  }
   .dashboard-h1 {
     font-size: xx-large;
   }

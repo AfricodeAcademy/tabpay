@@ -46,6 +46,7 @@
         <img
           src="{{url_for('static', filename='images/logo.png')}}"
           alt="TabPay Logo"
+          class="logo"
         />
       </div>
       <a href="{{ url_for('main.home') }}" class="text-dark">
@@ -65,7 +66,11 @@
       style="background-color: white"
     >
       <div class="offcanvas-header">
-        <h5 class="offcanvas-title" id="offcanvasSidebarLabel">Menu</h5>
+        <img
+          src="{{url_for('static',filename='images/logo.png')}}"
+          alt="TabPay Logo"
+          style="width: 120px"
+        />
         <button
           type="button"
           class="btn-close"
@@ -74,13 +79,6 @@
         ></button>
       </div>
       <div class="offcanvas-body">
-        <div class="tabpay-logo mb-2">
-          <img
-            src="{{url_for('static',filename='images/logo.png')}}"
-            alt="TabPay Logo"
-          />
-        </div>
-
         <a
           href="{{url_for('main.statistics')}}"
           style="background-color: {% if 'Dashboard' in title %}rgba(70, 162, 16, 0.873) {% endif %}; 

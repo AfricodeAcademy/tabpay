@@ -32,12 +32,19 @@ def create_app(config_name):
     from app.api import api_bp
     app.register_blueprint(api_bp, url_prefix='/api/v1')
 
+    
+
     with app.app_context():
         db.create_all()
 
         #Create roles
         user_datastore.find_or_create_role(name='Admin',description='System Administrator')
-        user_datastore.find_or_create_role(name='SuperUser',description='Account Owner')
+        user_datastore.find_or_create_role(name='SuperUser',description='Account Owner and Umbrella creator')
+        user_datastore.find_or_create_role(name='Chairman',description='Block chairman')
+        user_datastore.find_or_create_role(name='Secretary',description='Block secretary')
+        user_datastore.find_or_create_role(name='Member',description='Regular member')
+
+
 
 
         #Create Admin
@@ -46,12 +53,6 @@ def create_app(config_name):
             user_datastore.create_user(email='enockbett427@gmail.com',password=hashed_password,id_number=12345678,full_name='Captain Bett',roles=[user_datastore.find_role('Admin')])
             db.session.commit()
             print('Admin created successfully')
-
-        if not user_datastore.find_user(email='kiprononicholas131@gmail.com'):
-            hashed_password = hash_password('123456')
-            user_datastore.create_user(email='kiprononicholas131@gmail.com',password=hashed_password,id_number=87654321,full_name='Nick Rono',roles=[user_datastore.find_role('SuperUser')])
-            db.session.commit()
-            print('SuperUser created successfully')
 
  
 

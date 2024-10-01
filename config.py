@@ -11,7 +11,7 @@ class Config:
     SECURITY_POST_LOGIN_VIEW = '/statistics'
     SECURITY_POST_LOGOUT_VIEW = '/'
     SECURITY_POST_REGISTER_VIEW = '/login'
-    # SECURITY_CONFIRMABLE = True
+    SECURITY_CONFIRMABLE = True
     SECURITY_RECOVERABLE = True
 
 
@@ -35,6 +35,9 @@ class Config:
 class DevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///tabpay.db'
+    # SQLALCHEMY_DATABASE_URI = 'postgresql://captain:captain@localhost:5432/tabpay'
+
+
 
 class ProductionConfig(Config):
     DEBUG = False
