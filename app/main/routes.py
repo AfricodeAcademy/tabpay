@@ -124,7 +124,7 @@ def add_committee():
             # Check if the user has the "Member" role
             member_role = Role.query.filter_by(name='Member').first()
             if member_role not in user.roles:
-                flash(f'{user.full_name} must first have the "Member" role before being assigned a committee role.', 'danger')
+                flash(f'{user.full_name} must first be a member before being assigned a committee role.', 'danger')
                 return redirect(url_for('main.settings'))
         
             # Check if the user is already a committee member
@@ -134,10 +134,6 @@ def add_committee():
             if existing_role in user.roles:
                 flash(f'{user.full_name} is already a {role_name}!', 'danger')
             else:
-                # # Dynamically populate the form fields with the user's data
-                # committee_form.full_name.data = user.full_name
-                # committee_form.phone_number.data = user.phone_number
-
                 # Assign the committee role to the user
                 role = user_datastore.find_or_create_role(committee_form.role.data)
                 user_datastore.add_role_to_user(user, role)
