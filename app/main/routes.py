@@ -3,7 +3,7 @@ from flask_security import login_required, roles_required, current_user, logout_
 from flask_security.utils import hash_password
 from ..utils import db
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm
-from ..api.api import UserModel, UmbrellaModel, BlockModel, ZoneModel, user_datastore,Role,PaymentModel,MeetingModel
+from ..api.api import UserModel, UmbrellaModel, BlockModel, ZoneModel, user_datastore,Role,PaymentModel,MeetingModel,BankModel
 from PIL import Image
 import os
 import secrets
@@ -54,6 +54,11 @@ def render_settings_page(active_tab=None, error=None):
     zones = ZoneModel.query.filter_by(created_by=current_user.id).all()
     member_form.member_zone.choices = [(str(zone.id), zone.name) for zone in zones]
 
+    banks = BankModel.query.all()
+    member_form.bank.choices = [(str(bank.id), bank.name) for bank in banks]
+
+    
+    # Render the settings page
     return render_template('settings.html', title='Dashboard | Settings',
                            profile_form=profile_form, 
                            umbrella_form=umbrella_form,
@@ -264,6 +269,10 @@ def handle_member_creation():
             flash('User with that ID already exists', 'danger')
             return redirect(url_for('main.settings', active_tab='member'))
         else:
+        banks = BankModel.query.all()
+        member_form.bank.choices = [(str(bank.id), bank.name) for bank in banks]
+
+
             new_user = UserModel(
             full_name=member_form.full_name.data,
             id_number=member_form.id_number.data,

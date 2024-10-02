@@ -1,15 +1,15 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SelectField, IntegerField, SubmitField,DateField
-from wtforms.validators import DataRequired, Length, ValidationError,EqualTo
+from wtforms.validators import DataRequired, Length, ValidationError,EqualTo,NumberRange
 from ..api.api import UserModel
 from datetime import datetime
 
 class AddMemberForm(FlaskForm):
     full_name = StringField('Member Full Name',validators=[DataRequired(), Length(max=100,min=5)],render_kw={'placeholder':'John Doe'})
-    id_number = IntegerField('Member ID Number',validators=[DataRequired()],render_kw={'placeholder':'xxxxxxxx'})
-    phone_number = IntegerField('Phone Number',validators=[DataRequired()],render_kw={'placeholder':'0700000000'})
+    id_number = IntegerField('Member ID Number',validators=[DataRequired(),NumberRange(min=10000000, max=99999999, message="ID number must be exactly 8 digits.")],render_kw={'placeholder':'xxxxxxxx'})
+    phone_number = StringField('Phone Number',validators=[DataRequired(),Length(min=10, max=16, message="Phone number must be between 10 and 16 digits.")],render_kw={'placeholder':'0700000000'})
     member_zone = SelectField('Member Zone', validators=[DataRequired()])
-    bank = SelectField('Select Bank', choices=[('Equity', 'Equity'), ('DTB', 'DTB')],validators=[DataRequired()])
+    bank = SelectField('Select Bank',validators=[DataRequired()])
     acc_number = IntegerField('Bank Account Number',validators=[DataRequired()],render_kw={'placeholder':'xxxxxx'})
     submit = SubmitField('SAVE')
     
@@ -19,31 +19,31 @@ class AddMemberForm(FlaskForm):
             raise ValidationError('Member ID already exists')
     
     def validate_phone_number(self, field):
-        user = UserModel.query.filter_by(phone_number=field.data).first()
+        user = UserModel.query.filter_by(phone_number=str(field.data)).first()
         if user:
             raise ValidationError('Member phone number already exists')
         
     
     
 class ProfileForm(FlaskForm):
-    full_name = StringField('Update Your Full Names',validators=[DataRequired(), Length(max=100,min=10)])
-    id_number = IntegerField('Your ID Number',validators=[DataRequired()])
-    password = PasswordField('Password',validators=[DataRequired(), Length(max=100,min=6)],render_kw={'placeholder':'******'})
-    confirm_password = PasswordField('Confirm Password',validators=[DataRequired(), Length(max=100,min=6),EqualTo('password',message="Passwords do not match!")],render_kw={'placeholder':'******'})
+    full_name = StringField('Update Your Full Names',validators=[ Length(max=100,min=10)])
+    id_number = IntegerField('Your ID Number')
+    password = PasswordField('Password',validators=[ Length(max=100,min=6)],render_kw={'placeholder':'******'})
+    confirm_password = PasswordField('Confirm Password',validators=[ Length(max=100,min=6),EqualTo('password',message="Passwords do not match!")],render_kw={'placeholder':'******'})
     submit = SubmitField('SUBMIT')
 
-    def validate_id_number(self,field):
-        user = UserModel.query.filter_by(id_number=field.data).first()
-        if user:
-            raise ValidationError('Member ID already exists')
+    # def validate_id_number(self,field):
+    #     user = UserModel.query.filter_by(id_number=field.data).first()
+    #     if user:
+    #         raise ValidationError('Member ID already exists')
     
 
 
 class AddCommitteForm(FlaskForm):
     full_name = StringField('Committee Full Name',validators=[DataRequired(), Length(max=100,min=10)],render_kw={'placeholder':'e.g John Doe'})
-    id_number = IntegerField('Their ID Number',validators=[DataRequired()],render_kw={'placeholder':'xxxxxxxx'})
+    id_number = IntegerField('Their ID Number',validators=[DataRequired(),NumberRange(min=10000000, max=99999999, message="ID number must be exactly 8 digits.")],render_kw={'placeholder':'xxxxxxxx'})
     role = SelectField('Role', choices=[('Chairman', 'Chairman'), ('Secretary', 'Secretary')],validators=[DataRequired(message='Please select a valid role!')])
-    phone_number = IntegerField('Phone Number',validators=[DataRequired()],render_kw={'placeholder':'0700000000'}) 
+    phone_number = StringField('Phone Number',validators=[DataRequired(),Length(min=10, max=16, message="Phone number must be between 10 and 16 digits.")],render_kw={'placeholder':'0700000000'}) 
     submit = SubmitField('SUBMIT')
 
     def validate_id_number(self,field):
@@ -52,7 +52,7 @@ class AddCommitteForm(FlaskForm):
             raise ValidationError('Member ID already exists')
     
     def validate_phone_number(self, field):
-        user = UserModel.query.filter_by(phone_number=field.data).first()
+        user = UserModel.query.filter_by(phone_number=str(field.data)).first()
         if user:
             raise ValidationError('Member phone number already exists')
         

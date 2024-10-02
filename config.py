@@ -35,6 +35,9 @@ class Config:
 class DevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///tabpay.db'
+    # SQLALCHEMY_DATABASE_URI = 'postgresql://captain:captain@localhost:5432/tabpay'
+
+
 
 class ProductionConfig(Config):
     DEBUG = False
