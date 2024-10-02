@@ -1,426 +1,462 @@
 {% extends "base.html" %} {% block heading %}Community Umbrella settings{%
-endblock %} {% block content %}
-
-<!-- Dashboard Content -->
-<div class="dashboard mt-2">
-  <div class="container">
-    <div class="dashboard-paragraph">
-      <p class="mb-4 fs-6">
-        Configure your user account with ease by managing your profile, setting
-        up your community umbrella, defining blocks under that umbrella,
-        establishing zones within each block, adding members to their respective
-        zones, inviting and managing committee members.
-      </p>
-    </div>
-
-    <div class="dashboard-content">
-      <!-- Tab Navigation -->
-      <ul class="nav nav-tabs p-3">
-        <li class="nav-item">
-          <a class="nav-link active" data-bs-toggle="tab" href="#profile"
-            >Profile</a
-          >
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" data-bs-toggle="tab" href="#committee"
-            >Add Committee</a
-          >
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" data-bs-toggle="tab" href="#umbrella"
-            >Community Umbrella</a
-          >
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" data-bs-toggle="tab" href="#block"
-            >Block Definition</a
-          >
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" data-bs-toggle="tab" href="#zone"
-            >Zone Definition</a
-          >
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" data-bs-toggle="tab" href="#members"
-            >Add Members</a
-          >
-        </li>
-      </ul>
-
-      <!-- Tab Panes -->
-      <div class="tab-content d-flex justify-content-center">
-        <!-- PROFIILE -->
-        <div id="profile" class="tab-pane fade show active">
-          <form method="post" action="{{url_for('main.update_profile')}}">
-            {{ profile_form.hidden_tag() }}
-            <div class="row mb-5 mt-2">
-              <div class="col-md-6">
-                <div class="mb-3">
-                    {{ profile_form.full_name.label }} {{ profile_form.full_name(class="input") }}  
-                   
-                
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="mb-3">
-                  {{ profile_form.id_number.label }} {{ profile_form.id_number(class="input",readonly=True) }}     
-          
-                </div>
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="col-md-6">
-                <div class="mb-3">
-                  {{ profile_form.password.label }} {{ profile_form.password(class="input") }}      
-          
-
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="mb-3">
-                  {{ profile_form.confirm_password.label }} {{ profile_form.confirm_password(class="input") }}
-                  
-          
-                </div>
-              </div>
-            </div>
-
-          {{ profile_form.submit(class="submit-btn") }}            
-          {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-          <div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
-            {% for category, message in messages %}
-            <div
-              class="alert alert-{{ category }} alert-dismissible fade show"
-              role="alert"
+  endblock %} {% block content %}
+  
+  <!-- Dashboard Content -->
+  <div class="dashboard mt-2">
+    <div class="container">
+      <div class="dashboard-paragraph">
+        <p class="mb-4 fs-6">
+          Configure your user account with ease by managing your profile, setting
+          up your community umbrella, defining blocks under that umbrella,
+          establishing zones within each block, adding members to their respective
+          zones, inviting and managing committee members.
+        </p>
+      </div>
+  
+      <div class="dashboard-content">
+        <!-- Tab Navigation -->
+        <ul class="nav nav-tabs p-3">
+          <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#profile"
+              >Profile</a
             >
-              {{ message }}
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#committee"
+              >Add Committee</a
+            >
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#umbrella"
+              >Community Umbrella</a
+            >
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#block"
+              >Block Definition</a
+            >
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#zone"
+              >Zone Definition</a
+            >
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#members"
+              >Add Members</a
+            >
+          </li>
+        </ul>
+  
+        <!-- Tab Panes -->
+        <div class="tab-content d-flex justify-content-center">
+          <!-- PROFIILE -->
+          <div id="profile" class="tab-pane fade show active">
+            <div class="row">
+              <div class="col-md-3"> <!-- Adjust this column width for the left section -->
+                <div class="profile-box text-center" style="border: 2px solid #333; padding: 20px; border-radius: 5px; height: 100%;"> <!-- Darkened border, fills full height -->
+                  <img src="{{ url_for('static', filename='profile.jpg') }}" alt="Profile image" class="rounded-circle mb-2" id="profilePic" width="150" height="150">
+                  <div class="mt-2">
+                    <strong>ENOCK BENZ</strong><br>
+                    bensonkings81@gmail.com
+                  </div>
+                  <label for="profilePicInput" class="edit-icon" style="cursor:pointer;">
+                    <i class="fa fa-pencil" aria-hidden="true"></i> <!-- Pen icon for updating the image -->
+                  </label>
+                  <input type="file" id="profilePicInput" style="display:none;" accept="image/*" onchange="updateProfilePicture(event)">
+                </div>
+              </div>
+            
+              <div class="col-md-1" style="margin-left: 20px;"></div> <!-- Reasonable space between the sections -->
+            
+              <div class="col-md-7"> <!-- Make this section fill the remaining space -->
+                <div class="form-box" style="border: 2px solid #333; padding: 20px; border-radius: 10px; height: 100%;"> <!-- Darkened border, fills full height -->
+                  <form method="post" action="{{ url_for('main.update_profile') }}">
+                    {{ profile_form.hidden_tag() }}
+                    <div class="row mb-5 mt-2">
+                      <div class="col-md-6">
+                        <div class="mb-3">
+                          {{ profile_form.full_name.label }} 
+                          {{ profile_form.full_name(class="input") }}
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="mb-3">
+                          {{ profile_form.id_number.label }} 
+                          {{ profile_form.id_number(class="input", readonly=True) }}
+                        </div>
+                      </div>
+                    </div>
+            
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="mb-3">
+                          {{ profile_form.password.label }} 
+                          {{ profile_form.password(class="input") }}
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="mb-3">
+                          {{ profile_form.confirm_password.label }} 
+                          {{ profile_form.confirm_password(class="input") }}
+                        </div>
+                      </div>
+                    </div>
+            
+                    {{ profile_form.submit(class="submit-btn") }}
+            
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                    <div class="container mt-3" id="flash-container" style="max-width: 500px;">
+                      {% for category, message in messages %}
+                      <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                      </div>
+                      {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% endwith %}
+                  </form>
+                </div>
+              </div>
             </div>
-            {% endfor %}
+            
+            <script>
+              function updateProfilePicture(event) {
+                const profilePic = document.getElementById('profilePic');
+                const input = event.target;
+            
+                if (input.files && input.files[0]) {
+                  const reader = new FileReader();
+                  reader.onload = function(e) {
+                    profilePic.src = e.target.result; // Update the profile picture with the selected image
+                  };
+                  reader.readAsDataURL(input.files[0]);
+                }
+              }
+            </script>
+            
           </div>
-          {% endif %}
-          {% endwith %}
-          </form>
-        </div>
-        <!-- END OF PROFIILE -->
-
-        <!-- COMMITTEE TAB -->
-        <div id="committee" class="tab-pane fade">
-          <form method="post" action="{{url_for('main.add_committee')}}">
-            {{ committee_form.hidden_tag() }}
-            <div class="row mb-5 mt-2">
-              <div class="col-md-6">
-                <div class="mb-3">
-                  {{ committee_form.full_name.label }}
-                   {{ committee_form.full_name(class="input", readonly=True) }}
+          <!-- END OF PROFIILE -->
+  
+          <!-- COMMITTEE TAB -->
+          <div id="committee" class="tab-pane fade">
+            <form method="post" action="{{url_for('main.add_committee')}}">
+              {{ committee_form.hidden_tag() }}
+              <div class="row mb-5 mt-2">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    {{ committee_form.full_name.label }}
+                     {{ committee_form.full_name(class="input", readonly=True) }}
+                  
+                  
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    {{ committee_form.id_number.label }} 
+                    {{ committee_form.id_number(class="input") }}
+                  
+  
+                  </div>
+                </div>
+              </div>
+  
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="role">{{ committee_form.role.label }}</label>
+                    <select class="select" id="role" name="role">
+                        <option value="" disabled selected>Please select a role</option>  <!-- Disabled, placeholder option -->
+                        {% for value, label in committee_form.role.choices %}
+                            <option value="{{ value }}" {% if committee_form.role.data == value %} selected {% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    {{ committee_form.phone_number.label }} {{ committee_form.phone_number(class="input",readonly=True) }}
                 
-                
+  
+                  </div>
                 </div>
               </div>
-              <div class="col-md-6">
-                <div class="mb-3">
-                  {{ committee_form.id_number.label }} 
-                  {{ committee_form.id_number(class="input") }}
-                
-
-                </div>
-              </div>
-            </div>
-
-            <div class="row">
-              <div class="col-md-6">
-                <div class="mb-3">
-                  <label for="role">{{ committee_form.role.label }}</label>
-                  <select class="select" id="role" name="role">
-                      <option value="" disabled selected>Please select a role</option>  <!-- Disabled, placeholder option -->
-                      {% for value, label in committee_form.role.choices %}
-                          <option value="{{ value }}" {% if committee_form.role.data == value %} selected {% endif %}>
-                              {{ label }}
-                          </option>
-                      {% endfor %}
-                  </select>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="mb-3">
-                  {{ committee_form.phone_number.label }} {{ committee_form.phone_number(class="input",readonly=True) }}
-              
-
-                </div>
-              </div>
-            </div>
-
-            {{ committee_form.submit(class="submit-btn") }}            
-     {% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}
-<div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
-  {% for category, message in messages %}
-  <div
-    class="alert alert-{{ category }} alert-dismissible fade show"
-    role="alert"
-  >
-    {{ message }}
+  
+              {{ committee_form.submit(class="submit-btn") }}            
+       {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
+    {% for category, message in messages %}
+    <div
+      class="alert alert-{{ category }} alert-dismissible fade show"
+      role="alert"
+    >
+      {{ message }}
+    </div>
+    {% endfor %}
   </div>
-  {% endfor %}
-</div>
-{% endif %}
-{% endwith %}
-          </form>
-        </div>
-        <!--/ COMMITTEE TAB -->
-
-        <!-- COMMUNITY UMBRELLA TAB -->
-        <div id="umbrella" class="tab-pane fade">
-          <p class="p-3">
-            Establish your community's foundation by creating overarching
-            umbrellas that represent geographic areas, such as counties,
-            constituencies, or wards. For example, 'Bomet East' becomes a
-            top-level umbrella, under which you can create distinct blocks,
-            fostering collaboration and organization at the local level.
-          </p>
-          <form method="post" action="{{url_for('main.create_umbrella')}}">
-            {{ umbrella_form.hidden_tag() }}
-
-            <div class="row p-2 d-flex justify-content-center">
-              <div class="col-md-4">
-                <div class="mb-3">
-                  {{ umbrella_form.umbrella_name.label }}{% if
-                    umbrella_form.umbrella_name.errors %}  {{ umbrella_form.umbrella_name(class="input is-invalid") }}
+  {% endif %}
+  {% endwith %}
+            </form>
+          </div>
+          <!--/ COMMITTEE TAB -->
+  
+          <!-- COMMUNITY UMBRELLA TAB -->
+          <div id="umbrella" class="tab-pane fade">
+            <p class="p-3">
+              Establish your community's foundation by creating overarching
+              umbrellas that represent geographic areas, such as counties,
+              constituencies, or wards. For example, 'Bomet East' becomes a
+              top-level umbrella, under which you can create distinct blocks,
+              fostering collaboration and organization at the local level.
+            </p>
+            <form method="post" action="{{url_for('main.create_umbrella')}}">
+              {{ umbrella_form.hidden_tag() }}
+  
+              <div class="row p-2 d-flex justify-content-center">
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    {{ umbrella_form.umbrella_name.label }}{% if
+                      umbrella_form.umbrella_name.errors %}  {{ umbrella_form.umbrella_name(class="input is-invalid") }}
+                      <div class="invalid-feedback">
+                        {% for error in umbrella_form.umbrella_name.errors %}
+                        <span>{{ error }}</span>
+                        {% endfor %}
+                      </div>
+                      {% else %} {{ umbrella_form.umbrella_name(class="input") }} {%
+                        endif %}
+                   
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    {{ umbrella_form.location.label }}{% if
+                      umbrella_form.location.errors %} {{ umbrella_form.location(class="input is-invalid") }}
+                      <div class="invalid-feedback">
+                        {% for error in umbrella_form.location.errors %}
+                        <span>{{ error }}</span>
+                        {% endfor %}
+                      </div>
+                      {% else %} {{ umbrella_form.location(class="input") }} {%
+                        endif %}
+                  </div>
+                </div>
+              </div>
+              {{ umbrella_form.submit(class="submit-btn") }}            
+       {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
+    {% for category, message in messages %}
+    <div
+      class="alert alert-{{ category }} alert-dismissible fade show"
+      role="alert"
+    >
+      {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+  {% endwith %}
+            </form>
+          </div>
+  
+          <!-- COMMUNITY UMBRELLA TAB -->
+  
+          <!-- BLOCK DEFINITION -->
+          <div id="block" class="tab-pane fade">
+            <p>
+              Organize your community's structure by defining distinct blocks
+              within each umbrella.
+            </p>
+            <form method="post" action="{{url_for('main.create_block')}}">
+              {{ block_form.hidden_tag() }}
+              <div class="row p-4">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    {{ block_form.block_name.label }} {{ block_form.block_name(class="input") }}
                     <div class="invalid-feedback">
-                      {% for error in umbrella_form.umbrella_name.errors %}
-                      <span>{{ error }}</span>
-                      {% endfor %}
+                      {{ block_form.block_name.errors[0] }}
                     </div>
-                    {% else %} {{ umbrella_form.umbrella_name(class="input") }} {%
-                      endif %}
-                 
+                  </div>
                 </div>
-              </div>
-              <div class="col-md-4">
-                <div class="mb-3">
-                  {{ umbrella_form.location.label }}{% if
-                    umbrella_form.location.errors %} {{ umbrella_form.location(class="input is-invalid") }}
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    {{ block_form.parent_umbrella.label }} 
+                    {{ block_form.parent_umbrella(class="input") }} 
+  
                     <div class="invalid-feedback">
-                      {% for error in umbrella_form.location.errors %}
-                      <span>{{ error }}</span>
-                      {% endfor %}
+                      {{ block_form.parent_umbrella.errors[0] }}
                     </div>
-                    {% else %} {{ umbrella_form.location(class="input") }} {%
-                      endif %}
+                  </div>
                 </div>
               </div>
-            </div>
-            {{ umbrella_form.submit(class="submit-btn") }}            
-     {% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}
-<div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
-  {% for category, message in messages %}
-  <div
-    class="alert alert-{{ category }} alert-dismissible fade show"
-    role="alert"
-  >
-    {{ message }}
+              {{ block_form.submit(class="submit-btn") }}            
+       {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+  <div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
+    {% for category, message in messages %}
+    <div
+      class="alert alert-{{ category }} alert-dismissible fade show"
+      role="alert"
+    >
+      {{ message }}
+    </div>
+    {% endfor %}
   </div>
-  {% endfor %}
-</div>
-{% endif %}
-{% endwith %}
-          </form>
+  {% endif %}
+  {% endwith %}
+            </form>
+          </div>
+  
+          <!--/ BLOCK DEFINITION -->
+  
+          <!--ZONE DEFINITION -->
+          <div id="zone" class="tab-pane fade">
+            <p>
+              Define zones within each block to make it easier when allocating
+              block event to zone members.
+            </p>
+            <form method="post" action="{{url_for('main.create_zone')}}">
+              {{ zone_form.hidden_tag() }}
+              <div class="row p-4">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    {{ zone_form.zone_name.label }} {{ zone_form.zone_name(class="input") }}
+                    <div class="invalid-feedback">
+                      {{ zone_form.zone_name.errors[0] }}
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    {{ zone_form.parent_block.label }} 
+                    {{ zone_form.parent_block(class="select") }}
+                    <div class="invalid-feedback">
+                      {{ zone_form.parent_block.errors[0] }}
+                  </div>
+                </div>
+              </div>
+              </div>
+              {{ zone_form.submit(class="submit-btn") }}            
+              {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
+                  {% for category, message in messages %}
+                  <div
+                    class="alert alert-{{ category }} alert-dismissible fade show"
+                    role="alert"
+                  >
+                    {{ message }}
+                  </div>
+                  {% endfor %}
+                </div>
+                {% endif %}
+                {% endwith %}
+            </form>
+          </div>
+  
+          <!--/ ZONE DEFINITION -->
+  
+          <!--ADD MEMBERS -->
+          <div id="members" class="tab-pane fade">
+            <p class="text-center">
+              Each zone has distinct members, please add the different members of
+              the zone.
+            </p>
+            <form action="{{url_for('main.add_member')}}" method="post">
+              {{ member_form.hidden_tag() }}            
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    {{ member_form.full_name.label }} {{ member_form.full_name(class="input") }}
+                    <div class="invalid-feedback">
+                      {{ member_form.full_name.errors[0] }}
+                  </div>
+                </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+  
+                  {{ member_form.phone_number.label }} {{ member_form.phone_number(class="input") }}
+                  <div class="invalid-feedback">
+                    {{ member_form.phone_number.errors[0] }}
+                </div>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    {{ member_form.id_number.label }} {{ member_form.id_number(class="input") }}
+                    <div class="invalid-feedback">
+                      {{ member_form.id_number.errors[0] }}
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    {{ member_form.member_zone.label }}
+                     {{ member_form.member_zone(class="select") }}
+                    <div class="invalid-feedback">
+                      {{ member_form.member_zone.errors[0] }}
+  
+                  </div>
+                </div>
+              </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    {{ member_form.bank.label }} {{ member_form.bank(class="select") }}
+                    <div class="invalid-feedback">
+                      {{ member_form.bank.errors[0] }}
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    {{ member_form.acc_number.label }} {{ member_form.acc_number(class="input") }}
+                    <div class="invalid-feedback">
+                      {{ member_form.acc_number.errors[0] }}
+  
+                  </div>
+                </div>
+              </div>
+              </div>
+              {{ member_form.submit(class="submit-btn") }} 
+              {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+              <div class="container mt-3 " id="flash-container" style="max-width: 500px;">
+                {% for category, message in messages %}
+                <div
+                  class="alert alert-{{ category }} alert-dismissible fade show"
+                  role="alert"
+                >
+                  {{ message }}
+                </div>
+                {% endfor %}
+              </div>
+              {% endif %}
+              {% endwith %}
+            </form>
+          </div>
+  
+          <!--/ ADD MEMBERS -->
         </div>
-
-        <!-- COMMUNITY UMBRELLA TAB -->
-
-        <!-- BLOCK DEFINITION -->
-        <div id="block" class="tab-pane fade">
-          <p>
-            Organize your community's structure by defining distinct blocks
-            within each umbrella.
-          </p>
-          <form method="post" action="{{url_for('main.create_block')}}">
-            {{ block_form.hidden_tag() }}
-            <div class="row p-4">
-              <div class="col-md-6">
-                <div class="mb-3">
-                  {{ block_form.block_name.label }} {{ block_form.block_name(class="input") }}
-                  <div class="invalid-feedback">
-                    {{ block_form.block_name.errors[0] }}
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="mb-3">
-                  {{ block_form.parent_umbrella.label }} 
-                  {{ block_form.parent_umbrella(class="input") }} 
-
-                  <div class="invalid-feedback">
-                    {{ block_form.parent_umbrella.errors[0] }}
-                  </div>
-                </div>
-              </div>
-            </div>
-            {{ block_form.submit(class="submit-btn") }}            
-     {% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}
-<div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
-  {% for category, message in messages %}
-  <div
-    class="alert alert-{{ category }} alert-dismissible fade show"
-    role="alert"
-  >
-    {{ message }}
-  </div>
-  {% endfor %}
-</div>
-{% endif %}
-{% endwith %}
-          </form>
-        </div>
-
-        <!--/ BLOCK DEFINITION -->
-
-        <!--ZONE DEFINITION -->
-        <div id="zone" class="tab-pane fade">
-          <p>
-            Define zones within each block to make it easier when allocating
-            block event to zone members.
-          </p>
-          <form method="post" action="{{url_for('main.create_zone')}}">
-            {{ zone_form.hidden_tag() }}
-            <div class="row p-4">
-              <div class="col-md-6">
-                <div class="mb-3">
-                  {{ zone_form.zone_name.label }} {{ zone_form.zone_name(class="input") }}
-                  <div class="invalid-feedback">
-                    {{ zone_form.zone_name.errors[0] }}
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="mb-3">
-                  {{ zone_form.parent_block.label }} 
-                  {{ zone_form.parent_block(class="select") }}
-                  <div class="invalid-feedback">
-                    {{ zone_form.parent_block.errors[0] }}
-                </div>
-              </div>
-            </div>
-            </div>
-            {{ zone_form.submit(class="submit-btn") }}            
-     {% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}
-<div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
-  {% for category, message in messages %}
-  <div
-    class="alert alert-{{ category }} alert-dismissible fade show"
-    role="alert"
-  >
-    {{ message }}
-  </div>
-  {% endfor %}
-</div>
-{% endif %}
-{% endwith %}
-          </form>
-        </div>
-
-        <!--/ ZONE DEFINITION -->
-
-        <!--ADD MEMBERS -->
-        <div id="members" class="tab-pane fade">
-          <p class="text-center">
-            Each zone has distinct members, please add the different members of
-            the zone.
-          </p>
-          <form action="{{url_for('main.add_member')}}" method="post">
-            {{ member_form.hidden_tag() }}            
-            <div class="row">
-              <div class="col-md-6">
-                <div class="mb-3">
-                  {{ member_form.full_name.label }} {{ member_form.full_name(class="input") }}
-                  <div class="invalid-feedback">
-                    {{ member_form.full_name.errors[0] }}
-                </div>
-              </div>
-              </div>
-              <div class="col-md-6">
-                <div class="mb-3">
-
-                {{ member_form.phone_number.label }} {{ member_form.phone_number(class="input") }}
-                <div class="invalid-feedback">
-                  {{ member_form.phone_number.errors[0] }}
-              </div>
-                </div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-md-6">
-                <div class="mb-3">
-                  {{ member_form.id_number.label }} {{ member_form.id_number(class="input") }}
-                  <div class="invalid-feedback">
-                    {{ member_form.id_number.errors[0] }}
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="mb-3">
-                  {{ member_form.member_zone.label }}
-                   {{ member_form.member_zone(class="select") }}
-                  <div class="invalid-feedback">
-                    {{ member_form.member_zone.errors[0] }}
-
-                </div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-md-6">
-                <div class="mb-3">
-                  {{ member_form.bank.label }} {{ member_form.bank(class="select") }}
-                  <div class="invalid-feedback">
-                    {{ member_form.bank.errors[0] }}
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="mb-3">
-                  {{ member_form.acc_number.label }} {{ member_form.acc_number(class="input") }}
-                  <div class="invalid-feedback">
-                    {{ member_form.acc_number.errors[0] }}
-
-                </div>
-              </div>
-            </div>
-            {{ member_form.submit(class="submit-btn") }} 
-            {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            <div class="container mt-3" id="flash-container" style="max-width: 500px;">
-              {% for category, message in messages %}
-              <div
-                class="alert alert-{{ category }} alert-dismissible fade show"
-                role="alert"
-              >
-                {{ message }}
-              </div>
-              {% endfor %}
-            </div>
-            {% endif %}
-            {% endwith %}
-          </form>
-        </div>
-
-        <!--/ ADD MEMBERS -->
       </div>
     </div>
   </div>
-</div>
-<!-- JavaScript to automatically hide flash messages after 5 seconds -->
-<script>
-  setTimeout(function() {
-    const flashContainer = document.getElementById('flash-container');
-    if (flashContainer) {
-      flashContainer.style.display = 'none';  // Hide the container after 5 seconds
-    }
-  }, 5000);  // 5000 milliseconds = 5 seconds
-</script>
-{% endblock %}
+  <!-- JavaScript to automatically hide flash messages after 5 seconds -->
+  <script>
+    setTimeout(function() {
+      const flashContainer = document.getElementById('flash-container');
+      if (flashContainer) {
+        flashContainer.style.display = 'none';  // Hide the container after 5 seconds
+      }
+    }, 5000);  // 5000 milliseconds = 5 seconds
+  </script>
+  {% endblock %}
+  
