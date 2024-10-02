@@ -269,10 +269,6 @@ def handle_member_creation():
             flash('User with that ID already exists', 'danger')
             return redirect(url_for('main.settings', active_tab='member'))
         else:
-        banks = BankModel.query.all()
-        member_form.bank.choices = [(str(bank.id), bank.name) for bank in banks]
-
-
             new_user = UserModel(
             full_name=member_form.full_name.data,
             id_number=member_form.id_number.data,
