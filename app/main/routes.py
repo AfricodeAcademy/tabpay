@@ -3,7 +3,7 @@ from flask_security import login_required, roles_required, current_user, logout_
 from flask_security.utils import hash_password
 from ..utils import db
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm
-from ..api.api import UserModel, UmbrellaModel, BlockModel, ZoneModel, user_datastore,Role,PaymentModel,MeetingModel
+from ..api.api import UserModel, UmbrellaModel, BlockModel, ZoneModel, user_datastore,Role,PaymentModel,MeetingModel,BankModel
 from PIL import Image
 import os
 import secrets
@@ -18,11 +18,8 @@ def home():
     return render_template('index.html', title='TabPay | Home')
 
 
-@main.route('/settings', methods=['GET','POST'])
-@roles_accepted('Admin','SuperUser','Chairman','Secretary')
-@login_required
-def settings():
-   
+# Helper function to render the settings page with forms
+def render_settings_page(active_tab=None, error=None):
     # Instantiate all forms
     profile_form = ProfileForm()
     umbrella_form = UmbrellaForm()
@@ -30,6 +27,9 @@ def settings():
     block_form = BlockForm()
     member_form = AddMemberForm()
     zone_form = ZoneForm()
+
+    if not active_tab:
+        active_tab = request.args.get('active_tab', 'profile')
 
     user = UserModel.query.filter_by(id=current_user.id).first()
 
@@ -47,13 +47,16 @@ def settings():
     else:
         flash('You need to create an umbrella before managing settings!', 'danger')
 
-    # Dynamically fetch blocks created by the current user
+    # Dynamically fetch blocks and zones created by the current user
     blocks = BlockModel.query.filter_by(created_by=current_user.id).all()
     zone_form.parent_block.choices = [(str(block.id), block.name) for block in blocks]
 
-    # Dynamically fetch zones created by the current user
     zones = ZoneModel.query.filter_by(created_by=current_user.id).all()
     member_form.member_zone.choices = [(str(zone.id), zone.name) for zone in zones]
+
+    banks = BankModel.query.all()
+    member_form.bank.choices = [(str(bank.id), bank.name) for bank in banks]
+
     
     # Render the settings page
     return render_template('settings.html', title='Dashboard | Settings',
@@ -63,16 +66,39 @@ def settings():
                            block_form=block_form,
                            zone_form=zone_form,
                            member_form=member_form,
-                           user=current_user,blocks=blocks ,zones=zones                  
-                                 )
+                           user=current_user,
+                           blocks=blocks,
+                           zones=zones,
+                           active_tab=active_tab,  
+                           error=error)
 
-# Profile Update Route
-@main.route('/settings/update_profile', methods=['GET', 'POST'])
-@roles_required('Admin','SuperUser')
-def update_profile():
+# Single route to handle all settings form submissions
+@main.route('/settings', methods=['GET', 'POST'])
+@roles_accepted('Admin', 'SuperUser', 'Chairman', 'Secretary')
+@login_required
+def settings():
+    # Check which form was submitted
+    if 'profile_submit' in request.form:
+        return handle_profile_update()
+    elif 'umbrella_submit' in request.form:
+        return handle_umbrella_creation()
+    elif 'committee_submit' in request.form:
+        return handle_committee_addition()
+    elif 'block_submit' in request.form:
+        return handle_block_creation()
+    elif 'zone_submit' in request.form:
+        return handle_zone_creation()
+    elif 'member_submit' in request.form:
+        return handle_member_creation()
+    
+    # Default GET request rendering the settings page
+    return render_settings_page(active_tab=request.args.get('active_tab', 'profile'))
+
+# Handle profile update
+def handle_profile_update():
     profile_form = ProfileForm()
 
-    # Handle GET request - populate form with current user info
+# Handle GET request - populate form with current user info
     if request.method == 'GET':
         user = UserModel.query.filter_by(id=current_user.id).first()
 
@@ -82,100 +108,76 @@ def update_profile():
             profile_form.id_number.data = user.id_number  # The id_number is read-only in the form
         else:
             flash('User not found!', 'danger')
-            return redirect(url_for('main.settings'))
-
-    # Handle POST request - update profile
+            return redirect(url_for('main.settings',active_tab='profile'))
+        
     if profile_form.validate_on_submit():
         user = UserModel.query.filter_by(id=current_user.id).first()
-        
         if user:
             user.full_name = profile_form.full_name.data
-            
-            # Update password only if provided
+
+             # Update password only if provided
             if profile_form.password.data:
                 user.password = hash_password(profile_form.password.data)
-            
             db.session.commit()
             flash('Profile updated successfully!', 'success')
+            return redirect(url_for('main.settings',active_tab='profile'))
+
         else:
             flash('User not found!', 'danger')
-    
-    elif request.method == 'POST':  # If form validation fails
-        error_messages = [f"{field.capitalize()}: {error}" for field, errors in profile_form.errors.items() for error in errors]
-        for message in error_messages:
-            flash(message, 'danger')
-    
+            return redirect(url_for('main.settings', active_tab='profile'))
+    else:
+        error = [f"{field.capitalize()}: {error}" for field, errors in profile_form.errors.items() for error in errors]
+        return render_settings_page(active_tab='profile', error=error)
 
 
-# Committee Addition Route
-@main.route('/settings/add_committee',  methods=['GET','POST'])
-@roles_accepted('SuperUser','Admin')
-def add_committee():
+# Handle committee addition
+def handle_committee_addition():
     committee_form = AddCommitteForm()
 
     if committee_form.validate_on_submit():
-        # Query the database for the user by ID number
         user = UserModel.query.filter_by(id_number=committee_form.id_number.data).first()
-
         if not user:
-            flash('No member found with that ID! ', 'danger')
-            return redirect(url_for('main.settings'))
+            flash('No member found with that ID!', 'danger')
+            return redirect(url_for('main.settings', active_tab='committee'))
         else:
-            # Check if the user has the "Member" role
             member_role = Role.query.filter_by(name='Member').first()
             if member_role not in user.roles:
                 flash(f'{user.full_name} must first be a member before being assigned a committee role.', 'danger')
-                return redirect(url_for('main.settings'))
-        
-            # Check if the user is already a committee member
-            role_name = committee_form.role.data  
-            existing_role = Role.query.filter_by(name=role_name).first()
+                return redirect(url_for('main.settings', active_tab='committee'))
 
-            if existing_role in user.roles:
-                flash(f'{user.full_name} is already a {role_name}!', 'danger')
             else:
-                # Assign the committee role to the user
-                role = user_datastore.find_or_create_role(committee_form.role.data)
-                user_datastore.add_role_to_user(user, role)
-                db.session.commit()
-                flash(f'{user.full_name} added as {committee_form.role.data}', 'success')
+                role_name = committee_form.role.data  
+                existing_role = Role.query.filter_by(name=role_name).first()
+                if existing_role in user.roles:
+                    flash(f'{user.full_name} is already a {role_name}!', 'danger')
+                    return redirect(url_for('main.settings', active_tab='committee'))
+                else:
+                    role = user_datastore.find_or_create_role(role_name)
+                    user_datastore.add_role_to_user(user, role)
+                    db.session.commit()
+                    flash(f'{user.full_name} added as {role_name}', 'success')
+                    return redirect(url_for('main.settings', active_tab='committee'))
 
-            return redirect(url_for('main.settings'))
-    # Handle GET method to pre-fill form based on the user's input (ID number)
-    elif request.method == 'GET' and 'id_number' in request.args:
-        user = UserModel.query.filter_by(id_number=request.args.get('id_number')).first()
-
-        if user:
-            committee_form.full_name.data = user.full_name
-            committee_form.phone_number.data = user.phone_number
-        else:
-            flash('No member found with that ID!', 'danger')
-
+    
+    error = [f"{field.capitalize()}: {error}" for field, errors in committee_form.errors.items() for error in errors]
+    return render_settings_page(active_tab='committee', error=error)
 
 
-    flash('Form validation failed, please check your input', 'danger')
-    return redirect(url_for('main.settings'))
-
-              
-#Umbrella Creation Route
-@main.route('/settings/create_umbrella',  methods=['GET','POST'])
-@roles_accepted('SuperUser','Admin')
-def create_umbrella():
+# Handle umbrella creation
+def handle_umbrella_creation():
     umbrella_form = UmbrellaForm()
 
     if umbrella_form.validate_on_submit():
-        # Check if the user already has an umbrella
         existing_umbrella = UmbrellaModel.query.filter_by(created_by=current_user.id).first()
         if existing_umbrella:
             flash('You can only create one umbrella!', 'danger')
+            return redirect(url_for('main.settings', active_tab='umbrella'))
         else:
-            # Check if an umbrella with the same name already exists
-            umbrella_name = umbrella_form.umbrella_name.data
-            duplicate_umbrella = UmbrellaModel.query.filter_by(name=umbrella_name).first()
+            duplicate_umbrella = UmbrellaModel.query.filter_by(name=umbrella_form.umbrella_name.data).first()
             if duplicate_umbrella:
                 flash('An umbrella with that name already exists!', 'danger')
+                return redirect(url_for('main.settings', active_tab='umbrella'))
             else:
-                # Proceed to create the umbrella if no duplicates
                 new_umbrella = UmbrellaModel(
                     name=umbrella_form.umbrella_name.data,
                     location=umbrella_form.location.data,
@@ -184,42 +186,25 @@ def create_umbrella():
                 db.session.add(new_umbrella)
                 db.session.commit()
                 flash('Umbrella created successfully!', 'success')
-        return redirect(url_for('main.settings'))
-
-     # If we reach this point, the form was not validated
-    for field, errors in umbrella_form.errors.items():
-        for error in errors:
-            flash(f'Error in {field}: {error}', 'danger')
-    
-    return redirect(url_for('main.settings'))
+                return redirect(url_for('main.settings', active_tab='umbrella'))    
+    error = [f"{field.capitalize()}: {error}" for field, errors in umbrella_form.errors.items() for error in errors]
+    return render_settings_page(active_tab='umbrella', error=error)
 
 
-#Block Creation Route
-@main.route('/settings/create_block', methods=['GET', 'POST'])
-@roles_accepted('SuperUser', 'Admin')
-def create_block():
+# Handle block creation
+def handle_block_creation():
     block_form = BlockForm()
-
-    # Automatically retrieve the umbrella created by the current user
     umbrella = UmbrellaModel.query.filter_by(created_by=current_user.id).first()
 
     if not umbrella:
         flash('You need to create an umbrella before adding a block!', 'danger')
-        return redirect(url_for('main.settings'))
-
-    # Pre-fill the umbrella field with the current user's umbrella and make it read-only
-    if request.method == 'GET':
-        block_form.parent_umbrella.data = umbrella.name  # Pre-fill hidden umbrella field
+        return redirect(url_for('main.settings', active_tab='block'))
 
     if block_form.validate_on_submit():
-        # Check if a block with the same name exists within the parent umbrella
-        existing_block = BlockModel.query.filter_by(
-            name=block_form.block_name.data,
-            parent_umbrella_id=umbrella.id
-        ).first()
-
+        existing_block = BlockModel.query.filter_by(name=block_form.block_name.data, parent_umbrella_id=umbrella.id).first()
         if existing_block:
             flash('A block with that name already exists in this umbrella.', 'danger')
+            return redirect(url_for('main.settings', active_tab='block'))
         else:
             new_block = BlockModel(
                 name=block_form.block_name.data,
@@ -229,42 +214,31 @@ def create_block():
             db.session.add(new_block)
             db.session.commit()
             flash('Block created successfully!', 'success')
-        return redirect(url_for('main.settings'))
+            return redirect(url_for('main.settings', active_tab='block'))
 
+    
+    error = [f"{field.capitalize()}: {error}" for field, errors in block_form.errors.items() for error in errors]
+    return render_settings_page(active_tab='block', error=error)
 
-#Zone Creation Route
-@main.route('/settings/create_zone',  methods=['GET','POST'])
-@roles_accepted('SuperUser','Admin')
-def create_zone():
+# Handle zone creation
+def handle_zone_creation():
     zone_form = ZoneForm()
-
-    # Dynamically fetch the blocks created by the current user
     blocks = BlockModel.query.filter_by(created_by=current_user.id).all()
     zone_form.parent_block.choices = [(str(block.id), block.name) for block in blocks]
-    
+
     if zone_form.validate_on_submit():
         if not blocks:
             flash('You need to create a block before adding a zone!', 'danger')
-            return redirect(url_for('main.settings'))
-        
-        # Check if a zone with the same name exists within the parent block
+            return redirect(url_for('main.settings',active_tab='zone'))
+
         existing_zone = ZoneModel.query.filter_by(
             name=zone_form.zone_name.data,
             parent_block_id=zone_form.parent_block.data
         ).first()
-        
         if existing_zone:
             flash('A zone with that name already exists in this block.', 'danger')
-        
-        
+            return redirect(url_for('main.settings', active_tab='zone'))
         else:
-
-            # Dynamically fetch the blocks from the database
-            blocks = BlockModel.query.filter_by(created_by=current_user.id).all()
-
-            # Populate the SelectField with block choices
-            zone_form.parent_block.choices = [(str(block.id), block.name) for block in blocks]
-
             new_zone = ZoneModel(
                 name=zone_form.zone_name.data,
                 parent_block_id=zone_form.parent_block.data,
@@ -273,54 +247,51 @@ def create_zone():
             db.session.add(new_zone)
             db.session.commit()
             flash('Zone created successfully!', 'success')
-        return redirect(url_for('main.settings'))
-    else:
-        flash('Form validation failed', 'danger')
-        return redirect(url_for('main.settings'))
+            return redirect(url_for('main.settings', active_tab='zone'))
+    
+    error = [f"{field.capitalize()}: {error}" for field, errors in zone_form.errors.items() for error in errors]
+    return render_settings_page(active_tab='zone', error=error)
 
-#Member Creation Route
-@main.route('/settings/add_member',  methods=['GET','POST'])
-@roles_accepted('SuperUser','Admin','Chairman','Secretary')
-def add_member():
-    member_form = AddMemberForm()    
 
+# Handle member creation
+def handle_member_creation():
+    member_form = AddMemberForm()
     zones = ZoneModel.query.filter_by(created_by=current_user.id).all()
     member_form.member_zone.choices = [(str(zone.id), zone.name) for zone in zones]
 
     if member_form.validate_on_submit():
         if not zones:
             flash('You need to create a zone before adding a member!', 'danger')
-            return redirect(url_for('main.settings'))
+            return redirect(url_for('main.settings',active_tab='member'))
         
-        existing_user = UserModel.query.filter_by(id_number=member_form.id_number.data,zone=member_form.member_zone.data).first()
+        existing_user = UserModel.query.filter_by(id_number=member_form.id_number.data, zone=member_form.member_zone.data).first()
         if existing_user:
             flash('User with that ID already exists', 'danger')
-        
-        # Dynamically fetch zones created by the current user
-        zones = ZoneModel.query.filter_by(created_by=current_user.id).all()
-        member_form.member_zone.choices = [(str(zone.id), zone.name) for zone in zones]
-
-        new_user = UserModel(
+            return redirect(url_for('main.settings', active_tab='member'))
+        else:
+            new_user = UserModel(
             full_name=member_form.full_name.data,
             id_number=member_form.id_number.data,
             phone_number=member_form.phone_number.data,
             zone=member_form.member_zone.data,
             bank=member_form.bank.data,
             acc_number=member_form.acc_number.data
-        )
-        db.session.add(new_user)
-        db.session.commit()
+            )
+            db.session.add(new_user)
+            db.session.commit()
 
               # Assign the 'Member' role to the new user
-        member_role = user_datastore.find_or_create_role('Member')
-        user_datastore.add_role_to_user(new_user, member_role)
-        db.session.commit()
+            member_role = user_datastore.find_or_create_role('Member')
+            user_datastore.add_role_to_user(new_user, member_role)
+            db.session.commit()
 
-        flash('Member added successfully', 'success')
-        return redirect(url_for('main.settings'))
-    else:
-        flash('Form validation failed', 'danger')
-        return redirect(url_for('main.settings'))
+            flash('Member created successfully!', 'success')
+            return redirect(url_for('main.settings', active_tab='member'))
+     
+    error = [f"{field.capitalize()}: {error}" for field, errors in member_form.errors.items() for error in errors]
+    return render_settings_page(active_tab='member', error=error)
+
+
 
 def save_picture(form_picture):
     random_hex = secrets.token_hex(8)

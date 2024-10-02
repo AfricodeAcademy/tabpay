@@ -44,7 +44,7 @@ class UserModel(db.Model, UserMixin):
     id_number = db.Column(db.Integer, index=True,unique=True)  
     phone_number = db.Column(db.String(80), unique=True)
     active = db.Column(db.Boolean, default=True)
-    bank = db.Column(db.String(50))
+    bank = db.Column(db.Integer, db.ForeignKey('banks.id'))
     acc_number = db.Column(db.String(50))
     image_file = db.Column(db.String(20), nullable=False, default = 'profile.png')
     registered_at = db.Column(db.DateTime, default=db.func.current_timestamp())
@@ -106,8 +106,7 @@ class BlockModel(db.Model):
 
     def __repr__(self):
         return f"<Zone {self.name}>"
-    
-    
+     
 
    
 class ZoneModel(db.Model):
@@ -138,7 +137,19 @@ class MeetingModel(db.Model):
         
      def _repr_(self):
          return f"<Meeting {self.id} on {self.date}>"
-     
+
+
+class BankModel(db.Model):
+    __tablename__ = 'banks'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(80),nullable=False)
+    paybill_no = db.Column(db.Integer,nullable=False)
+    total_transactions = db.relationship('PaymentModel',backref='total_transactions',lazy=True)
+    
+    def __repr__(self):
+        return f"<Bank {self.name}>"
+    
 
 class PaymentModel(db.Model):
     __tablename__ = 'payments'
@@ -150,6 +161,7 @@ class PaymentModel(db.Model):
     amount = db.Column(db.Integer, nullable=False)
     payment_date = db.Column(db.DateTime, default=db.func.current_timestamp())
     transaction_status = db.Column(db.Boolean, default=False)
+    bank_id = db.Column(db.Integer, db.ForeignKey('banks.id'), nullable=False)
 
     # Payment association with a specific block
     block_id = db.Column(db.Integer, db.ForeignKey('blocks.id'), nullable=False)
@@ -169,7 +181,6 @@ class PaymentModel(db.Model):
     def get_contributions_by_block(cls, block_id):
         """Get all contributions for a specific block."""
         return cls.query.filter_by(block_id=block_id).all()
-
 
 
 class CommunicationModel(db.Model):
@@ -208,9 +219,13 @@ communication_args = reqparse.RequestParser()
 communication_args.add_argument('content', type=str, required=True, help='Content is required')
 communication_args.add_argument('user_id', type=int, required=True, help='Author is required')
 
+bank_args = reqparse.RequestParser()
+bank_args.add_argument('name', type=str, required=True, help='Bank Name is required')
+bank_args.add_argument('paybill_no', type=int, required=True, help='Paybill Number is required')
+
 payment_args = reqparse.RequestParser()
 payment_args.add_argument('payer_id', type=int, required=True, help='Payer is required')
-payment_args.add_argument('source_phone_number', type=str, required=True, help='Source phone number is required')  # Changed to str
+payment_args.add_argument('source_phone_number', type=str, required=True, help='Source phone number is required')  
 payment_args.add_argument('amount', type=float, required=True, help='Amount is required')
 
 # Fields for serialization
@@ -247,6 +262,13 @@ payment_fields = {
     "account_number": fields.String,  # Changed to String
     "source_phone_number": fields.String,  # Changed to String
     "transaction_status": fields.Boolean
+}
+
+bank_fields = {
+    "id": fields.Integer,
+    "name": fields.String,
+    "paybill_no": fields.Integer,
+    "total_transactions": fields.List(fields.Nested(payment_fields))
 }
 
 block_fields = {
@@ -657,6 +679,129 @@ class Communication(Resource):
 
 
 
+class Banks(Resource):
+    @marshal_with(bank_fields)
+    def get(self):
+        try:
+            banks = BankModel.query.all()
+            return banks, 200
+        
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            error_message = {"error": "Database error occurred", "details": str(e)}
+            abort(500, message=error_message)
+        
+        except HTTPException as e:
+            error_message = {"error": "HTTP error occurred", "details": str(e)}
+            abort(e.code, message=error_message)
+        
+        except Exception as e:
+            error_message = {"error": "Unexpected error occurred", "details": str(e)}
+            abort(500, message=error_message)
+        
+        finally:
+            db.session.close()
+
+    @marshal_with(payment_fields)
+    def post(self):
+        try:
+            args = bank_args.parse_args()
+            new_bank = BankModel(**args)
+            db.session.add(new_bank)
+            db.session.commit()
+            return new_bank, 201
+        
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            error_message = {"error": "Database error occurred", "details": str(e)}
+            abort(500, message=error_message)
+        
+        except HTTPException as e:
+            error_message = {"error": "HTTP error occurred", "details": str(e)}
+            abort(e.code, message=error_message)
+        
+        except Exception as e:
+            error_message = {"error": "Unexpected error occurred", "details": str(e)}
+            abort(500, message=error_message)
+        
+        finally:
+            db.session.close()
+
+class Payment(Resource):
+    @marshal_with(bank_fields)
+    def get(self, id):
+        try:
+            bank = BankModel.query.get_or_404(id)
+            return bank, 200
+        
+        except SQLAlchemyError as e:
+            error_message = {"error": "Database error occurred", "details": str(e)}
+            abort(500, message=error_message)
+        
+        except HTTPException as e:
+            error_message = {"error": "HTTP error occurred", "details": str(e)}
+            abort(e.code, message=error_message)
+        
+        except Exception as e:
+            error_message = {"error": "Unexpected error occurred", "details": str(e)}
+            abort(500, message=error_message)
+        
+        finally:
+            db.session.close()
+
+    @marshal_with(bank_fields)
+    def patch(self, id):
+        try:
+            args = bank_args.parse_args()
+            bank = BankModel.query.get_or_404(id)
+            
+            for key, value in args.items():
+                setattr(bank, key, value)
+            db.session.commit()
+            return bank, 200
+        
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            error_message = {"error": "Database error occurred", "details": str(e)}
+            abort(500, message=error_message)
+        
+        except HTTPException as e:
+            error_message = {"error": "HTTP error occurred", "details": str(e)}
+            abort(e.code, message=error_message)
+        
+        except Exception as e:
+            error_message = {"error": "Unexpected error occurred", "details": str(e)}
+            abort(500, message=error_message)
+        
+        finally:
+            db.session.close()
+
+    @marshal_with(bank_fields)
+    def delete(self, id):
+        try:
+            bank = BankModel.query.get_or_404(id)
+            db.session.delete(bank)
+            db.session.commit()
+            banks = BankModel.query.all()
+            return banks, 200
+        
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            error_message = {"error": "Database error occurred", "details": str(e)}
+            abort(500, message=error_message)
+        
+        except HTTPException as e:
+            error_message = {"error": "HTTP error occurred", "details": str(e)}
+            abort(e.code, message=error_message)
+        
+        except Exception as e:
+            error_message = {"error": "Unexpected error occurred", "details": str(e)}
+            abort(500, message=error_message)
+        
+        finally:
+            db.session.close()
+
+
 
 class Payments(Resource):
     @marshal_with(payment_fields)
@@ -1037,6 +1182,8 @@ api.add_resource(Users, '/api/v1/users/')
 api.add_resource(User, '/api/v1/users/<int:id>/')
 api.add_resource(Communications, '/api/v1/communications/')
 api.add_resource(Communication, '/api/v1/communications/<int:id>/')
+api.add_resource(Banks, '/api/v1/banks/')
+api.add_resource(Banks, '/api/v1/banks/<int:id>/')
 api.add_resource(Payments, '/api/v1/payments/')
 api.add_resource(Payment, '/api/v1/payments/<int:id>/')
 api.add_resource(Blocks, '/api/v1/blocks/')
