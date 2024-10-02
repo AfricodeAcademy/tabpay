@@ -15,44 +15,34 @@ endblock %} {% block content %}
 
     <div class="dashboard-content">
       <!-- Tab Navigation -->
-      <ul class="nav nav-tabs p-3">
-        <li class="nav-item">
-          <a class="nav-link active" data-bs-toggle="tab" href="#profile"
-            >Profile</a
-          >
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" data-bs-toggle="tab" href="#committee"
-            >Add Committee</a
-          >
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" data-bs-toggle="tab" href="#umbrella"
-            >Community Umbrella</a
-          >
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" data-bs-toggle="tab" href="#block"
-            >Block Definition</a
-          >
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" data-bs-toggle="tab" href="#zone"
-            >Zone Definition</a
-          >
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" data-bs-toggle="tab" href="#members"
-            >Add Members</a
-          >
-        </li>
-      </ul>
+       
+<ul class="nav nav-tabs p-3">
+  <li class="nav-item">
+      <a class="nav-link {% if active_tab == 'profile' %}active{% endif %}" href="{{ url_for('main.settings', active_tab='profile') }}">Profile</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if active_tab == 'committee' %}active{% endif %}" href="{{ url_for('main.settings', active_tab='committee') }}">Add Committee</a>
+  </li>
+  <li class="nav-item">
+      <a class="nav-link {% if active_tab == 'umbrella' %}active{% endif %}" href="{{ url_for('main.settings', active_tab='umbrella') }}">Community Umbrella</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if active_tab == 'block' %}active{% endif %}" href="{{ url_for('main.settings', active_tab='block') }}">Block Definition</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if active_tab == 'zone' %}active{% endif %}" href="{{ url_for('main.settings', active_tab='zone') }}">Zone Definition</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link {% if active_tab == 'member' %}active{% endif %}" href="{{ url_for('main.settings', active_tab='member') }}">Add Members</a>
+  </li>
+</ul>
+
 
       <!-- Tab Panes -->
       <div class="tab-content d-flex justify-content-center">
         <!-- PROFIILE -->
-        <div id="profile" class="tab-pane fade show active">
-          <form method="post" action="{{url_for('main.update_profile')}}">
+        <div id="profile" class="tab-pane fade {% if active_tab == 'profile' %}show active{% endif %}">
+          <form method="POST" action="{{url_for('main.settings',active_tab='profile')}}">
             {{ profile_form.hidden_tag() }}
             <div class="row mb-5 mt-2">
               <div class="col-md-6">
@@ -86,8 +76,9 @@ endblock %} {% block content %}
                 </div>
               </div>
             </div>
-
-          {{ profile_form.submit(class="submit-btn") }}            
+            <button type="submit" name="profile_submit" class="submit-btn">
+              {{ profile_form.submit.label.text }}
+          </button>         
           {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
           <div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
@@ -107,8 +98,8 @@ endblock %} {% block content %}
         <!-- END OF PROFIILE -->
 
         <!-- COMMITTEE TAB -->
-        <div id="committee" class="tab-pane fade">
-          <form method="post" action="{{url_for('main.add_committee')}}">
+        <div id="committee" class="tab-pane fade {% if active_tab == 'committee' %}show active{% endif %}">
+          <form method="POST" action="{{url_for('main.settings',active_tab='committee')}}">
             {{ committee_form.hidden_tag() }}
             <div class="row mb-5 mt-2">
               <div class="col-md-6">
@@ -151,8 +142,9 @@ endblock %} {% block content %}
                 </div>
               </div>
             </div>
-
-            {{ committee_form.submit(class="submit-btn") }}            
+            <button type="submit" name="committee_submit" class="submit-btn">
+              {{ committee_form.submit.label.text }}
+          </button>
      {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
 <div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
@@ -172,7 +164,7 @@ endblock %} {% block content %}
         <!--/ COMMITTEE TAB -->
 
         <!-- COMMUNITY UMBRELLA TAB -->
-        <div id="umbrella" class="tab-pane fade">
+        <div id="umbrella" class="tab-pane fade {% if active_tab == 'umbrella' %}show active{% endif %}">
           <p class="p-3">
             Establish your community's foundation by creating overarching
             umbrellas that represent geographic areas, such as counties,
@@ -180,7 +172,7 @@ endblock %} {% block content %}
             top-level umbrella, under which you can create distinct blocks,
             fostering collaboration and organization at the local level.
           </p>
-          <form method="post" action="{{url_for('main.create_umbrella')}}">
+          <form method="POST" action="{{url_for('main.settings',tab='umbrella')}}">
             {{ umbrella_form.hidden_tag() }}
 
             <div class="row p-2 d-flex justify-content-center">
@@ -212,7 +204,10 @@ endblock %} {% block content %}
                 </div>
               </div>
             </div>
-            {{ umbrella_form.submit(class="submit-btn") }}            
+            <button type="submit" name="umbrella_submit" class="submit-btn">
+              {{ umbrella_form.submit.label.text }}
+          </button>
+              
      {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
 <div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
@@ -233,12 +228,12 @@ endblock %} {% block content %}
         <!-- COMMUNITY UMBRELLA TAB -->
 
         <!-- BLOCK DEFINITION -->
-        <div id="block" class="tab-pane fade">
+        <div id="block" class="tab-pane fade {% if active_tab == 'block' %}show active{% endif %}">
           <p>
             Organize your community's structure by defining distinct blocks
             within each umbrella.
           </p>
-          <form method="post" action="{{url_for('main.create_block')}}">
+          <form method="POST" action="{{url_for('main.settings',active_tab='block')}}">
             {{ block_form.hidden_tag() }}
             <div class="row p-4">
               <div class="col-md-6">
@@ -260,33 +255,35 @@ endblock %} {% block content %}
                 </div>
               </div>
             </div>
-            {{ block_form.submit(class="submit-btn") }}            
-     {% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}
-<div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
-  {% for category, message in messages %}
-  <div
-    class="alert alert-{{ category }} alert-dismissible fade show"
-    role="alert"
-  >
-    {{ message }}
-  </div>
-  {% endfor %}
-</div>
-{% endif %}
-{% endwith %}
+            <button type="submit" name="block_submit" class="submit-btn">
+              {{ block_form.submit.label.text }}
+          </button>
+               {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                <div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
+                  {% for category, message in messages %}
+                  <div
+                    class="alert alert-{{ category }} alert-dismissible fade show"
+                    role="alert"
+                  >
+                    {{ message }}
+                  </div>
+                  {% endfor %}
+                </div>
+                {% endif %}
+                {% endwith %}
           </form>
         </div>
 
         <!--/ BLOCK DEFINITION -->
 
         <!--ZONE DEFINITION -->
-        <div id="zone" class="tab-pane fade">
+        <div id="zone" class="tab-pane fade {% if active_tab == 'zone' %}show active{% endif %}">
           <p>
             Define zones within each block to make it easier when allocating
             block event to zone members.
           </p>
-          <form method="post" action="{{url_for('main.create_zone')}}">
+          <form method="POST" action="{{url_for('main.settings')}}">
             {{ zone_form.hidden_tag() }}
             <div class="row p-4">
               <div class="col-md-6">
@@ -307,8 +304,10 @@ endblock %} {% block content %}
               </div>
             </div>
             </div>
-            {{ zone_form.submit(class="submit-btn") }}            
-            {% with messages = get_flashed_messages(with_categories=true) %}
+            <button type="submit" name="zone_submit" class="submit-btn">
+              {{ zone_form.submit.label.text }}
+          </button>
+                      {% with messages = get_flashed_messages(with_categories=true) %}
               {% if messages %}
               <div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
                 {% for category, message in messages %}
@@ -328,12 +327,12 @@ endblock %} {% block content %}
         <!--/ ZONE DEFINITION -->
 
         <!--ADD MEMBERS -->
-        <div id="members" class="tab-pane fade">
+        <div id="member" class="tab-pane fade {% if active_tab == 'member' %}show active{% endif %}">
           <p class="text-center">
             Each zone has distinct members, please add the different members of
             the zone.
           </p>
-          <form action="{{url_for('main.add_member')}}" method="post">
+          <form action="{{url_for('main.settings',tab='member')}}" method="POST">
             {{ member_form.hidden_tag() }}            
             <div class="row">
               <div class="col-md-6">
@@ -393,8 +392,10 @@ endblock %} {% block content %}
               </div>
             </div>
             </div>
-            {{ member_form.submit(class="submit-btn") }} 
-            {% with messages = get_flashed_messages(with_categories=true) %}
+            <button type="submit" name="member_submit" class="submit-btn">
+              {{ member_form.submit.label.text }}
+          </button>
+                      {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
             <div class="container mt-3 " id="flash-container" style="max-width: 500px;">
               {% for category, message in messages %}

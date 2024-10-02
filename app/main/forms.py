@@ -2,6 +2,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SelectField, IntegerField, SubmitField,DateField
 from wtforms.validators import DataRequired, Length, ValidationError,EqualTo
 from ..api.api import UserModel
+from datetime import datetime
 
 class AddMemberForm(FlaskForm):
     full_name = StringField('Member Full Name',validators=[DataRequired(), Length(max=100,min=5)],render_kw={'placeholder':'John Doe'})
@@ -87,3 +88,6 @@ class ScheduleForm(FlaskForm):
     date = DateField('Pick the date',validators=[DataRequired()])
     submit = SubmitField('Submit')
 
+    def validate_date(self, field):
+        if field.data < datetime.now():
+            raise ValidationError('The meeting date cannot be in the past')
