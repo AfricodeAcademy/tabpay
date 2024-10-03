@@ -1,10 +1,5 @@
-{% extends "base.html" %}
-
-{% block heading %}
-  Block Reports
-{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block heading %} Block Reports {% endblock %} {%
+block content %}
 <div class="dashboard">
   <div class="container">
     <p class="mt-2 text-gray-600 fs-5">
@@ -20,7 +15,7 @@
             class="nav-link active"
             data-bs-toggle="tab"
             href="#member-contribution"
-            style="color:lightgreen"
+            style="color: lightgreen"
           >
             Member Contribution
           </a>
@@ -43,25 +38,52 @@
           <div class="row">
             <div class="col-md-3">
               <select id="block" name="block">
+                <option value="">All Blocks</option>
                 {% for block in blocks %}
-                  <option value="{{ block.name }}">{{ block.name }}</option>
+                <option value="{{ block.name }}">{{ block.name }}</option>
                 {% endfor %}
               </select>
             </div>
             <div class="col-md-3">
               <select id="member" name="member">
+                <option value="">All Members</option>
                 {% for member in members %}
-                  <option value="{{ member.full_name }}">{{ member.full_name }}</option>
+                <option value="{{ member.full_name }}">
+                  {{ member.full_name }}
+                </option>
                 {% endfor %}
               </select>
             </div>
-            <div class="col-md-3">
-              <input type="date" id="date" name="date" />
+            <div class="col-md-2">
+              <input
+                type="date"
+                id="startDate"
+                name="startDate"
+                placeholder="Start Date"
+              />
             </div>
-            <div class="col-md-3 tt-contributed">
-              Total Contributed:
-              <span style="color: rgb(14, 169, 14)"> Kes {{ total_contributed }}</span>
+            <div class="col-md-2">
+              <input
+                type="date"
+                id="endDate"
+                name="endDate"
+                placeholder="End Date"
+              />
             </div>
+            <div class="col-md-2">
+              <button id="applyFilters" class="btn btn-primary">
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mt-3">
+          <div class="col-md-12 tt-contributed">
+            Total Contributed:
+            <span id="totalContributed" style="color: rgb(14, 169, 14)"
+              >Kes 0</span
+            >
           </div>
         </div>
 
@@ -73,18 +95,65 @@
               <th>Contributed Amount</th>
             </tr>
           </thead>
-          <tbody>
-            {% for contribution in contributions %}
-              <tr>
-                <td>{{ contribution.payer.zone.name }}</td>
-                <td>{{ contribution.payer.full_name }}</td>
-                <td>Kes {{ contribution.amount }}</td>
-              </tr>
-            {% endfor %}
+          <tbody id="reportBody">
+            <!-- Table content will be dynamically populated here -->
           </tbody>
         </table>
+
+        <nav>
+          <ul class="pagination justify-content-center" id="pagination">
+            <!-- Pagination will be dynamically populated here -->
+          </ul>
+        </nav>
       </div>
     </div>
   </div>
 </div>
+
+<script>
+  function fetchReports(page = 1) {
+    const block = document.getElementById("block").value;
+    const member = document.getElementById("member").value;
+    const startDate = document.getElementById("startDate").value;
+    const endDate = document.getElementById("endDate").value;
+
+    fetch(
+      `/api/v1/block_reports?page=${page}&blocks=${block}&member=${member}&start_date=${startDate}&end_date=${endDate}`
+    )
+      .then((response) => response.json())
+      .then((data) => {
+        document.getElementById(
+          "totalContributed"
+        ).textContent = `Kes ${data.total_contributed.toFixed(2)}`;
+        const reportBody = document.getElementById("reportBody");
+        reportBody.innerHTML = "";
+        data.detailed_contributions.forEach((contribution) => {
+          const row = `<tr>
+            <td>${contribution.zone}</td>
+            <td>${contribution.host}</td>
+            <td>Kes ${contribution.contributed_amount.toFixed(2)}</td>
+          </tr>`;
+          reportBody.innerHTML += row;
+        });
+        updatePagination(data.pagination);
+      })
+      .catch((error) => console.error("Error:", error));
+  }
+
+  function updatePagination(pagination) {
+    const paginationElement = document.getElementById("pagination");
+    paginationElement.innerHTML = "";
+    for (let i = 1; i <= pagination.total_pages; i++) {
+      const li = document.createElement("li");
+      li.className = `page-item ${i === pagination.page ? "active" : ""}`;
+      li.innerHTML = `<a class="page-link" href="#" onclick="fetchReports(${i})">${i}</a>`;
+      paginationElement.appendChild(li);
+    }
+  }
+
+  document
+    .getElementById("applyFilters")
+    .addEventListener("click", () => fetchReports());
+  fetchReports();
+</script>
 {% endblock %}

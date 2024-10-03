@@ -42,7 +42,7 @@ endblock %} {% block content %}
       <div class="tab-content d-flex justify-content-center">
         <!-- PROFIILE -->
         <div id="profile" class="tab-pane fade {% if active_tab == 'profile' %}show active{% endif %}">
-          <form method="POST" action="{{url_for('main.settings',active_tab='profile')}}">
+          <form id="profileForm">
             {{ profile_form.hidden_tag() }}
             <div class="row mb-5 mt-2">
               <div class="col-md-6">
@@ -79,9 +79,9 @@ endblock %} {% block content %}
             <button type="submit" name="profile_submit" class="submit-btn">
               {{ profile_form.submit.label.text }}
           </button>         
-          {% with messages = get_flashed_messages(with_categories=true) %}
+          <!-- {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
-          <div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
+          <div class="container mt-3" id="flash-container" style="max-width: 500px;"> 
             {% for category, message in messages %}
             <div
               class="alert alert-{{ category }} alert-dismissible fade show"
@@ -92,14 +92,14 @@ endblock %} {% block content %}
             {% endfor %}
           </div>
           {% endif %}
-          {% endwith %}
+          {% endwith %} -->
           </form>
         </div>
         <!-- END OF PROFIILE -->
 
         <!-- COMMITTEE TAB -->
         <div id="committee" class="tab-pane fade {% if active_tab == 'committee' %}show active{% endif %}">
-          <form method="POST" action="{{url_for('main.settings',active_tab='committee')}}">
+          <form id="committeeForm">
             {{ committee_form.hidden_tag() }}
             <div class="row mb-5 mt-2">
               <div class="col-md-6">
@@ -145,9 +145,9 @@ endblock %} {% block content %}
             <button type="submit" name="committee_submit" class="submit-btn">
               {{ committee_form.submit.label.text }}
           </button>
-     {% with messages = get_flashed_messages(with_categories=true) %}
+     <!-- {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
-<div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
+<div class="container mt-3" id="flash-container" style="max-width: 500px;"> 
   {% for category, message in messages %}
   <div
     class="alert alert-{{ category }} alert-dismissible fade show"
@@ -158,7 +158,7 @@ endblock %} {% block content %}
   {% endfor %}
 </div>
 {% endif %}
-{% endwith %}
+{% endwith %} -->
           </form>
         </div>
         <!--/ COMMITTEE TAB -->
@@ -172,7 +172,7 @@ endblock %} {% block content %}
             top-level umbrella, under which you can create distinct blocks,
             fostering collaboration and organization at the local level.
           </p>
-          <form method="POST" action="{{url_for('main.settings',tab='umbrella')}}">
+          <form id="umbrellaForm">
             {{ umbrella_form.hidden_tag() }}
 
             <div class="row p-2 d-flex justify-content-center">
@@ -208,9 +208,9 @@ endblock %} {% block content %}
               {{ umbrella_form.submit.label.text }}
           </button>
               
-     {% with messages = get_flashed_messages(with_categories=true) %}
+     <!-- {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
-<div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
+<div class="container mt-3" id="flash-container" style="max-width: 500px;"> 
   {% for category, message in messages %}
   <div
     class="alert alert-{{ category }} alert-dismissible fade show"
@@ -221,7 +221,7 @@ endblock %} {% block content %}
   {% endfor %}
 </div>
 {% endif %}
-{% endwith %}
+{% endwith %} -->
           </form>
         </div>
 
@@ -233,7 +233,7 @@ endblock %} {% block content %}
             Organize your community's structure by defining distinct blocks
             within each umbrella.
           </p>
-          <form method="POST" action="{{url_for('main.settings',active_tab='block')}}">
+          <form id="blockForm">
             {{ block_form.hidden_tag() }}
             <div class="row p-4">
               <div class="col-md-6">
@@ -258,9 +258,9 @@ endblock %} {% block content %}
             <button type="submit" name="block_submit" class="submit-btn">
               {{ block_form.submit.label.text }}
           </button>
-               {% with messages = get_flashed_messages(with_categories=true) %}
+               <!-- {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
-                <div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
+                <div class="container mt-3" id="flash-container" style="max-width: 500px;"> 
                   {% for category, message in messages %}
                   <div
                     class="alert alert-{{ category }} alert-dismissible fade show"
@@ -271,7 +271,7 @@ endblock %} {% block content %}
                   {% endfor %}
                 </div>
                 {% endif %}
-                {% endwith %}
+                {% endwith %} -->
           </form>
         </div>
 
@@ -283,7 +283,7 @@ endblock %} {% block content %}
             Define zones within each block to make it easier when allocating
             block event to zone members.
           </p>
-          <form method="POST" action="{{url_for('main.settings')}}">
+          <form id="zoneForm">
             {{ zone_form.hidden_tag() }}
             <div class="row p-4">
               <div class="col-md-6">
@@ -307,9 +307,9 @@ endblock %} {% block content %}
             <button type="submit" name="zone_submit" class="submit-btn">
               {{ zone_form.submit.label.text }}
           </button>
-                      {% with messages = get_flashed_messages(with_categories=true) %}
+                      <!-- {% with messages = get_flashed_messages(with_categories=true) %}
               {% if messages %}
-              <div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
+              <div class="container mt-3" id="flash-container" style="max-width: 500px;">
                 {% for category, message in messages %}
                 <div
                   class="alert alert-{{ category }} alert-dismissible fade show"
@@ -320,7 +320,7 @@ endblock %} {% block content %}
                 {% endfor %}
               </div>
               {% endif %}
-              {% endwith %}
+              {% endwith %} -->
           </form>
         </div>
 
@@ -332,7 +332,7 @@ endblock %} {% block content %}
             Each zone has distinct members, please add the different members of
             the zone.
           </p>
-          <form action="{{url_for('main.settings',tab='member')}}" method="POST">
+          <form id="memberForm">
             {{ member_form.hidden_tag() }}            
             <div class="row">
               <div class="col-md-6">
@@ -395,7 +395,7 @@ endblock %} {% block content %}
             <button type="submit" name="member_submit" class="submit-btn">
               {{ member_form.submit.label.text }}
           </button>
-                      {% with messages = get_flashed_messages(with_categories=true) %}
+                      <!-- {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
             <div class="container mt-3 " id="flash-container" style="max-width: 500px;">
               {% for category, message in messages %}
@@ -408,7 +408,7 @@ endblock %} {% block content %}
               {% endfor %}
             </div>
             {% endif %}
-            {% endwith %}
+            {% endwith %} -->
           </form>
         </div>
 
@@ -417,13 +417,59 @@ endblock %} {% block content %}
     </div>
   </div>
 </div>
-<!-- JavaScript to automatically hide flash messages after 5 seconds -->
+<!-- Flash message container - I have commented out initial implementation of flash just incase -->
+<div id="flash-container" class="container mt-3" style="max-width: 500px; display: none;">
+  <div id="flash-message" class="alert alert-dismissible fade show" role="alert">
+    <span id="flash-text"></span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+</div>
+
 <script>
-  setTimeout(function() {
-    const flashContainer = document.getElementById('flash-container');
-    if (flashContainer) {
-      flashContainer.style.display = 'none';  // Hide the container after 5 seconds
-    }
-  }, 5000);  // 5000 milliseconds = 5 seconds
+function showFlashMessage(message, category) {
+  const flashContainer = document.getElementById('flash-container');
+  const flashMessage = document.getElementById('flash-message');
+  const flashText = document.getElementById('flash-text');
+  
+  flashText.textContent = message;
+  flashMessage.className = `alert alert-${category} alert-dismissible fade show`;
+  flashContainer.style.display = 'block';
+  
+  setTimeout(() => {
+    flashContainer.style.display = 'none';
+  }, 5000);
+}
+
+function handleFormSubmit(formId, apiEndpoint) {
+  const form = document.getElementById(formId);
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(form);
+    
+    fetch(apiEndpoint, {
+      method: 'POST',
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showFlashMessage(data.message, 'success');
+      } else {
+        showFlashMessage(data.message, 'danger');
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      showFlashMessage('An error occurred. Please try again.', 'danger');
+    });
+  });
+}
+
+handleFormSubmit('profileForm', '/api/v1/users');
+handleFormSubmit('committeeForm', '/api/v1/users'); // Assuming committee members are users with specific roles
+handleFormSubmit('umbrellaForm', '/api/v1/umbrellas');
+handleFormSubmit('blockForm', '/api/v1/blocks');
+handleFormSubmit('zoneForm', '/api/v1/zones');
+handleFormSubmit('memberForm', '/api/v1/users'); // Assuming members are users
 </script>
 {% endblock %}

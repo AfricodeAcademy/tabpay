@@ -1,1194 +1,243 @@
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import func
+from datetime import datetime
 from flask import Blueprint
 from werkzeug.exceptions import HTTPException
-from flask_restful import Api,Resource, marshal_with, abort, fields, reqparse
+from flask_restful import Api,Resource, marshal_with, abort
+from ..main.models import UserModel, CommunicationModel, \
+    PaymentModel, BankModel, BlockModel, UmbrellaModel, ZoneModel, MeetingModel
+from .serializers import user_fields, user_args, communication_fields,\
+      communication_args, payment_fields, payment_args, bank_fields, bank_args, \
+    block_fields, block_args, umbrella_fields, umbrella_args, zone_fields, zone_args\
+    , meeting_fields, meeting_args, block_report_args, block_report_fields
 from ..utils import db
-from flask_security import UserMixin, RoleMixin, SQLAlchemyUserDatastore
-from flask_security.utils import hash_password
-import uuid
 
 
 api_bp = Blueprint('api', __name__)
 api = Api(api_bp)
 
-# Association table for many-to-many relationship between User and Block
-member_blocks = db.Table('member_blocks',
-    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
-    db.Column('block_id', db.Integer, db.ForeignKey('blocks.id'), primary_key=True)
-)
 
-# Association table for many-to-many relationship between User and Role
-roles_users = db.Table('roles_users',
-    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
-    db.Column('role_id', db.Integer, db.ForeignKey('roles.id'), primary_key=True)
-)
+class BaseResource(Resource):
+    model = None
+    fields = None
+    args = None
 
-class Role(db.Model, RoleMixin):
-    __tablename__ = 'roles'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(80), unique=True, nullable=False)
-    description = db.Column(db.String(255), nullable=True)
-    
-  
-    def __repr__(self):
-        return f"<Role {self.name}>"
-
-class UserModel(db.Model, UserMixin):
-    __tablename__ = 'users'
-
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(255), unique=True) 
-    password = db.Column(db.String(255)) 
-    full_name = db.Column(db.String(255))
-    id_number = db.Column(db.Integer, index=True,unique=True)  
-    phone_number = db.Column(db.String(80), unique=True)
-    active = db.Column(db.Boolean, default=True)
-    bank = db.Column(db.Integer, db.ForeignKey('banks.id'))
-    acc_number = db.Column(db.String(50))
-    image_file = db.Column(db.String(20), nullable=False, default = 'profile.png')
-    registered_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-    updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
-    fs_uniquifier = db.Column(db.String(64), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
-    zone = db.Column(db.String(100))
-    confirmed_at = db.Column(db.DateTime)
-    webauth = db.relationship('WebAuth', backref='user', uselist=False)
-
-
-    # Relationships
-    roles = db.relationship('Role', secondary=roles_users, backref=db.backref('users', lazy='dynamic'))
-    messages = db.relationship('CommunicationModel', backref='author', lazy=True)
-    payments = db.relationship('PaymentModel', backref='payer', lazy=True)
-    organized_meetings = db.relationship('MeetingModel', backref='meeting_organizer', lazy=True)
-
-    # Many-to-many relationship with blocks
-    block_memberships = db.relationship('BlockModel', secondary=member_blocks, backref=db.backref('users', lazy=True))
-
-    # Password auto-generation method
-    def generate_auto_password(self):
-        import random, string
-        password = ''.join(random.choices(string.ascii_letters + string.digits, k=8))
-        self.password = hash_password(password) 
-        return password  
-    
-    def __repr__(self):
-        return f"<Member {self.full_name}>"
-
-class WebAuth(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    auth_token = db.Column(db.String(255), unique=True, nullable=False)
-
-class UmbrellaModel(db.Model):
-    __tablename__ = 'umbrellas'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), nullable=False, unique=True)
-    location = db.Column(db.String(255), nullable=False)
-    created_by = db.Column(db.Integer, db.ForeignKey('users.id'),nullable=False)  
-    blocks = db.relationship('BlockModel', backref='parent_umbrella', lazy=True)
-
-    def __repr__(self):
-        return f"<Umbrella {self.name}>"
-    
-class BlockModel(db.Model):
-    __tablename__ = 'blocks'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), nullable=False)
-    parent_umbrella_id = db.Column(db.Integer, db.ForeignKey('umbrellas.id'), nullable=False)
-    zones = db.relationship('ZoneModel', backref='parent_block', lazy=True)
-    payments = db.relationship('PaymentModel', backref='block_payments', lazy=True)
-    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
-    meetings = db.relationship('MeetingModel', backref='hosting_block', lazy=True)
-
-
-
-    def __repr__(self):
-        return f"<Zone {self.name}>"
-     
-
-   
-class ZoneModel(db.Model):
-    __tablename__ = 'zones'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(20), nullable=False)
-    parent_block_id = db.Column(db.Integer, db.ForeignKey("blocks.id"), nullable=False)
-    created_by = db.Column(db.Integer, db.ForeignKey('users.id'))
-                           
-    meetings = db.relationship('MeetingModel', backref='host_zone', lazy=True)
-
-    
-    def __repr__(self):
-        return f"<Zone {self.name}>"
-    
-
-
-    
-class MeetingModel(db.Model):
-     _tablename_ = 'meetings'
-     id = db.Column(db.Integer, primary_key=True)
-     block_id = db.Column(db.Integer, db.ForeignKey('blocks.id'), nullable=False)
-     zone_id = db.Column(db.Integer, db.ForeignKey('zones.id'), nullable=False)
-     organizer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)  # the user who created the meeting
-     date = db.Column(db.DateTime, nullable=False)
-
-        
-     def _repr_(self):
-         return f"<Meeting {self.id} on {self.date}>"
-
-
-class BankModel(db.Model):
-    __tablename__ = 'banks'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(80),nullable=False)
-    paybill_no = db.Column(db.Integer,nullable=False)
-    total_transactions = db.relationship('PaymentModel',backref='total_transactions',lazy=True)
-    
-    def __repr__(self):
-        return f"<Bank {self.name}>"
-    
-
-class PaymentModel(db.Model):
-    __tablename__ = 'payments'
-
-    id = db.Column(db.Integer, primary_key=True)
-    mpesa_id = db.Column(db.String(255), nullable=False)  
-    account_number = db.Column(db.String(80), nullable=False)
-    source_phone_number = db.Column(db.String(80), nullable=False)
-    amount = db.Column(db.Integer, nullable=False)
-    payment_date = db.Column(db.DateTime, default=db.func.current_timestamp())
-    transaction_status = db.Column(db.Boolean, default=False)
-    bank_id = db.Column(db.Integer, db.ForeignKey('banks.id'), nullable=False)
-
-    # Payment association with a specific block
-    block_id = db.Column(db.Integer, db.ForeignKey('blocks.id'), nullable=False)
-    
-    # Payment association with a specific user (payer)
-    payer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-
-    def __repr__(self):
-        return f"<Payment {self.amount} by Member {self.payer_id}>"
-
-    @classmethod
-    def get_contributions_by_member(cls, user_id):
-        """Get all contributions made by a specific member."""
-        return cls.query.filter_by(payer_id=user_id).all()
-
-    @classmethod
-    def get_contributions_by_block(cls, block_id):
-        """Get all contributions for a specific block."""
-        return cls.query.filter_by(block_id=block_id).all()
-
-
-class CommunicationModel(db.Model):
-    __tablename__ = 'communications'
-
-    id = db.Column(db.Integer, primary_key=True)
-    content = db.Column(db.String(255), nullable=False)
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-    member_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-
-    def __repr__(self):
-        return f"<Message from Member {self.member_id}>"
-
-# Setup Flask-Security
-user_datastore = SQLAlchemyUserDatastore(db, UserModel, Role)
-
-
-# Argument parsers for different resources
-umbrella_args = reqparse.RequestParser()
-umbrella_args.add_argument('name', type=str, required=True, help='Umbrella Name is required')
-umbrella_args.add_argument('location', type=str, required=True, help='Umbrella location is required')
-
-block_args = reqparse.RequestParser()
-block_args.add_argument('name', type=str, required=True, help='Block Name is required')
-block_args.add_argument('parent_umbrella_id', type=int, required=True, help='Parent Umbrella is required')
-
-zone_args = reqparse.RequestParser()
-zone_args.add_argument('name', type=str, required=True, help='Zone Name is required')
-zone_args.add_argument('parent_block_id', type=int, required=True, help='Parent Block is required')
-
-user_args = reqparse.RequestParser()
-user_args.add_argument('email', type=str, required=True, help='Email is required')
-user_args.add_argument('password', type=str, required=True, help='Password is required')
-
-communication_args = reqparse.RequestParser()
-communication_args.add_argument('content', type=str, required=True, help='Content is required')
-communication_args.add_argument('user_id', type=int, required=True, help='Author is required')
-
-bank_args = reqparse.RequestParser()
-bank_args.add_argument('name', type=str, required=True, help='Bank Name is required')
-bank_args.add_argument('paybill_no', type=int, required=True, help='Paybill Number is required')
-
-payment_args = reqparse.RequestParser()
-payment_args.add_argument('payer_id', type=int, required=True, help='Payer is required')
-payment_args.add_argument('source_phone_number', type=str, required=True, help='Source phone number is required')  
-payment_args.add_argument('amount', type=float, required=True, help='Amount is required')
-
-# Fields for serialization
-user_fields = {
-    "id": fields.Integer,
-    "full_name": fields.String,
-    "email": fields.String,
-    "password": fields.String,
-    "id_number": fields.Integer,
-    "phone_number": fields.String,  # Changed to String
-    "active": fields.Boolean,
-    "zone_id": fields.Integer,
-    "bank": fields.String,
-    "acc_number": fields.String,  # Changed to String
-    "registered_at": fields.DateTime,
-    "updated_at": fields.DateTime,
-    "message": fields.String(attribute="author.full_name")
-}
-
-communication_fields = {
-    "id": fields.Integer,
-    "content": fields.String,
-    "user_id": fields.Integer,
-    "created_at": fields.DateTime,
-    "updated_at": fields.DateTime
-}
-
-payment_fields = {
-    "id": fields.Integer,
-    "payer_id": fields.Integer,
-    "amount": fields.Float,
-    "payment_date": fields.DateTime,
-    "mpesa_id": fields.String,
-    "account_number": fields.String,  # Changed to String
-    "source_phone_number": fields.String,  # Changed to String
-    "transaction_status": fields.Boolean
-}
-
-bank_fields = {
-    "id": fields.Integer,
-    "name": fields.String,
-    "paybill_no": fields.Integer,
-    "total_transactions": fields.List(fields.Nested(payment_fields))
-}
-
-block_fields = {
-    "id": fields.Integer,
-    "name": fields.String,
-    "umbrella_id": fields.Integer
-}
-
-umbrella_fields = {
-    "id": fields.Integer,
-    "name": fields.String,
-    "location": fields.String
-}
-
-zone_fields = {
-    "id": fields.Integer,
-    "name": fields.String,
-    "parent_block_id": fields.Integer
-}
-
-class Users(Resource):
-    @marshal_with(user_fields)
-    def get(self):
+    @marshal_with(fields)
+    def get(self, id=None):
         try:
-            users = UserModel.query.all()
-            return users, 200
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
+            if id:
+                item = self.model.query.get_or_404(id)
+                return item, 200
+            items = self.model.query.all()
+            return items, 200
         except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
+            return self.handle_error(e)
 
-    @marshal_with(user_fields)
+    @marshal_with(fields)
     def post(self):
         try:
-            args = user_args.parse_args()
-            existing_user = UserModel.query.filter_by(email=args['email']).first()
-            
-            if existing_user:
-                error_message = {"error": "User already exists"}
-                abort(409, message=error_message)
-            
-            new_user = UserModel(**args)
-            db.session.add(new_user)
+            args = self.args.parse_args()
+            new_item = self.model(**args)
+            db.session.add(new_item)
             db.session.commit()
-            return new_user, 201
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
+            return {"success": True, "message": f"{self.model.__name__} created successfully", "data": new_item}, 201
         except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
+            return self.handle_error(e)
 
-class User(Resource):
-    @marshal_with(user_fields)
-    def get(self, id):
-        try:
-            user = UserModel.query.get_or_404(id)
-            return user, 200
-                   
-        except SQLAlchemyError as e:
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()   
-
-    @marshal_with(user_fields)
+    @marshal_with(fields)
     def patch(self, id):
         try:
-            args = user_args.parse_args()
-            existing_user = UserModel.query.get_or_404(id)
-            
-            if existing_user:
-                for key, value in args.items():
-                    setattr(existing_user, key, value)
-                db.session.commit()
-                return existing_user, 200
-            
-            abort(404, message={"error": "User not found"})
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
+            args = self.args.parse_args()
+            item = self.model.query.get_or_404(id)
+            for key, value in args.items():
+                setattr(item, key, value)
+            db.session.commit()
+            return item, 200
         except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close() 
+            return self.handle_error(e)
 
-    @marshal_with(user_fields)
+    @marshal_with(fields)
     def delete(self, id):
         try:
-            existing_user = UserModel.query.get_or_404(id)
-            
-            if existing_user:
-                db.session.delete(existing_user)
-                db.session.commit()
-                users = UserModel.query.all()
-                return users, 200
-            
-            abort(404, message={"error": "User not found"})
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
+            item = self.model.query.get_or_404(id)
+            db.session.delete(item)
+            db.session.commit()
+            items = self.model.query.all()
+            return items, 200
         except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
+            return self.handle_error(e)
+
+    def handle_error(self, e):
+        db.session.rollback()
+        if isinstance(e, SQLAlchemyError):
+            error_message = {"success": False, "message": "Database error occurred", "details": str(e)}
             abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-
-
-
-class Umbrellas(Resource):
-    @marshal_with(umbrella_fields)
-    def get(self):
-        try:
-            umbrellas = UmbrellaModel.query.all()
-            return umbrellas, 200
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
+        elif isinstance(e, HTTPException):
+            error_message = {"success": False, "message": "HTTP error occurred", "details": str(e)}
             abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
+        else:
+            error_message = {"success": False, "message": "Unexpected error occurred", "details": str(e)}
             abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
+        return error_message
 
-    @marshal_with(umbrella_fields)
+
+class UsersResource(BaseResource):
+    model = UserModel
+    fields = user_fields
+    args = user_args
+
+class CommunicationsResource(BaseResource):
+    model = CommunicationModel
+    fields = communication_fields
+    args = communication_args
+
+class BanksResource(BaseResource):
+    model = BankModel
+    fields = bank_fields
+    args = bank_args
+
+class PaymentsResource(BaseResource):
+    model = PaymentModel
+    fields = payment_fields
+    args = payment_args
+    
+
+class BlocksResource(BaseResource):
+    model = BlockModel
+    fields = block_fields
+    args = block_args
+
+class UmbrellasResource(BaseResource):
+    model = UmbrellaModel
+    fields = umbrella_fields
+    args = umbrella_args
+
+    @marshal_with(fields)
     def post(self):
         try:
-            args = umbrella_args.parse_args()
-            new_umbrella = UmbrellaModel(**args)
+            args = self.args.parse_args()
+            existing_umbrella = self.model.query.filter_by(created_by=args['created_by']).first()
+            if existing_umbrella:
+                abort(400, message='You can only create one umbrella!')
+            duplicate_umbrella = self.model.query.filter_by(name=args['name']).first()
+            if duplicate_umbrella:
+                abort(400, message='An umbrella with that name already exists!')
+            new_umbrella = self.model(**args)
             db.session.add(new_umbrella)
             db.session.commit()
             return new_umbrella, 201
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
         except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
+            return self.handle_error(e)
 
-class Umbrella(Resource):
-    @marshal_with(umbrella_fields)
-    def get(self, id):
-        try:
-            umbrella = UmbrellaModel.query.get_or_404(id)
-            return umbrella, 200
-        
-        except SQLAlchemyError as e:
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
+class MeetingsResource(BaseResource):
+    model = MeetingModel
+    fields = meeting_fields
+    args = meeting_args
 
-    @marshal_with(umbrella_fields)
-    def patch(self, id):
-        try:
-            args = umbrella_args.parse_args()
-            umbrella = UmbrellaModel.query.get_or_404(id)
-            
-            for key, value in args.items():
-                setattr(umbrella, key, value)
-            db.session.commit()
-            return umbrella, 200
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-    @marshal_with(umbrella_fields)
-    def delete(self, id):
-        try:
-            umbrella = UmbrellaModel.query.get_or_404(id)
-            db.session.delete(umbrella)
-            db.session.commit()
-            umbrellas = UmbrellaModel.query.all()
-            return umbrellas, 200
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-
-
-
-
-
-
-class Communications(Resource):
-    @marshal_with(communication_fields)
-    def get(self):
-        try:
-            communications = CommunicationModel.query.all()
-            return communications, 200
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-    @marshal_with(communication_fields)
+    @marshal_with(fields)
     def post(self):
         try:
-            args = communication_args.parse_args()
-            new_communication = CommunicationModel(**args)
-            db.session.add(new_communication)
+            args = self.args.parse_args()
+            new_meeting = self.model(**args)
+            db.session.add(new_meeting)
             db.session.commit()
-            return new_communication, 201
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
+            return new_meeting, 201
         except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-class Communication(Resource):
-    @marshal_with(communication_fields)
-    def get(self, id):
-        try:
-            communication = CommunicationModel.query.get_or_404(id)
-            return communication, 200
-        
-        except SQLAlchemyError as e:
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-    @marshal_with(communication_fields)
-    def patch(self, id):
-        try:
-            args = communication_args.parse_args()
-            communication = CommunicationModel.query.get_or_404(id)
-            
-            for key, value in args.items():
-                setattr(communication, key, value)
-            db.session.commit()
-            return communication, 200
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-    @marshal_with(communication_fields)
-    def delete(self, id):
-        try:
-            communication = CommunicationModel.query.get_or_404(id)
-            db.session.delete(communication)
-            db.session.commit()
-            communications = CommunicationModel.query.all()
-            return communications, 200
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
+            return self.handle_error(e)
 
 
+class ZonesResource(BaseResource):
+    model = ZoneModel
+    fields = zone_fields
+    args = zone_args
 
-class Banks(Resource):
-    @marshal_with(bank_fields)
+class BlockReportsResource(Resource):
+    @marshal_with(block_report_fields)
     def get(self):
-        try:
-            banks = BankModel.query.all()
-            return banks, 200
+        args = block_report_args.parse_args()
         
-        except SQLAlchemyError as e:
+        try:
+            # Build the base query
+            query = db.session.query(
+                ZoneModel.name.label('zone'),
+                UserModel.full_name.label('host'),
+                func.sum(PaymentModel.amount).label('contributed_amount')
+            ).join(UserModel, PaymentModel.payer_id == UserModel.id
+            ).join(ZoneModel, UserModel.zone == ZoneModel.name
+            ).group_by(ZoneModel.name, UserModel.full_name)
+
+            # Apply filters
+            query = self._apply_filters(query, args)
+
+            # Pagination
+            page = args['page']
+            per_page = args['per_page']
+            paginated_results = query.paginate(page=page, per_page=per_page, error_out=False)
+
+            total_contributed = db.session.query(func.sum(PaymentModel.amount)).scalar() or 0
+
+            return {
+                'total_contributed': total_contributed,
+                'detailed_contributions': [
+                    {
+                        'zone': item.zone,
+                        'host': item.host,
+                        'contributed_amount': item.contributed_amount
+                    } for item in paginated_results.items
+                ],
+                'pagination': {
+                    'page': page,
+                    'per_page': per_page,
+                    'total_pages': paginated_results.pages,
+                    'total_items': paginated_results.total
+                }
+            }
+
+        except Exception as e:
             db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
+            return {'error': str(e)}, 500
 
-    @marshal_with(payment_fields)
-    def post(self):
+    def _apply_filters(self, query, args):
+        if args['blocks']:
+            block = BlockModel.query.filter_by(name=args['blocks']).first()
+            if not block:
+                raise ValueError(f"Block '{args['blocks']}' not found")
+            members_in_block = [member.id for member in block.members]
+            query = query.filter(PaymentModel.payer_id.in_(members_in_block))
+
+        if args['member']:
+            member = UserModel.query.filter_by(full_name=args['member']).first()
+            if not member:
+                raise ValueError(f"Member '{args['member']}' not found")
+            query = query.filter(PaymentModel.payer_id == member.id)
+
+        start_date = self._parse_date(args['start_date'])
+        end_date = self._parse_date(args['end_date'])
+
+        if start_date:
+            query = query.filter(PaymentModel.payment_date >= start_date)
+        if end_date:
+            query = query.filter(PaymentModel.payment_date <= end_date)
+
+        return query
+
+    def _parse_date(self, date_str):
+        if not date_str:
+            return None
         try:
-            args = bank_args.parse_args()
-            new_bank = BankModel(**args)
-            db.session.add(new_bank)
-            db.session.commit()
-            return new_bank, 201
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-class Payment(Resource):
-    @marshal_with(bank_fields)
-    def get(self, id):
-        try:
-            bank = BankModel.query.get_or_404(id)
-            return bank, 200
-        
-        except SQLAlchemyError as e:
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-    @marshal_with(bank_fields)
-    def patch(self, id):
-        try:
-            args = bank_args.parse_args()
-            bank = BankModel.query.get_or_404(id)
-            
-            for key, value in args.items():
-                setattr(bank, key, value)
-            db.session.commit()
-            return bank, 200
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-    @marshal_with(bank_fields)
-    def delete(self, id):
-        try:
-            bank = BankModel.query.get_or_404(id)
-            db.session.delete(bank)
-            db.session.commit()
-            banks = BankModel.query.all()
-            return banks, 200
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
+            return datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            raise ValueError(f"Invalid date format: {date_str}. Use YYYY-MM-DD.")
 
 
+# API routes
+api.add_resource(UsersResource, '/api/v1/users', '/api/v1/users/<int:id>')
+api.add_resource(CommunicationsResource, '/api/v1/communications', '/api/v1/communications/<int:id>')
+api.add_resource(BanksResource, '/api/v1/banks', '/api/v1/banks/<int:id>')
+api.add_resource(PaymentsResource, '/api/v1/payments', '/api/v1/payments/<int:id>')
+api.add_resource(BlocksResource, '/api/v1/blocks', '/api/v1/blocks/<int:id>')
+api.add_resource(UmbrellasResource, '/api/v1/umbrellas', '/api/v1/umbrellas/<int:id>')
+api.add_resource(ZonesResource, '/api/v1/zones', '/api/v1/zones/<int:id>')
+api.add_resource(MeetingsResource, '/api/v1/meetings', '/api/v1/meetings/<int:id>')
+api.add_resource(BlockReportsResource, '/api/v1/block_reports')
 
-class Payments(Resource):
-    @marshal_with(payment_fields)
-    def get(self):
-        try:
-            payments = PaymentModel.query.all()
-            return payments, 200
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-    @marshal_with(payment_fields)
-    def post(self):
-        try:
-            args = payment_args.parse_args()
-            new_payment = PaymentModel(**args)
-            db.session.add(new_payment)
-            db.session.commit()
-            return new_payment, 201
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-class Payment(Resource):
-    @marshal_with(payment_fields)
-    def get(self, id):
-        try:
-            payment = PaymentModel.query.get_or_404(id)
-            return payment, 200
-        
-        except SQLAlchemyError as e:
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-    @marshal_with(payment_fields)
-    def patch(self, id):
-        try:
-            args = payment_args.parse_args()
-            payment = PaymentModel.query.get_or_404(id)
-            
-            for key, value in args.items():
-                setattr(payment, key, value)
-            db.session.commit()
-            return payment, 200
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-    @marshal_with(payment_fields)
-    def delete(self, id):
-        try:
-            payment = PaymentModel.query.get_or_404(id)
-            db.session.delete(payment)
-            db.session.commit()
-            payments = PaymentModel.query.all()
-            return payments, 200
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-
-
-
-
-class Blocks(Resource):
-    @marshal_with(block_fields)
-    def get(self):
-        try:
-            blocks = BlockModel.query.all()
-            return blocks, 200
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-    @marshal_with(block_fields)
-    def post(self):
-        try:
-            args = block_args.parse_args()
-            new_block = BlockModel(**args)
-            db.session.add(new_block)
-            db.session.commit()
-            return new_block, 201
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-class Block(Resource):
-    @marshal_with(block_fields)
-    def get(self, id):
-        try:
-            block = BlockModel.query.get_or_404(id)
-            return block, 200
-        
-        except SQLAlchemyError as e:
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-    @marshal_with(block_fields)
-    def patch(self, id):
-        try:
-            args = block_args.parse_args()
-            block = BlockModel.query.get_or_404(id)
-            
-            for key, value in args.items():
-                setattr(block, key, value)
-            db.session.commit()
-            return block, 200
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-    @marshal_with(block_fields)
-    def delete(self, id):
-        try:
-            block = BlockModel.query.get_or_404(id)
-            db.session.delete(block)
-            db.session.commit()
-            blocks = BlockModel.query.all()
-            return blocks, 200
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-
-
-
-
-class Zones(Resource):
-    @marshal_with(zone_fields)
-    def get(self):
-        try:
-            zones = ZoneModel.query.all()
-            return zones, 200
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-    @marshal_with(zone_fields)
-    def post(self):
-        try:
-            args = zone_args.parse_args()
-            new_zone = ZoneModel(**args)
-            db.session.add(new_zone)
-            db.session.commit()
-            return new_zone, 201
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-class Zone(Resource):
-    @marshal_with(zone_fields)
-    def get(self, id):
-        try:
-            zone = ZoneModel.query.get_or_404(id)
-            return zone, 200
-        
-        except SQLAlchemyError as e:
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-    @marshal_with(zone_fields)
-    def patch(self, id):
-        try:
-            args = zone_args.parse_args()
-            zone = ZoneModel.query.get_or_404(id)
-            
-            for key, value in args.items():
-                setattr(zone, key, value)
-            db.session.commit()
-            return zone, 200
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-    @marshal_with(zone_fields)
-    def delete(self, id):
-        try:
-            zone = ZoneModel.query.get_or_404(id)
-            db.session.delete(zone)
-            db.session.commit()
-            zones = ZoneModel.query.all()
-            return zones, 200
-        
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            error_message = {"error": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        except HTTPException as e:
-            error_message = {"error": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-        
-        except Exception as e:
-            error_message = {"error": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        finally:
-            db.session.close()
-
-
-api.add_resource(Users, '/api/v1/users/')
-api.add_resource(User, '/api/v1/users/<int:id>/')
-api.add_resource(Communications, '/api/v1/communications/')
-api.add_resource(Communication, '/api/v1/communications/<int:id>/')
-api.add_resource(Banks, '/api/v1/banks/')
-api.add_resource(Banks, '/api/v1/banks/<int:id>/')
-api.add_resource(Payments, '/api/v1/payments/')
-api.add_resource(Payment, '/api/v1/payments/<int:id>/')
-api.add_resource(Blocks, '/api/v1/blocks/')
-api.add_resource(Block, '/api/v1/blocks/<int:id>/')
-api.add_resource(Umbrellas, '/api/v1/umbrellas/')
-api.add_resource(Umbrella, '/api/v1/umbrellas/<int:id>/')
-api.add_resource(Zones, '/api/v1/zones/')
-api.add_resource(Zone, '/api/v1/zones/<int:id>/')
