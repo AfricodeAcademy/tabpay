@@ -10,7 +10,6 @@ from flask_wtf.csrf import generate_csrf
 
 
 main = Blueprint('main', __name__)
-
 @main.route('/', methods=['GET'])
 def home():
     return render_template('index.html', title='TabPay | Home')
@@ -19,56 +18,26 @@ def home():
 @login_required
 @roles_accepted('Admin', 'SuperUser', 'Chairman', 'Secretary')
 def settings():
-    profile_form = ProfileForm()
-    umbrella_form = UmbrellaForm()
-    committee_form = AddCommitteForm()
-    block_form = BlockForm()
-    zone_form = ZoneForm()
-    member_form = AddMemberForm()
+    active_tab = request.args.get('active_tab', 'profile')
     
-    
-    user = UserModel.query.get(current_user.id)
-    if user:
-        profile_form.full_name.data = user.full_name
-        profile_form.id_number.data = user.id_number
-
-    umbrella = UmbrellaModel.query.filter_by(created_by=current_user.id).first()
-    if umbrella:
-        block_form.parent_umbrella.data = umbrella.name
-
-    blocks = BlockModel.query.filter_by(created_by=current_user.id).all()
-    zone_form.parent_block.choices = [(str(block.id), block.name) for block in blocks]
-
-    zones = ZoneModel.query.filter_by(created_by=current_user.id).all()
-    member_form.member_zone.choices = [(str(zone.id), zone.name) for zone in zones]
-
-    banks = BankModel.query.all()
-    member_form.bank.choices = [(str(bank.id), bank.name) for bank in banks]
-
     if request.method == 'POST':
-        if 'profile_submit' in request.form:
+        form_type = request.form.get('form_type')
+        if form_type == 'profile':
             return handle_profile_update()
-        elif 'committee_submit' in request.form:
-            return handle_committee_addition()
-        elif 'umbrella_submit' in request.form:
+        elif form_type == 'umbrella':
             return handle_umbrella_creation()
-        elif 'block_submit' in request.form:
+        elif form_type == 'committee':
+            return handle_committee_addition()
+        elif form_type == 'block':
             return handle_block_creation()
-        elif 'zone_submit' in request.form:
+        elif form_type == 'zone':
             return handle_zone_creation()
-        elif 'member_submit' in request.form:
+        elif form_type == 'member':
             return handle_member_creation()
+    
+    return render_settings_page(active_tab)
 
-    return render_template('settings.html', title='Dashboard | Settings',
-                           profile_form=profile_form, 
-                           umbrella_form=umbrella_form,
-                           committee_form=committee_form,
-                           block_form=block_form,
-                           zone_form=zone_form,
-                           member_form=member_form,
-                           user=current_user,
-                           blocks=blocks,
-                           zones=zones)
+
 
 @main.route('/statistics', methods=['GET'])
 @login_required
@@ -103,7 +72,6 @@ def host():
 @login_required
 def block_reports():
     # Use the API endpoint to get block reports data
-    from app.api.api import BlockReportsResource
     block_reports_resource = BlockReportsResource()
     response = block_reports_resource.get()
     
@@ -116,6 +84,10 @@ def block_reports():
                            contributions=response.get('detailed_contributions', []),
                            total_contributed=response.get('total_contributed', 0))
 
+
+
+
+
 # Helper functions (these now use the API endpoints where appropriate)
 def handle_profile_update():
     profile_form = ProfileForm()
@@ -126,6 +98,10 @@ def handle_profile_update():
             flash('Profile updated successfully!', 'success')
         else:
             flash(response.get('message', 'Failed to update profile.'), 'danger')
+    else:
+        for field, errors in profile_form.errors.items():
+            for error in errors:
+                flash(f'{field}: {error}', 'danger')
     return redirect(url_for('main.settings', active_tab='profile'))
 
 def handle_umbrella_creation():
@@ -137,6 +113,10 @@ def handle_umbrella_creation():
             flash('Umbrella created successfully!', 'success')
         else:
             flash(response.get('message', 'Failed to create umbrella.'), 'danger')
+    else:
+        for field, errors in umbrella_form.errors.items():
+            for error in errors:
+                flash(f'{field}: {error}', 'danger')
     return redirect(url_for('main.settings', active_tab='umbrella'))
 #TODO to make this helper use the API endpoint
 def handle_committee_addition():
@@ -151,6 +131,10 @@ def handle_committee_addition():
             flash(f'{user.full_name} added as {role_name}', 'success')
         else:
             flash('No member found with that ID!', 'danger')
+    else:
+        for field, errors in committee_form.errors.items():
+            for error in errors:
+                flash(f'{field}: {error}', 'danger')
     return redirect(url_for('main.settings', active_tab='committee'))
 
 def handle_block_creation():
@@ -162,6 +146,10 @@ def handle_block_creation():
             flash('Block created successfully!', 'success')
         else:
             flash(response.get('message', 'Failed to create block.'), 'danger')
+    else:
+        for field, errors in block_form.errors.items():
+            for error in errors:
+                flash(f'{field}: {error}', 'danger')
     return redirect(url_for('main.settings', active_tab='block'))
 
 def handle_zone_creation():
@@ -173,6 +161,10 @@ def handle_zone_creation():
             flash('Zone created successfully!', 'success')
         else:
             flash(response.get('message', 'Failed to create zone.'), 'danger')
+    else:
+        for field, errors in zone_form.errors.items():
+            for error in errors:
+                flash(f'{field}: {error}', 'danger')
     return redirect(url_for('main.settings', active_tab='zone'))
 
 def handle_member_creation():
@@ -184,9 +176,13 @@ def handle_member_creation():
             flash('Member created successfully!', 'success')
         else:
             flash(response.get('message', 'Failed to create member.'), 'danger')
+    else:
+        for field, errors in member_form.errors.items():
+            for error in errors:
+                flash(f'{field}: {error}', 'danger')
     return redirect(url_for('main.settings', active_tab='member'))
 
-def render_settings_page():
+def render_settings_page(active_tab):
     profile_form = ProfileForm()
     umbrella_form = UmbrellaForm()
     committee_form = AddCommitteForm()
@@ -222,6 +218,7 @@ def render_settings_page():
                            user=current_user,
                            blocks=blocks,
                            zones=zones,
+                           active_tab=active_tab,
                            csrf_token=generate_csrf())
 
 def schedule_meeting(form):
