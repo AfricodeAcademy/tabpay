@@ -1,4 +1,6 @@
 from flask_restful import fields, reqparse
+
+
 # Fields for serialization
 user_fields = {
     "id": fields.Integer,
@@ -60,18 +62,32 @@ zone_fields = {
     "parent_block_id": fields.Integer
 }
 
+# block_report_fields = {
+#     "total_contributed": fields.Float,
+#     "contributions": fields.List(fields.Nested({
+#         "id": fields.Integer,
+#         "amount": fields.Float,
+#         "payment_date": fields.DateTime,
+#     })),
+#     "detailed_contributions": fields.List(fields.Nested({
+#         "zone": fields.String,
+#         "host": fields.String,
+#         "contributed_amount": fields.Float,
+#     })),
+# }
 block_report_fields = {
     "total_contributed": fields.Float,
-    "contributions": fields.List(fields.Nested({
-        "id": fields.Integer,
-        "amount": fields.Float,
-        "payment_date": fields.DateTime,
-    })),
     "detailed_contributions": fields.List(fields.Nested({
         "zone": fields.String,
         "host": fields.String,
         "contributed_amount": fields.Float,
     })),
+    "pagination": fields.Nested({
+        "page": fields.Integer,
+        "per_page": fields.Integer,
+        "total_pages": fields.Integer,
+        "total_items": fields.Integer
+    })
 }
 
 meeting_fields = {

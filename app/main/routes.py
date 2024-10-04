@@ -2,10 +2,12 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_security import login_required, roles_required, current_user, logout_user, roles_accepted
 from flask_security.utils import hash_password
 from ..utils import db
-from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm
+from ..main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm
 from .models import UserModel, Role, BlockModel, ZoneModel, UmbrellaModel, BankModel, MeetingModel, PaymentModel
 from app import user_datastore
 from app.api.api import BlockReportsResource, BlocksResource, UmbrellasResource, ZonesResource, UsersResource
+from flask_wtf.csrf import generate_csrf
+
 
 main = Blueprint('main', __name__)
 
@@ -13,7 +15,7 @@ main = Blueprint('main', __name__)
 def home():
     return render_template('index.html', title='TabPay | Home')
 
-@main.route('/settings', methods=['GET'])
+@main.route('/settings', methods=['GET', 'POST'])
 @login_required
 @roles_accepted('Admin', 'SuperUser', 'Chairman', 'Secretary')
 def settings():
@@ -23,6 +25,7 @@ def settings():
     block_form = BlockForm()
     zone_form = ZoneForm()
     member_form = AddMemberForm()
+    
     
     user = UserModel.query.get(current_user.id)
     if user:
@@ -41,6 +44,20 @@ def settings():
 
     banks = BankModel.query.all()
     member_form.bank.choices = [(str(bank.id), bank.name) for bank in banks]
+
+    if request.method == 'POST':
+        if 'profile_submit' in request.form:
+            return handle_profile_update()
+        elif 'committee_submit' in request.form:
+            return handle_committee_addition()
+        elif 'umbrella_submit' in request.form:
+            return handle_umbrella_creation()
+        elif 'block_submit' in request.form:
+            return handle_block_creation()
+        elif 'zone_submit' in request.form:
+            return handle_zone_creation()
+        elif 'member_submit' in request.form:
+            return handle_member_creation()
 
     return render_template('settings.html', title='Dashboard | Settings',
                            profile_form=profile_form, 
@@ -103,29 +120,25 @@ def block_reports():
 def handle_profile_update():
     profile_form = ProfileForm()
     if profile_form.validate_on_submit():
-        user = UserModel.query.get(current_user.id)
-        if user:
-            user.full_name = profile_form.full_name.data
-            if profile_form.password.data:
-                user.password = hash_password(profile_form.password.data)
-            db.session.commit()
+        users_resource = UsersResource()
+        response, status = users_resource.patch(current_user.id)
+        if status == 200:
             flash('Profile updated successfully!', 'success')
         else:
-            flash('User not found!', 'danger')
+            flash(response.get('message', 'Failed to update profile.'), 'danger')
     return redirect(url_for('main.settings', active_tab='profile'))
 
 def handle_umbrella_creation():
     umbrella_form = UmbrellaForm()
     if umbrella_form.validate_on_submit():
-        from app.api.api import UmbrellasResource
         umbrellas_resource = UmbrellasResource()
-        response = umbrellas_resource.post()
-        if response[1] == 201:
+        response, status = umbrellas_resource.post()
+        if status == 201:
             flash('Umbrella created successfully!', 'success')
         else:
-            flash(response[0].get('message', 'Failed to create umbrella.'), 'danger')
+            flash(response.get('message', 'Failed to create umbrella.'), 'danger')
     return redirect(url_for('main.settings', active_tab='umbrella'))
-
+#TODO to make this helper use the API endpoint
 def handle_committee_addition():
     committee_form = AddCommitteForm()
     if committee_form.validate_on_submit():
@@ -143,37 +156,34 @@ def handle_committee_addition():
 def handle_block_creation():
     block_form = BlockForm()
     if block_form.validate_on_submit():
-        from app.api.api import BlocksResource
         blocks_resource = BlocksResource()
-        response = blocks_resource.post()
-        if response[1] == 201:
+        response, status = blocks_resource.post()
+        if status == 201:
             flash('Block created successfully!', 'success')
         else:
-            flash(response[0].get('message', 'Failed to create block.'), 'danger')
+            flash(response.get('message', 'Failed to create block.'), 'danger')
     return redirect(url_for('main.settings', active_tab='block'))
 
 def handle_zone_creation():
     zone_form = ZoneForm()
     if zone_form.validate_on_submit():
-        from app.api.api import ZonesResource
         zones_resource = ZonesResource()
-        response = zones_resource.post()
-        if response[1] == 201:
+        response, status = zones_resource.post()
+        if status == 201:
             flash('Zone created successfully!', 'success')
         else:
-            flash(response[0].get('message', 'Failed to create zone.'), 'danger')
+            flash(response.get('message', 'Failed to create zone.'), 'danger')
     return redirect(url_for('main.settings', active_tab='zone'))
 
 def handle_member_creation():
     member_form = AddMemberForm()
     if member_form.validate_on_submit():
-        from app.api.api import UsersResource
         users_resource = UsersResource()
-        response = users_resource.post()
-        if response[1] == 201:
+        response, status = users_resource.post()
+        if status == 201:
             flash('Member created successfully!', 'success')
         else:
-            flash(response[0].get('message', 'Failed to create member.'), 'danger')
+            flash(response.get('message', 'Failed to create member.'), 'danger')
     return redirect(url_for('main.settings', active_tab='member'))
 
 def render_settings_page():
@@ -211,7 +221,8 @@ def render_settings_page():
                            member_form=member_form,
                            user=current_user,
                            blocks=blocks,
-                           zones=zones)
+                           zones=zones,
+                           csrf_token=generate_csrf())
 
 def schedule_meeting(form):
     new_meeting = MeetingModel(

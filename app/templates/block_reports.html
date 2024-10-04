@@ -109,6 +109,8 @@ block content %}
     </div>
   </div>
 </div>
+<div id="loading" style="display: none">Loading...</div>
+<div id="error" style="display: none; color: red"></div>
 
 <script>
   function fetchReports(page = 1) {
@@ -116,11 +118,28 @@ block content %}
     const member = document.getElementById("member").value;
     const startDate = document.getElementById("startDate").value;
     const endDate = document.getElementById("endDate").value;
+    const loading = document.getElementById("loading");
+    const error = document.getElementById("error");
+
+    loading.style.display = "block";
+    error.style.display = "none";
 
     fetch(
-      `/api/v1/block_reports?page=${page}&blocks=${block}&member=${member}&start_date=${startDate}&end_date=${endDate}`
+      `/api/v1/block_reports?page=${page}&blocks=${block}&member=${member}&start_date=${startDate}&end_date=${endDate}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      }
     )
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return response.json();
+      })
       .then((data) => {
         document.getElementById(
           "totalContributed"
@@ -132,12 +151,19 @@ block content %}
             <td>${contribution.zone}</td>
             <td>${contribution.host}</td>
             <td>Kes ${contribution.contributed_amount.toFixed(2)}</td>
-          </tr>`;
+        </tr>`;
           reportBody.innerHTML += row;
         });
         updatePagination(data.pagination);
+        loading.style.display = "none";
       })
-      .catch((error) => console.error("Error:", error));
+      .catch((error) => {
+        console.error("Error:", error);
+        loading.style.display = "none";
+        error.style.display = "block";
+        error.textContent =
+          "An error occurred while fetching data. Please try again.";
+      });
   }
 
   function updatePagination(pagination) {

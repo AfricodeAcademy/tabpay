@@ -5,16 +5,17 @@ from flask_security import SQLAlchemyUserDatastore
 from flask_security.utils import hash_password
 from config import config
 from app.auth.forms import ExtendedConfirmRegisterForm, ExtendedLoginForm, ExtendedRegisterForm
-
+from flask_wtf.csrf import CSRFProtect
 
  # Setup Flask-Security
 user_datastore = SQLAlchemyUserDatastore(db, UserModel, Role)
 def create_app(config_name):
     app = Flask(__name__)
+    csrf = CSRFProtect(app)
     
     # Use the config dictionary to load the appropriate config class
     app.config.from_object(config[config_name])
-    
+    csrf.init_app(app)
     # Initialize extensions
     db.init_app(app)
     mail.init_app(app)
