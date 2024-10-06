@@ -112,7 +112,7 @@ class UmbrellasResource(BaseResource):
     fields = umbrella_fields
     args = umbrella_args
 
-    @marshal_with(fields)
+    @marshal_with(user_fields)
     def post(self):
         try:
             args = self.args.parse_args()

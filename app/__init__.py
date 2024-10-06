@@ -30,8 +30,8 @@ def create_app(config_name):
     app.register_blueprint(auth_blueprint)
     
     # Initialize Flask-RESTful API
-    from app.api import api_bp
-    app.register_blueprint(api_bp, url_prefix='/api/v1')
+    from .api.api import api_bp
+    app.register_blueprint(api_bp)
     
     with app.app_context():
         db.create_all()
@@ -44,10 +44,10 @@ def create_app(config_name):
         user_datastore.find_or_create_role(name='Member', description='Regular member')
         
         # Create Admin
-        if not user_datastore.find_user(email='biikate48@gmail.com'):
+        if not user_datastore.find_user(email='enockbett427@gmail.com'):
             hashed_password = hash_password('123456')
-            user_datastore.create_user(email='biikate48@gmail.com', password=hashed_password,
-                                       id_number=12345678, full_name='Benard Ronoh',
+            user_datastore.create_user(email='enockbett427@gmail.com', password=hashed_password,
+                                       id_number=12345678, full_name='Cpt. Bett',
                                        roles=[user_datastore.find_role('Admin')])
             db.session.commit()
             print('Admin created successfully')
