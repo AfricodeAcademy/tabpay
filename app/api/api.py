@@ -1,4 +1,5 @@
 from sqlalchemy.exc import SQLAlchemyError
+import logging
 from sqlalchemy import func
 from datetime import datetime
 from flask import Blueprint
@@ -35,6 +36,7 @@ class BaseResource(Resource):
 
     @marshal_with(fields)
     def post(self):
+        logging.debug(f"Fields for {self.__class__.__name__}: {self.fields}")
         try:
             args = self.args.parse_args()
             new_item = self.model(**args)
@@ -112,38 +114,11 @@ class UmbrellasResource(BaseResource):
     fields = umbrella_fields
     args = umbrella_args
 
-    @marshal_with(fields)
-    def post(self):
-        try:
-            args = self.args.parse_args()
-            existing_umbrella = self.model.query.filter_by(created_by=args['created_by']).first()
-            if existing_umbrella:
-                abort(400, message='You can only create one umbrella!')
-            duplicate_umbrella = self.model.query.filter_by(name=args['name']).first()
-            if duplicate_umbrella:
-                abort(400, message='An umbrella with that name already exists!')
-            new_umbrella = self.model(**args)
-            db.session.add(new_umbrella)
-            db.session.commit()
-            return new_umbrella, 201
-        except Exception as e:
-            return self.handle_error(e)
-
 class MeetingsResource(BaseResource):
     model = MeetingModel
     fields = meeting_fields
     args = meeting_args
 
-    @marshal_with(fields)
-    def post(self):
-        try:
-            args = self.args.parse_args()
-            new_meeting = self.model(**args)
-            db.session.add(new_meeting)
-            db.session.commit()
-            return new_meeting, 201
-        except Exception as e:
-            return self.handle_error(e)
 
 
 class ZonesResource(BaseResource):
