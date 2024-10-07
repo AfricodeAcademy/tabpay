@@ -30,8 +30,9 @@ def create_app(config_name):
     app.register_blueprint(auth_blueprint)
     
     # Initialize Flask-RESTful API
-    from .api.api import api_bp
-    app.register_blueprint(api_bp)
+    from app.api.api import api_bp
+    csrf.exempt(api_bp)
+    app.register_blueprint(api_bp, url_prefix='/api/v1')
     
     with app.app_context():
         db.create_all()
