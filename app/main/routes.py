@@ -86,8 +86,6 @@ def block_reports():
 
 
 
-
-
 # Helper functions (these now use the API endpoints where appropriate)
 def handle_profile_update():
     profile_form = ProfileForm()

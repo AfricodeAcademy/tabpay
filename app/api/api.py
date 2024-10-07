@@ -12,9 +12,9 @@ from .serializers import user_fields, user_args, communication_fields,\
     , meeting_fields, meeting_args, block_report_args, block_report_fields
 from ..utils import db
 
-
 api_bp = Blueprint('api', __name__)
 api = Api(api_bp)
+
 
 
 class BaseResource(Resource):
@@ -231,13 +231,13 @@ class BlockReportsResource(Resource):
 
 
 # API routes
-api.add_resource(UsersResource, '/api/v1/users', '/api/v1/users/<int:id>')
-api.add_resource(CommunicationsResource, '/api/v1/communications', '/api/v1/communications/<int:id>')
-api.add_resource(BanksResource, '/api/v1/banks', '/api/v1/banks/<int:id>')
-api.add_resource(PaymentsResource, '/api/v1/payments', '/api/v1/payments/<int:id>')
-api.add_resource(BlocksResource, '/api/v1/blocks', '/api/v1/blocks/<int:id>')
-api.add_resource(UmbrellasResource, '/api/v1/umbrellas', '/api/v1/umbrellas/<int:id>')
-api.add_resource(ZonesResource, '/api/v1/zones', '/api/v1/zones/<int:id>')
-api.add_resource(MeetingsResource, '/api/v1/meetings', '/api/v1/meetings/<int:id>')
-api.add_resource(BlockReportsResource, '/api/v1/block_reports')
+api.add_resource(UsersResource, '/users/', '/users/<int:id>')
+api.add_resource(CommunicationsResource, '/communications/', '/communications/<int:id>')
+api.add_resource(BanksResource, '/banks/', '/banks/<int:id>')
+api.add_resource(PaymentsResource, '/payments/', '/payments/<int:id>')
+api.add_resource(BlocksResource, '/blocks/', '/blocks/<int:id>')
+api.add_resource(UmbrellasResource, '/umbrellas/', '/umbrellas/<int:id>')
+api.add_resource(ZonesResource, '/zones/', '/zones/<int:id>')
+api.add_resource(MeetingsResource, '/meetings/', '/meetings/<int:id>')
+api.add_resource(BlockReportsResource, '/block_reports/')
 
