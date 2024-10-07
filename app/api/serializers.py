@@ -76,14 +76,14 @@ meeting_fields = {
 
 # Argument parsers for different resources
 user_args = reqparse.RequestParser()
-user_args.add_argument('email', type=str, required=True, help='Email is required')
-user_args.add_argument('password', type=str, required=True, help='Password is required')
-user_args.add_argument('full_name', type=str, required=True, help='Full Name is required')
-user_args.add_argument('id_number', type=int, required=True, help='ID Number is required')
-user_args.add_argument('phone_number', type=str, required=True, help='Phone Number is required')
-user_args.add_argument('bank', type=int, required=True, help='Bank ID is required')
-user_args.add_argument('acc_number', type=str, required=True, help='Account Number is required')
-user_args.add_argument('zone', type=str, required=True, help='Zone is required')
+user_args.add_argument('email', type=str, required=True, help='Email is required and must be a valid email address.')
+user_args.add_argument('password', type=str, required=True, help='Password is required.')
+user_args.add_argument('full_name', type=str, required=True, help='Full Name is required.')
+user_args.add_argument('id_number', type=int, required=True, help='ID Number must be an integer and is required.')
+user_args.add_argument('phone_number', type=str, required=True, help='Phone Number is required.')
+user_args.add_argument('bank', type=int, required=True, help='Bank ID must be an integer and is required.')
+user_args.add_argument('acc_number', type=str, required=True, help='Account Number is required.')
+user_args.add_argument('zone', type=str, required=True, help='Zone is required.')
 
 communication_args = reqparse.RequestParser()
 communication_args.add_argument('content', type=str, required=True, help='Content is required')
