@@ -42,7 +42,7 @@ class UserModel(db.Model, UserMixin):
     registered_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
     fs_uniquifier = db.Column(db.String(64), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
-    zone = db.Column(db.String(100))
+    zone_id = db.Column(db.Integer, db.ForeignKey('zones.id'))
     confirmed_at = db.Column(db.DateTime)
     webauth = db.relationship('WebAuth', backref='user', uselist=False)
 
