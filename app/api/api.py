@@ -1,5 +1,4 @@
 from sqlalchemy.exc import SQLAlchemyError
-import logging
 from sqlalchemy import func
 from datetime import datetime
 from flask import Blueprint, jsonify
@@ -14,15 +13,6 @@ from .serializers import user_fields, user_args, communication_fields, \
 from ..utils import db
 
 
-# Configure logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s [%(levelname)s] %(message)s',
-    handlers=[
-        logging.FileHandler("api.log"),
-        logging.StreamHandler()
-    ]
-)
 
 
 api_bp = Blueprint('api', __name__)
@@ -63,19 +53,15 @@ class BaseResource(Resource):
 
     def get(self, id=None):
         if self.fields is None:
-            logging.error("Fields attribute not set for the resource.")
             return {"success": False, "message": "Internal server error. Please contact support."}, 500
 
         try:
             if id:
-                logging.info(f"Fetching {self.model.__name__} with ID {id}")
                 item = self.model.query.get_or_404(id)
                 return marshal(item, self.fields), 200
-            logging.info(f"Fetching all {self.model.__name__} records")
             items = self.model.query.all()
             return marshal(items, self.fields), 200
         except HTTPException as http_exc:
-            logging.error(f"Validation error: {str(http_exc)}")
             return {"success": False, "message": "Invalid request."}, 400
         except SQLAlchemyError as db_exc:
             return self.handle_error(db_exc)
@@ -84,16 +70,13 @@ class BaseResource(Resource):
 
 
     def post(self):
-        logging.info(f"Attempting to create a new {self.model.__name__}")
         try:
             args = self.args.parse_args()
             new_item = self.model(**args)
             db.session.add(new_item)
             db.session.commit()
-            logging.info(f"{self.model.__name__} created successfully")
             return marshal(new_item, self.fields), 201
         except HTTPException as http_exc:
-            logging.error(f"Validation error: {str(http_exc)}")
             return {
                 "success": False,
                 "message": "Invalid data provided.",
@@ -106,25 +89,21 @@ class BaseResource(Resource):
 
 
     def patch(self, id):
-        logging.info(f"Attempting to update {self.model.__name__} with ID {id}")
         try:
             args = self.args.parse_args()
             item = self.model.query.get_or_404(id)
             for key, value in args.items():
                 setattr(item, key, value)
             db.session.commit()
-            logging.info(f"{self.model.__name__} with ID {id} updated successfully")
             return marshal(item, self.fields), 200
         except Exception as e:
             return self.handle_error(e)
 
     def delete(self, id):
-        logging.info(f"Attempting to delete {self.model.__name__} with ID {id}")
         try:
             item = self.model.query.get_or_404(id)
             db.session.delete(item)
             db.session.commit()
-            logging.info(f"{self.model.__name__} with ID {id} deleted successfully")
             items = self.model.query.all()
             return marshal(items, self.fields), 200
         except Exception as e:
@@ -132,8 +111,7 @@ class BaseResource(Resource):
 
     def handle_error(self, e):
         db.session.rollback()
-        logging.error(f"Error occurred: {str(e)}")
-
+        
         if isinstance(e, SQLAlchemyError):
             error_message = {
                 "success": False,
