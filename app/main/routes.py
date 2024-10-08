@@ -18,6 +18,8 @@ main = Blueprint('main', __name__)
 
 @main.route('/', methods=['GET'])
 def home():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.statistics'))
     return render_template('index.html', title='TabPay | Home')
 
 # Helper function to render the settings page with forms
