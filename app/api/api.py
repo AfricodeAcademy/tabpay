@@ -190,7 +190,7 @@ class BlockReportsResource(Resource):
                 UserModel.full_name.label('host'),
                 func.sum(PaymentModel.amount).label('contributed_amount')
             ).join(UserModel, PaymentModel.payer_id == UserModel.id
-                   ).join(ZoneModel, UserModel.zone == ZoneModel.name
+                   ).join(ZoneModel, UserModel.zone_id == ZoneModel.name
                           ).group_by(ZoneModel.name, UserModel.full_name)
 
             # Apply filters

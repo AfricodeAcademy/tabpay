@@ -45,24 +45,23 @@ def render_settings_page(active_tab=None, error=None):
 
     # API call to get umbrella by user
     umbrella = get_umbrella_by_user(current_user.id)
-
+    
     if umbrella:
+
         block_form.parent_umbrella.data = umbrella['name']
-    else:
-        flash('You need to create an umbrella before managing settings!', 'danger')
 
-    # API calls to dynamically fetch blocks and zones
-    try:
+        # API calls to dynamically fetch blocks and zones
         blocks = get_blocks_by_umbrella(umbrella['id'])
-    except Exception as e:
-        current_app.logger.error(f"Error fetching blocks: {e}")
-        return "An error occurred while fetching data.", 500    
-    zone_form.parent_block.choices = [(str(block['id']), block['name']) for block in blocks]
+        zone_form.parent_block.choices = [(str(block['id']), block['name']) for block in blocks]
 
-    zones = []
-    for block in blocks:
-        zones.extend(get_zones_by_block(block['id']))  
-    member_form.member_zone.choices = [(str(zone['id']), zone['name']) for zone in zones]
+        zones = []
+        for block in blocks:
+            zones.extend(get_zones_by_block(block['id']))  
+        member_form.member_zone.choices = [(str(zone['id']), zone['name']) for zone in zones]
+    else:
+        blocks = []
+        zones = []
+
 
     # API call to get banks
     banks = get_banks()
@@ -181,7 +180,7 @@ def handle_umbrella_creation():
     if umbrella_form.validate_on_submit():
         # API call to check existing umbrella
         existing_umbrella = get_umbrella_by_user(current_user.id)
-
+        
         if existing_umbrella:
             flash('You can only create one umbrella!', 'danger')
             return redirect(url_for('main.settings', active_tab='umbrella'))
@@ -203,9 +202,11 @@ def handle_block_creation():
     block_form = BlockForm()
     umbrella = get_umbrella_by_user(current_user.id)
 
-    if not umbrella:
-        flash('You need to create an umbrella before adding a block!', 'danger')
-        return redirect(url_for('main.settings', active_tab='block'))
+    if umbrella:
+        block_form.parent_umbrella.data = umbrella['name']
+    else:
+        flash('You need to create an umbrella before creating a block!', 'danger')
+        return redirect(url_for('main.settings', active_tab='umbrella'))
 
     if block_form.validate_on_submit():
         # Check for duplicate blocks via the API
@@ -242,7 +243,6 @@ def handle_zone_creation():
     try:
         blocks = get_blocks_by_umbrella(umbrella['id'])
     except Exception as e:
-        current_app.logger.error(f"Error fetching blocks: {e}")
         return "An error occurred while fetching data.", 500  
     
     zone_form.parent_block.choices = [(str(block['id']), block['name']) for block in blocks]
@@ -253,7 +253,6 @@ def handle_zone_creation():
 
     if zone_form.validate_on_submit():
         existing_zones = get_zones_by_block(zone_form.parent_block.data)
-        current_app.logger.debug(f"Existing zones in block {zone_form.parent_block.data}: {existing_zones}")
 
         # Ensure no duplicate zones in the selected block
         if any(zone['name'] == zone_form.zone_name.data for zone in existing_zones):
@@ -261,7 +260,6 @@ def handle_zone_creation():
             return redirect(url_for('main.settings', active_tab='zone'))
 
         # Proceed to create the zone via the API
-        current_app.logger.debug(f"Creating zone with name: {zone_form.zone_name.data} for block ID: {zone_form.parent_block.data}")
         create_zone({
             'name': zone_form.zone_name.data,
             'parent_block_id': zone_form.parent_block.data,
@@ -367,6 +365,7 @@ def get_umbrella_by_user(user_id):
     response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/umbrellas/", params={'created_by': user_id})
     umbrellas = response.json() if response.status_code == 200 else None
     return umbrellas[0] if umbrellas else None
+    
 
 # Helper function to get blocks of a specific umbrella
 def get_blocks_by_umbrella(umbrella_id):
@@ -386,10 +385,8 @@ def get_zones_by_block(block_id):
     
     if response.status_code == 200:
         zones = response.json()
-        current_app.logger.debug(f"Zones fetched for block {block_id}: {zones}")
         return zones 
     else:
-        current_app.logger.error(f"Error fetching zones for block {block_id}: {response.text}")
         flash('Error retrieving zones from the server.', 'danger')
         return []
 
@@ -482,7 +479,7 @@ def host():
     zones = ZoneModel.query.filter_by(created_by=current_user.id).all()
     schedule_form.zone.choices = [(str(zone.id), zone.name) for zone in zones]
 
-    members = UserModel.query.filter_by(zone=schedule_form.zone.data).all()
+    members = UserModel.query.filter_by(zone_id=schedule_form.zone.data).all()
     schedule_form.member.choices = [(str(member.id), member.full_name) for member in members]
 
     block = schedule_form.block.data
@@ -506,7 +503,7 @@ def schedule_meeting():
     zones = ZoneModel.query.filter_by(created_by=current_user.id).all()
     schedule_form.zone.choices = [(str(zone.id), zone.name) for zone in zones]
 
-    members = UserModel.query.filter_by(zone=schedule_form.zone.data).all()
+    members = UserModel.query.filter_by(zone_id=schedule_form.zone.data).all()
     schedule_form.member.choices = [(str(member.id), member.full_name) for member in members]
     
     if schedule_form.validate_on_submit():
@@ -526,7 +523,7 @@ def schedule_meeting():
             # Only filter members if a zone has been selected
             if schedule_form.zone.data:
                 roles = Role.query.filter_by(role='Member').all()
-                members = UserModel.query.filter_by(zone=schedule_form.zone.data,roles=roles).all()
+                members = UserModel.query.filter_by(zone_id=schedule_form.zone.data,roles=roles).all()
                 schedule_form.member.choices = [(str(member.id), member.full_name) for member in members]
             else:
                 roles = Role.query.filter_by(name='Member').all()
@@ -609,7 +606,7 @@ def block_reports():
         PaymentModel.amount.label('contributed_amount')
     )
     .join(UserModel, PaymentModel.payer_id == UserModel.id)  
-    .join(ZoneModel, UserModel.zone == ZoneModel.name)  
+    .join(ZoneModel, UserModel.zone_id == ZoneModel.name)  
     .filter(PaymentModel.id.in_([contribution.id for contribution in contributions]))  
     .all()
 )
