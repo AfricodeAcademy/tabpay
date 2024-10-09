@@ -398,10 +398,6 @@ table {
 /* CSS ADJUSTMENTS */
 
 @media (max-width: 768px) or (max-width: 576px) {
-  body {
-    padding: 0;
-    padding-bottom: 100px;
-  }
   .logo {
     width: 150px;
   }
@@ -409,7 +405,7 @@ table {
     font-size: xx-large;
   }
   .dashboard {
-    padding: 0;
+    padding: 0 0 62px 0;
     margin: 0;
   }
   .glass-sidebar {
