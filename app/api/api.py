@@ -20,25 +20,21 @@ api = Api(api_bp)
 
 
 
-@api_bp.errorhandler(HTTPException)
-def handle_http_exception(e):
-    response = e.get_response()
-    response.data = jsonify({
-        "success": False,
-        "message": e.description
-    }).data
-    response.content_type = "application/json"
-    return response
-
-@api_bp.errorhandler(400)
-def handle_validation_error(error):
-    response = jsonify({
-        "success": False,
-        "message": "Invalid input data",
-        "details": error.description
-    })
-    response.status_code = 400
-    return response
+def handle_error(self, e):
+        db.session.rollback()
+        if isinstance(e, SQLAlchemyError):
+            error_message = {"success": False, "message": "Database error occurred", "details": str(e)}
+            abort(500, message=error_message)
+        
+        elif isinstance(e, HTTPException):
+            error_message = {"success": False, "message": "HTTP error occurred", "details": str(e)}
+            abort(e.code, message=error_message)
+           
+        else:
+            error_message = {"success": False, "message": "Unexpected error occurred", "details": str(e)}
+            abort(500, message=error_message)
+        return error_message
+    
 
 def marshal_with_fields(fields):
     def decorator(func):
@@ -61,10 +57,6 @@ class BaseResource(Resource):
                 return marshal(item, self.fields), 200
             items = self.model.query.all()
             return marshal(items, self.fields), 200
-        except HTTPException as http_exc:
-            return {"success": False, "message": "Invalid request."}, 400
-        except SQLAlchemyError as db_exc:
-            return self.handle_error(db_exc)
         except Exception as e:
             return self.handle_error(e)
 
@@ -76,14 +68,6 @@ class BaseResource(Resource):
             db.session.add(new_item)
             db.session.commit()
             return marshal(new_item, self.fields), 201
-        except HTTPException as http_exc:
-            return {
-                "success": False,
-                "message": "Invalid data provided.",
-                "details": str(http_exc)
-            }, 400
-        except SQLAlchemyError as db_exc:
-            return self.handle_error(db_exc)
         except Exception as e:
             return self.handle_error(e)
 
@@ -113,27 +97,17 @@ class BaseResource(Resource):
         db.session.rollback()
         
         if isinstance(e, SQLAlchemyError):
-            error_message = {
-                "success": False,
-                "message": "A database error occurred. Please contact support.",
-                "details": "Something went wrong while interacting with the database."
-            }
-            return jsonify(error_message), 500
+            error_message = {"success": False, "message": "Database error occurred", "details": str(e)}
+            abort(500, message=error_message)
 
         elif isinstance(e, HTTPException):
-            error_message = {
-                "success": False,
-                "message": "An error occurred.",
-                "details": e.description
-            }
-            return jsonify(error_message), e.code
+            error_message = {"success": False, "message": "HTTP error occurred", "details": str(e)}
+            abort(e.code, message=error_message)
 
         else:
-            error_message = {
-                "success": False,
-                "message": "An unexpected error occurred. Please try again later."
-            }
-            return jsonify(error_message), 500
+            error_message = {"success": False, "message": "Unexpected error occurred", "details": str(e)}
+            abort(500, message=error_message)
+        return error_message
 
 
 

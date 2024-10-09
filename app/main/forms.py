@@ -1,8 +1,10 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SelectField, IntegerField, SubmitField,DateField
-from wtforms.validators import DataRequired, Length, ValidationError,EqualTo,NumberRange
+from flask_wtf.file import FileField,FileAllowed
+from wtforms.validators import DataRequired, Length, ValidationError,NumberRange,Email
 from ..api.api import UserModel
 from datetime import datetime
+from flask_security import current_user
 
 class AddMemberForm(FlaskForm):
     full_name = StringField('Member Full Name',validators=[DataRequired(), Length(max=100,min=5)],render_kw={'placeholder':'John Doe'})
@@ -26,16 +28,23 @@ class AddMemberForm(FlaskForm):
     
     
 class ProfileForm(FlaskForm):
+    picture = FileField('Update Profile Picture',validators=[FileAllowed(['jpg','jpeg','png'])])
     full_name = StringField('Update Your Full Names',validators=[ Length(max=100,min=10)])
-    id_number = IntegerField('Your ID Number')
-    password = PasswordField('Password',validators=[ Length(max=100,min=6)],render_kw={'placeholder':'******'})
-    confirm_password = PasswordField('Confirm Password',validators=[ Length(max=100,min=6),EqualTo('password',message="Passwords do not match!")],render_kw={'placeholder':'******'})
+    id_number = IntegerField('Member ID Number',validators=[NumberRange(min=10000000, max=99999999, message="ID number must be exactly 8 digits.")])
+    email = StringField('Update Your Email',validators=[Email(message="Invalid email")])
+    password = PasswordField('Your Password',validators=[ Length(max=100,min=6),],render_kw={'placeholder':'******'})
     submit = SubmitField('SUBMIT')
 
-    # def validate_id_number(self,field):
-    #     user = UserModel.query.filter_by(id_number=field.data).first()
-    #     if user:
-    #         raise ValidationError('Member ID already exists')
+    def validate_id_number(self,field):
+        user = UserModel.query.filter_by(id_number=field.data).first()
+        if user:
+            raise ValidationError('Member ID already exists')
+        
+    def validate_email(self,email):
+        if email.data != current_user.email:
+            user = UserModel.query.filter_by(email=email.data).first()
+            if user:
+                raise ValidationError("That email is taken.Please choose a different one!")   
     
 
 
@@ -91,3 +100,11 @@ class ScheduleForm(FlaskForm):
     def validate_date(self, field):
         if field.data < datetime.now():
             raise ValidationError('The meeting date cannot be in the past')
+        
+
+
+
+
+    
+
+      

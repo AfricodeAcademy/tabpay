@@ -1,15 +1,13 @@
 import requests
 from flask import Blueprint, render_template, redirect, url_for, flash,request
-from flask_security import login_required, roles_required, current_user, logout_user,roles_accepted
-from flask_security.utils import hash_password
+from flask_security import login_required, current_user, roles_accepted
 from ..utils import db
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm
-from .models import UserModel, UmbrellaModel, BlockModel, ZoneModel, user_datastore,Role,PaymentModel,MeetingModel,BankModel
+from .models import UserModel, BlockModel, ZoneModel, user_datastore,Role,PaymentModel,MeetingModel
 from PIL import Image
 import os
 import secrets
 from app import create_app as app
-from datetime import datetime
 from flask import current_app
 
 
@@ -39,9 +37,12 @@ def render_settings_page(active_tab=None, error=None):
     user = get_user_from_api(current_user.id)
 
     if user:
+
         # Autofill form fields with user data
         profile_form.full_name.data = user['full_name']
         profile_form.id_number.data = user['id_number']
+        profile_form.email.data = user['email']
+
 
     # API call to get umbrella by user
     umbrella = get_umbrella_by_user(current_user.id)
@@ -104,28 +105,77 @@ def settings():
     return render_settings_page(active_tab=request.args.get('active_tab', 'profile'))
 
 
+
+def save_picture(form_picture):
+    random_hex = secrets.token_hex(8)
+    _, f_ext = os.path.splitext(form_picture.filename)
+    picture_fn = random_hex + f_ext
+    picture_path = os.path.join(app.root_path, 'static/images', picture_fn)
+    
+    #This below helps to reduce the file size and make our web faster
+    output_size = (125, 125)
+    i = Image.open(form_picture)
+    i.thumbnail(output_size)
+    i.save(picture_path)
+
+    
+    return picture_fn
+
+
+
 # Handle profile update
 def handle_profile_update():
     profile_form = ProfileForm()
     api_url = f"{current_app.config['API_BASE_URL']}/api/v1/users/{current_user.id}"
 
     if profile_form.validate_on_submit():
-        update_data = {
-            'full_name': profile_form.full_name.data
-        }
+        # Initialize the update_data dictionary
+        update_data = {}
 
-        if profile_form.password.data:
-            update_data['password'] = profile_form.password.data
+        # Check if an image is uploaded
+        if profile_form.picture.data:
+            picture_file = save_picture(profile_form.picture.data)
+            image_path = os.path.join('static/images', picture_file)
 
-        response = requests.patch(api_url, json=update_data)
+            # Prepare multipart data for the API
+            files = {
+                'picture': (picture_file, open(image_path, 'rb'), 'image/png'),
+            }
+            # Update only the image in the API
+            response = requests.patch(api_url, files=files)
 
-        if response.status_code == 200:
-            flash('Profile updated successfully!', 'success')
+            if response.status_code == 200:
+                flash('Profile picture updated successfully!', 'success')
+                # Update the current user's image_file
+                current_user.image_file = picture_file
+            else:
+                flash('Failed to update profile picture.', 'danger')
+
         else:
-            flash('Failed to update profile.', 'danger')
+            # If no image is uploaded, update the text fields only
+            if profile_form.full_name.data:
+                update_data['full_name'] = profile_form.full_name.data
+            if profile_form.id_number.data:
+                update_data['id_number'] = profile_form.id_number.data
+            if profile_form.email.data:
+                update_data['email'] = profile_form.email.data
+            if profile_form.password.data:
+                update_data['password'] = profile_form.password.data
 
+            # Only send data if there are updates
+            if update_data:
+                response = requests.patch(api_url, json=update_data)
+                if response.status_code == 200:
+                    flash('Profile updated successfully!', 'success')
+                else:
+                    flash('Failed to update profile.', 'danger')
+            else:
+                flash('No changes made to the profile.', 'info')
+
+    # Handle validation errors
     error = [f"{field.capitalize()}: {error}" for field, errors in profile_form.errors.items() for error in errors]
     return render_settings_page(active_tab='profile', error=error)
+
 
 
 # Handle committee addition
@@ -427,21 +477,6 @@ def create_zone(payload):
 
 
 
-
-def save_picture(form_picture):
-    random_hex = secrets.token_hex(8)
-    _, f_ext = os.path.splitext(form_picture.filename)
-    picture_fn = random_hex + f_ext
-    picture_path = os.path.join(app.root_path, 'static/images', picture_fn)
-    
-    #This below helps to reduce the file size and make our web faster
-    output_size = (125, 125)
-    i = Image.open(form_picture)
-    i.thumbnail(output_size)
-    i.save(picture_path)
-
-    
-    return picture_fn
 
 
 @main.route('/statistics', methods=['GET'])
