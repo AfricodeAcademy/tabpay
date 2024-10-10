@@ -33,40 +33,46 @@ def render_settings_page(active_tab=None, error=None):
     if not active_tab:
         active_tab = request.args.get('active_tab', 'profile')
 
-    # API call to get user details
-    user = get_user_from_api(current_user.id)
-
-    if user:
-
-        # Autofill form fields with user data
-        profile_form.full_name.data = user['full_name']
-        profile_form.id_number.data = user['id_number']
-        profile_form.email.data = user['email']
-
+  # API call to get user details
+    try:
+        user = get_user_from_api(current_user.id)
+        if user:
+            # Autofill form fields with user data
+            profile_form.full_name.data = user.get('full_name', '')
+            profile_form.id_number.data = user.get('id_number', '')
+            profile_form.email.data = user.get('email', '')
+        else:
+            flash('Unable to load user data.', 'danger')
+    except Exception as e:
+        flash('Error loading user details. Please try again later.', 'danger')
 
     # API call to get umbrella by user
-    umbrella = get_umbrella_by_user(current_user.id)
-    
-    if umbrella:
+    try:
+        umbrella = get_umbrella_by_user(current_user.id)
+        if umbrella:
+            block_form.parent_umbrella.data = umbrella.get('name', '')
 
-        block_form.parent_umbrella.data = umbrella['name']
+            # API calls to dynamically fetch blocks and zones
+            blocks = get_blocks_by_umbrella(umbrella['id'])
+            zone_form.parent_block.choices = [(str(block['id']), block['name']) for block in blocks]
 
-        # API calls to dynamically fetch blocks and zones
-        blocks = get_blocks_by_umbrella(umbrella['id'])
-        zone_form.parent_block.choices = [(str(block['id']), block['name']) for block in blocks]
-
-        zones = []
-        for block in blocks:
-            zones.extend(get_zones_by_block(block['id']))  
-        member_form.member_zone.choices = [(str(zone['id']), zone['name']) for zone in zones]
-    else:
-        blocks = []
-        zones = []
-
+            zones = []
+            for block in blocks:
+                zones.extend(get_zones_by_block(block['id']))
+            member_form.member_zone.choices = [(str(zone['id']), zone['name']) for zone in zones]
+        else:
+            blocks, zones = [], []
+            flash('No umbrella found. Please create one first.', 'info')
+    except Exception as e:
+        flash('Error loading umbrella data. Please try again later.', 'danger')
 
     # API call to get banks
-    banks = get_banks()
-    member_form.bank.choices = [(str(bank['id']), bank['name']) for bank in banks]
+    try:
+        banks = get_banks()
+        member_form.bank.choices = [(str(bank['id']), bank['name']) for bank in banks]
+    except Exception as e:
+        flash('Error loading bank information. Please try again later.', 'danger')
+
 
     # Render the settings page
     return render_template('settings.html', title='Dashboard | Settings',
@@ -110,16 +116,15 @@ def save_picture(form_picture):
     random_hex = secrets.token_hex(8)
     _, f_ext = os.path.splitext(form_picture.filename)
     picture_fn = random_hex + f_ext
-    picture_path = os.path.join(app.root_path, 'static/images', picture_fn)
-    
-    #This below helps to reduce the file size and make our web faster
-    output_size = (125, 125)
+    picture_path = os.path.join(current_app.root_path, 'static/images', picture_fn)
+
+    output_size = (125, 125) 
     i = Image.open(form_picture)
     i.thumbnail(output_size)
     i.save(picture_path)
 
-    
     return picture_fn
+
 
 
 
@@ -128,53 +133,62 @@ def handle_profile_update():
     profile_form = ProfileForm()
     api_url = f"{current_app.config['API_BASE_URL']}/api/v1/users/{current_user.id}"
 
+
     if profile_form.validate_on_submit():
         # Initialize the update_data dictionary
         update_data = {}
 
-        # Check if an image is uploaded
+        # If the user uploaded a picture, handle that first
         if profile_form.picture.data:
-            picture_file = save_picture(profile_form.picture.data)
-            image_path = os.path.join('static/images', picture_file)
 
-            # Prepare multipart data for the API
-            files = {
-                'picture': (picture_file, open(image_path, 'rb'), 'image/png'),
-            }
-            # Update only the image in the API
-            response = requests.patch(api_url, files=files)
+            try:
+                picture_file = save_picture(profile_form.picture.data)
+                image_path = os.path.join('static/images', picture_file)
 
-            if response.status_code == 200:
-                flash('Profile picture updated successfully!', 'success')
-                # Update the current user's image_file
-                current_user.image_file = picture_file
-            else:
-                flash('Failed to update profile picture.', 'danger')
+
+                # Prepare multipart data for the API
+                with open(image_path, 'rb') as f:
+                    files = {'picture': (picture_file, f, 'image/png')}
+                    response = requests.patch(api_url, files=files)
+
+
+                if response.status_code == 200:
+                    flash('Profile picture updated successfully!', 'success')
+                    # Update the current user's image_file
+                    current_user.image_file = picture_file
+                else:
+                    flash('Failed to update profile picture.', 'danger')
+
+            except Exception as e:
+                flash('An error occurred while updating the profile picture.', 'danger')
 
         else:
-            # If no image is uploaded, update the text fields only
-            if profile_form.full_name.data:
-                update_data['full_name'] = profile_form.full_name.data
-            if profile_form.id_number.data:
-                update_data['id_number'] = profile_form.id_number.data
-            if profile_form.email.data:
-                update_data['email'] = profile_form.email.data
-            if profile_form.password.data:
-                update_data['password'] = profile_form.password.data
+            # If no picture is uploaded, validate the other fields
+            if profile_form.full_name.data or profile_form.id_number.data or profile_form.email.data or profile_form.password.data:
 
-            # Only send data if there are updates
-            if update_data:
-                response = requests.patch(api_url, json=update_data)
-                if response.status_code == 200:
-                    flash('Profile updated successfully!', 'success')
+                # Collect the fields to update
+                if profile_form.full_name.data:
+                    update_data['full_name'] = profile_form.full_name.data
+                if profile_form.email.data:
+                    update_data['email'] = profile_form.email.data
+                if profile_form.password.data and len(profile_form.password.data) >= 6:
+                    update_data['password'] = profile_form.password.data
+
+                # Skip id_number validation since it's not editable
+                if update_data:
+                    response = requests.patch(api_url, json=update_data)
+                    if response.status_code == 200:
+                        flash('Profile updated successfully!', 'success')
+                    else:
+                        flash('Failed to update profile.', 'danger')
                 else:
-                    flash('Failed to update profile.', 'danger')
+                    flash('No changes made to the profile.', 'info')
+
             else:
                 flash('No changes made to the profile.', 'info')
 
-    # Handle validation errors
-    error = [f"{field.capitalize()}: {error}" for field, errors in profile_form.errors.items() for error in errors]
-    return render_settings_page(active_tab='profile', error=error)
+    return render_settings_page(active_tab='profile')
+
 
 
 
