@@ -4,7 +4,7 @@
 {% macro render_flash_messages() %}
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
-<div class="container mt-3" id="flash-container" style="max-width: 500px;"> <!-- Adjust the max-width here -->
+<div class="container mt-3" id="flash-container" style="max-width: 300px;"> <!-- Adjust the max-width here -->
   {% for category, message in messages %}
   <div
     class="alert alert-{{ category }} alert-dismissible fade show"
@@ -20,7 +20,21 @@
 {% endwith %}
 {% endmacro %}
 
-  
+  {% macro render_field(field) %}
+<div class="mb-3">
+  {{ field.label(class="form-label") }}
+  {% if field.errors %}
+    {{ field(class="form-control is-invalid") }}
+    <div class="invalid-feedback">
+      {% for error in field.errors %}
+        {{ error }}
+      {% endfor %}
+    </div>
+  {% else %}
+    {{ field(class="form-control") }}
+  {% endif %}
+</div>
+{% endmacro %}
   
   <!-- Dashboard Content -->
   <div class="dashboard mt-2">
@@ -72,103 +86,74 @@
                     <img class="rounded-circle ms-5" style="height: 170px; width: 170px;" 
                         src="{{ url_for('static', filename='images/' + current_user.image_file) }}" alt="Profile_image"/>
 
-                    <div class="form-group">
-                      {{ profile_form.picture.label() }} 
-                      {{ profile_form.picture() }}
-                      {% if profile_form.picture.errors %}
-                        {% for error in profile_form.picture.errors %}
-                          <span class="text-danger">{{ error }}</span><br />
-                        {% endfor %}
-                      {% endif %}
-                    </div>
-                  </div>
+        <div class="form-group">
+          {{ profile_form.picture.label() }} 
+          {{ profile_form.picture() }}
+          {% if profile_form.picture.errors %}
+            {% for error in profile_form.picture.errors %}
+              <span class="text-danger">{{ error }}</span><br />
+            {% endfor %}
+          {% endif %}
+        </div>
+      </div>
 
-                  <div class="col-md-8">
-                    <div class="row mb-5 mt-2">
-                      <div class="col-md-6">
-                        <div class="mb-3">
-                          {{ profile_form.full_name.label }} 
-                          {{ profile_form.full_name(class="input") }}
-                          <!-- Full name field errors -->
-                          {% if profile_form.full_name.errors %}
-                            {% for error in profile_form.full_name.errors %}
-                              <span class="text-danger">{{ error }}</span><br />
-                            {% endfor %}
-                          {% endif %}
-                        </div>
-                      </div>
-                      <div class="col-md-6">
-                        <div class="mb-3">
-                          {{ profile_form.id_number.label }} 
-                          {{ profile_form.id_number(class="input", readonly="True") }} 
-                          <!-- ID number field errors -->
-                          {% if profile_form.id_number.errors %}
-                            {% for error in profile_form.id_number.errors %}
-                              <span class="text-danger">{{ error }}</span><br />
-                            {% endfor %}
-                          {% endif %}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="row">
-                      <div class="col-md-6">
-                        <div class="mb-3">
-                          {{ profile_form.email.label }} 
-                          {{ profile_form.email(class="input") }}
-                          <!-- Email field errors -->
-                          {% if profile_form.email.errors %}
-                            {% for error in profile_form.email.errors %}
-                              <span class="text-danger">{{ error }}</span><br />
-                            {% endfor %}
-                          {% endif %}
-                        </div>
-                      </div>
-
-                      <div class="col-md-6">
-                        <div class="mb-3">
-                          {{ profile_form.password.label }} 
-                          {{ profile_form.password(class="input") }}
-                          <!-- Password field errors -->
-                          {% if profile_form.password.errors %}
-                            {% for error in profile_form.password.errors %}
-                              <span class="text-danger">{{ error }}</span><br />
-                            {% endfor %}
-                          {% endif %}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <button type="submit" name="profile_submit" class="submit-btn">
-                  {{ profile_form.submit.label.text }}
-                </button>       
-
-                {{ render_flash_messages() }}
-
-              </form>
+      <div class="col-md-8">
+        <div class="row mb-5 mt-2">
+          <div class="col-md-6">
+            <div class="mb-3">
+              {{ render_field(profile_form.full_name) }}
             </div>
-            <!-- END OF PROFILE -->
+          </div>
+          <div class="col-md-6">
+            <div class="mb-3">
+             {{render_field(profile_form.id_number)}}
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+             {{ render_field(profile_form.email)}}
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="mb-3">
+             {{ render_field(profile_form.password)}}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" name="profile_submit" class="submit-btn">
+      {{ profile_form.submit.label.text }}
+    </button>       
+
+    {{ render_flash_messages() }}
+
+  </form>
+</div>
+<!-- END OF PROFILE -->
+
 
   
           <!-- COMMITTEE TAB -->
           <div id="committee" class="tab-pane fade {% if active_tab == 'committee' %}show active{% endif %}">
-            <form method="POST" action="{{url_for('main.settings',active_tab='committee')}}">
+            <form method="POST" action="{{url_for('main.settings',active_tab='committee')}}" novalidate>
               {{ committee_form.hidden_tag() }}
               <div class="row mb-5 mt-2">
                 <div class="col-md-6">
                   <div class="mb-3">
-                    {{ committee_form.full_name.label }}
-                     {{ committee_form.full_name(class="input", readonly=True) }}
+                   {{ render_field(committee_form.full_name)}}
                   
                   
                   </div>
                 </div>
                 <div class="col-md-6">
                   <div class="mb-3">
-                    {{ committee_form.id_number.label }} 
-                    {{ committee_form.id_number(class="input") }}
+                   {{ render_field(committee_form.id_number)}}
                   
   
                   </div>
@@ -191,7 +176,7 @@
                 </div>
                 <div class="col-md-6">
                   <div class="mb-3">
-                    {{ committee_form.phone_number.label }} {{ committee_form.phone_number(class="input",readonly=True) }}
+                   {{ render_field(committee_form.phone_number)}}
                 
   
                   </div>
@@ -216,35 +201,18 @@
               top-level umbrella, under which you can create distinct blocks,
               fostering collaboration and organization at the local level.
             </p>
-            <form method="POST" action="{{url_for('main.settings',tab='umbrella')}}">
+            <form method="POST" action="{{url_for('main.settings',tab='umbrella')}}" novalidate>
               {{ umbrella_form.hidden_tag() }}
   
               <div class="row p-2 d-flex justify-content-center">
                 <div class="col-md-4">
                   <div class="mb-3">
-                    {{ umbrella_form.umbrella_name.label }}{% if
-                      umbrella_form.umbrella_name.errors %}  {{ umbrella_form.umbrella_name(class="input is-invalid") }}
-                      <div class="invalid-feedback">
-                        {% for error in umbrella_form.umbrella_name.errors %}
-                        <span>{{ error }}</span>
-                        {% endfor %}
-                      </div>
-                      {% else %} {{ umbrella_form.umbrella_name(class="input") }} {%
-                        endif %}
-                   
+                  {{ render_field(umbrella_form.umbrella_name)}}
                   </div>
                 </div>
                 <div class="col-md-4">
                   <div class="mb-3">
-                    {{ umbrella_form.location.label }}{% if
-                      umbrella_form.location.errors %} {{ umbrella_form.location(class="input is-invalid") }}
-                      <div class="invalid-feedback">
-                        {% for error in umbrella_form.location.errors %}
-                        <span>{{ error }}</span>
-                        {% endfor %}
-                      </div>
-                      {% else %} {{ umbrella_form.location(class="input") }} {%
-                        endif %}
+                    {{ render_field(umbrella_form.location)}}
                   </div>
                 </div>
               </div>
@@ -265,25 +233,17 @@
               Organize your community's structure by defining distinct blocks
               within each umbrella.
             </p>
-            <form method="POST" action="{{url_for('main.settings',active_tab='block')}}">
+            <form method="POST" action="{{url_for('main.settings',active_tab='block')}}" novalidate>
               {{ block_form.hidden_tag() }}
               <div class="row p-4">
                 <div class="col-md-6">
                   <div class="mb-3">
-                    {{ block_form.block_name.label }} {{ block_form.block_name(class="input") }}
-                    <div class="invalid-feedback">
-                      {{ block_form.block_name.errors[0] }}
-                    </div>
+                    {{ render_field(block_form.block_name) }}
                   </div>
                 </div>
                 <div class="col-md-6">
                   <div class="mb-3">
-                    {{ block_form.parent_umbrella.label }} 
-                    {{ block_form.parent_umbrella(class="input") }} 
-  
-                    <div class="invalid-feedback">
-                      {{ block_form.parent_umbrella.errors[0] }}
-                    </div>
+                    {{render_field(block_form.parent_umbrella)}}
                   </div>
                 </div>
               </div>
@@ -304,24 +264,17 @@
               Define zones within each block to make it easier when allocating
               block event to zone members.
             </p>
-            <form method="POST" action="{{url_for('main.settings')}}">
+            <form method="POST" action="{{url_for('main.settings')}}" novalidate>
               {{ zone_form.hidden_tag() }}
               <div class="row p-4">
                 <div class="col-md-6">
                   <div class="mb-3">
-                    {{ zone_form.zone_name.label }} {{ zone_form.zone_name(class="input") }}
-                    <div class="invalid-feedback">
-                      {{ zone_form.zone_name.errors[0] }}
-                    </div>
+                   {{render_field(zone_form.zone_name)}}
                   </div>
                 </div>
                 <div class="col-md-6">
                   <div class="mb-3">
-                    {{ zone_form.parent_block.label }} 
-                    {{ zone_form.parent_block(class="select") }}
-                    <div class="invalid-feedback">
-                      {{ zone_form.parent_block.errors[0] }}
-                  </div>
+                   {{ render_field(zone_form.parent_block)}}
                 </div>
               </div>
               </div>
@@ -342,63 +295,41 @@
           Each zone has distinct members, please add the different members of
           the zone.
         </p>
-        <form action="{{url_for('main.settings',tab='member')}}" method="POST">
+        <form action="{{url_for('main.settings',tab='member')}}" method="POST" novalidate>
           {{ member_form.hidden_tag() }}            
           <div class="row">
             <div class="col-md-6">
               <div class="mb-3">
-                {{ member_form.full_name.label }} {{ member_form.full_name(class="input") }}
-                <div class="invalid-feedback">
-                  {{ member_form.full_name.errors[0] }}
-              </div>
+               {{ render_field(member_form.full_name)}}
             </div>
             </div>
             <div class="col-md-6">
               <div class="mb-3">
-  
-              {{ member_form.phone_number.label }} {{ member_form.phone_number(class="input") }}
-              <div class="invalid-feedback">
-                {{ member_form.phone_number.errors[0] }}
-            </div>
+                {{ render_field(member_form.phone_number)}}
               </div>
             </div>
           </div>
           <div class="row">
             <div class="col-md-6">
               <div class="mb-3">
-                {{ member_form.id_number.label }} {{ member_form.id_number(class="input") }}
-                <div class="invalid-feedback">
-                  {{ member_form.id_number.errors[0] }}
-                </div>
+               {{ render_field(member_form.id_number)}}
               </div>
             </div>
             <div class="col-md-6">
               <div class="mb-3">
-                {{ member_form.member_zone.label }}
-                 {{ member_form.member_zone(class="select") }}
-                <div class="invalid-feedback">
-                  {{ member_form.member_zone.errors[0] }}
-  
-              </div>
+                {{ render_field(member_form.member_zone)}}
             </div>
           </div>
           </div>
           <div class="row">
             <div class="col-md-6">
               <div class="mb-3">
-                {{ member_form.bank.label }} {{ member_form.bank(class="select") }}
-                <div class="invalid-feedback">
-                  {{ member_form.bank.errors[0] }}
-                </div>
+                {{ render_field(member_form.bank)}}
               </div>
             </div>
             <div class="col-md-6">
               <div class="mb-3">
-                {{ member_form.acc_number.label }} {{ member_form.acc_number(class="input") }}
-                <div class="invalid-feedback">
-                  {{ member_form.acc_number.errors[0] }}
-  
-              </div>
+                {{ render_field(member_form.acc_number)}}
             </div>
           </div>
           </div>

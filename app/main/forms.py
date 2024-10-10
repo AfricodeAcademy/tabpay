@@ -7,11 +7,11 @@ from datetime import datetime
 from flask_security import current_user
 
 class AddMemberForm(FlaskForm):
-    full_name = StringField('Member Full Name',validators=[DataRequired(), Length(max=100,min=5)],render_kw={'placeholder':'John Doe'})
-    id_number = IntegerField('Member ID Number',validators=[DataRequired(),NumberRange(min=10000000, max=99999999, message="ID number must be exactly 8 digits.")],render_kw={'placeholder':'xxxxxxxx'})
-    phone_number = StringField('Phone Number',validators=[DataRequired(),Length(min=10, max=16, message="Phone number must be between 10 and 16 digits.")],render_kw={'placeholder':'0700000000'})
-    member_zone = SelectField('Member Zone', validators=[DataRequired()])
-    bank = SelectField('Select Bank',validators=[DataRequired()])
+    full_name = StringField('Member Full Name',validators=[DataRequired(message="Member Full Name is required"), Length(max=100,min=5)],render_kw={'placeholder':'John Doe'})
+    id_number = IntegerField('Member ID Number',validators=[DataRequired(message="Member Id is required"),NumberRange(min=10000000, max=99999999, message="ID number must be exactly 8 digits.")],render_kw={'placeholder':'xxxxxxxx'})
+    phone_number = StringField('Phone Number',validators=[DataRequired("Phone Number is required"),Length(min=10, max=16, message="Phone number must be between 10 and 16 digits.")],render_kw={'placeholder':'0700000000'})
+    member_zone = SelectField('Member Zone', validators=[DataRequired(message="Member Zone is required")])
+    bank = SelectField('Select Bank',validators=[DataRequired(message="Bank is required")])
     acc_number = IntegerField('Bank Account Number',validators=[DataRequired()],render_kw={'placeholder':'xxxxxx'})
     submit = SubmitField('SAVE')
     

@@ -240,8 +240,12 @@ def handle_profile_update():
             else:
                 logging.info("No changes made to the profile.")
                 flash('No changes made to the profile.', 'info')
+    else:
+        for field, errors in profile_form.errors.items():
+            for error in errors:
+                flash(f'{error}', 'danger')
+    return render_settings_page(active_tab='profile')
 
-    return render_settings_page(active_tab='profile', error=None)
 
 
 
@@ -286,8 +290,11 @@ def handle_committee_addition():
         return redirect(url_for('main.settings', active_tab='committee'))
 
     # Collect any form errors
-    error = [f"{field.capitalize()}: {error}" for field, errors in committee_form.errors.items() for error in errors]
-    return render_settings_page(active_tab='committee', error=error)
+    else:
+        for field, errors in committee_form.errors.items():
+            for error in errors:
+                flash(f'{error}', 'danger')
+    return render_settings_page(active_tab='committee')
 
 
 # Handle umbrella creation
@@ -310,8 +317,11 @@ def handle_umbrella_creation():
         flash('Umbrella created successfully!', 'success')
         return redirect(url_for('main.settings', active_tab='umbrella'))
 
-    error = [f"{field.capitalize()}: {error}" for field, errors in umbrella_form.errors.items() for error in errors]
-    return render_settings_page(active_tab='umbrella', error=error)
+    else:
+        for field, errors in umbrella_form.errors.items():
+            for error in errors:
+                flash(f'{error}', 'danger')
+    return render_settings_page(active_tab='umbrella')
 
 
 # Handle block creation using API
@@ -342,8 +352,11 @@ def handle_block_creation():
         flash('Block created successfully!', 'success')
         return redirect(url_for('main.settings', active_tab='block'))
 
-    error = [f"{field.capitalize()}: {error}" for field, errors in block_form.errors.items() for error in errors]
-    return render_settings_page(active_tab='block', error=error)
+    else:
+        for field, errors in block_form.errors.items():
+            for error in errors:
+                flash(f'{error}', 'danger')
+    return render_settings_page(active_tab='block')
 
 # Handle zone creation using API
 def handle_zone_creation():
@@ -385,8 +398,11 @@ def handle_zone_creation():
         flash('Zone created successfully!', 'success')
         return redirect(url_for('main.settings', active_tab='zone'))
 
-    error = [f"{field.capitalize()}: {error}" for field, errors in zone_form.errors.items() for error in errors]
-    return render_settings_page(active_tab='zone', error=error)
+    else:
+        for field, errors in zone_form.errors.items():
+            for error in errors:
+                flash(f'{error}', 'danger')
+    return render_settings_page(active_tab='zone')
 
 
 # Handle member creation
@@ -461,8 +477,11 @@ def handle_member_creation():
         return redirect(url_for('main.settings', active_tab='member'))
 
     # Collect any form errors
-    error = [f"{field.capitalize()}: {error}" for field, errors in member_form.errors.items() for error in errors]
-    return render_settings_page(active_tab='member', error=error)
+    else:
+        for field, errors in member_form.errors.items():
+            for error in errors:
+                flash(f'{error}', 'danger')
+    return render_settings_page(active_tab='member')
 
 
 
