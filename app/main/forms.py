@@ -28,23 +28,19 @@ class AddMemberForm(FlaskForm):
     
     
 class ProfileForm(FlaskForm):
-    picture = FileField('Update Profile Picture',validators=[FileAllowed(['jpg','jpeg','png'])])
+    picture = FileField('Update Profile Picture',validators=[FileAllowed(['jpg','jpeg','png'],'Images only')])
     full_name = StringField('Update Your Full Names',validators=[ Length(max=100,min=10)])
     id_number = IntegerField('Member ID Number',validators=[NumberRange(min=10000000, max=99999999, message="ID number must be exactly 8 digits.")])
     email = StringField('Update Your Email',validators=[Email(message="Invalid email")])
     password = PasswordField('Your Password',validators=[ Length(max=100,min=6),],render_kw={'placeholder':'******'})
     submit = SubmitField('SUBMIT')
 
-    def validate_id_number(self,field):
-        user = UserModel.query.filter_by(id_number=field.data).first()
-        if user:
-            raise ValidationError('Member ID already exists')
         
     def validate_email(self,email):
         if email.data != current_user.email:
             user = UserModel.query.filter_by(email=email.data).first()
             if user:
-                raise ValidationError("That email is taken.Please choose a different one!")   
+                raise ValidationError("That email is taken.Please choose a different one!")    
     
 
 
