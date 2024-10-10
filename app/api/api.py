@@ -243,3 +243,4 @@ api.add_resource(UmbrellasResource, '/umbrellas/', '/umbrellas/<int:id>')
 api.add_resource(ZonesResource, '/zones/', '/zones/<int:id>')
 api.add_resource(MeetingsResource, '/meetings/', '/meetings/<int:id>')
 api.add_resource(BlockReportsResource, '/block_reports/')
+

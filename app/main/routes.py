@@ -6,6 +6,7 @@ from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, Umbrella
 from .models import UserModel, BlockModel, ZoneModel, user_datastore,Role,PaymentModel,MeetingModel
 from PIL import Image
 import os
+import logging
 import secrets
 from app import create_app as app
 from flask import current_app
@@ -111,84 +112,136 @@ def settings():
     return render_settings_page(active_tab=request.args.get('active_tab', 'profile'))
 
 
+import os
+import secrets
+from PIL import Image
+import requests
+from flask import current_app, flash
+from flask_login import current_user
+import logging
 
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Function to save the profile picture
 def save_picture(form_picture):
-    random_hex = secrets.token_hex(8)
-    _, f_ext = os.path.splitext(form_picture.filename)
-    picture_fn = random_hex + f_ext
-    picture_path = os.path.join(current_app.root_path, 'static/images', picture_fn)
+    try:
+        # Generate a random hex for the filename and get the file extension
+        random_hex = secrets.token_hex(8)
+        _, f_ext = os.path.splitext(form_picture.filename)
+        picture_fn = random_hex + f_ext
 
-    output_size = (125, 125) 
-    i = Image.open(form_picture)
-    i.thumbnail(output_size)
-    i.save(picture_path)
+        # Ensure the directory exists and log the action
+        image_dir = os.path.join(current_app.root_path, 'static/images')
+        if not os.path.exists(image_dir):
+            logging.info(f"Directory {image_dir} does not exist. Creating directory...")
+            os.makedirs(image_dir)
+        else:
+            logging.info(f"Directory {image_dir} already exists.")
 
-    return picture_fn
+        # Create the path to save the image
+        picture_path = os.path.join(image_dir, picture_fn)
 
+        # Resize the image and save it
+        output_size = (125, 125)
+        i = Image.open(form_picture)
+        i.thumbnail(output_size)
+        i.save(picture_path)
 
+        logging.info(f"Profile picture saved at {picture_path}")
+        return picture_fn
 
+    except Exception as e:
+        logging.error(f"Error saving picture: {e}")
+        raise e
 
 # Handle profile update
 def handle_profile_update():
     profile_form = ProfileForm()
     api_url = f"{current_app.config['API_BASE_URL']}/api/v1/users/{current_user.id}"
 
+    # Log form validation status
+    logger.info("Profile update request received. Validating form...")
 
     if profile_form.validate_on_submit():
+        logging.info("Form validated successfully.")
+    else:
+        logging.warning(f"Form validation failed: {profile_form.errors}")
         # Initialize the update_data dictionary
         update_data = {}
 
-        # If the user uploaded a picture, handle that first
+        # Handle profile picture update
         if profile_form.picture.data:
+            logging.info("User uploaded a new profile picture.")
 
             try:
+                # Save picture and get the file name
                 picture_file = save_picture(profile_form.picture.data)
-                image_path = os.path.join('static/images', picture_file)
+                image_path = os.path.join(current_app.root_path, 'static/images', picture_file)  # Use absolute path
 
-
-                # Prepare multipart data for the API
+                # Prepare multipart data for the API request
                 with open(image_path, 'rb') as f:
                     files = {'picture': (picture_file, f, 'image/png')}
                     response = requests.patch(api_url, files=files)
 
-
+                # Check API response
                 if response.status_code == 200:
+                    logging.info("Profile picture updated successfully via API.")
                     flash('Profile picture updated successfully!', 'success')
                     # Update the current user's image_file
                     current_user.image_file = picture_file
                 else:
+                    logging.error(f"Failed to update profile picture: {response.status_code} - {response.text}")
                     flash('Failed to update profile picture.', 'danger')
 
             except Exception as e:
+                logging.error(f"Error while updating profile picture: {e}")
                 flash('An error occurred while updating the profile picture.', 'danger')
 
         else:
-            # If no picture is uploaded, validate the other fields
-            if profile_form.full_name.data or profile_form.id_number.data or profile_form.email.data or profile_form.password.data:
+            logging.info("No profile picture uploaded.")
+
+            # Process other profile fields for updates
+            if profile_form.full_name.data or profile_form.email.data or profile_form.password.data:
+                logging.info("Processing other profile fields for update.")
 
                 # Collect the fields to update
                 if profile_form.full_name.data:
                     update_data['full_name'] = profile_form.full_name.data
                 if profile_form.email.data:
                     update_data['email'] = profile_form.email.data
+
+                # Only update the password if it meets the length requirement
                 if profile_form.password.data and len(profile_form.password.data) >= 6:
                     update_data['password'] = profile_form.password.data
+                elif profile_form.password.data and len(profile_form.password.data) < 6:
+                    logging.warning("Password update failed: Password must be at least 6 characters long.")
+                    flash('Password must be at least 6 characters long.', 'danger')
+                    return render_settings_page(active_tab='profile', error=None)
 
-                # Skip id_number validation since it's not editable
                 if update_data:
-                    response = requests.patch(api_url, json=update_data)
-                    if response.status_code == 200:
-                        flash('Profile updated successfully!', 'success')
-                    else:
-                        flash('Failed to update profile.', 'danger')
+                    try:
+                        response = requests.patch(api_url, json=update_data)
+                        if response.status_code == 200:
+                            logging.info("Profile fields updated successfully via API.")
+                            flash("Profile updated successfully!", "success")
+                        else:
+                            logging.error(f"Failed to update profile fields: {response.status_code} - {response.text}")
+                            errors = response.json().get('message', "An error occurred")
+                            flash(errors, "danger")
+                    except Exception as e:
+                        logging.error(f"Error while updating profile fields: {e}")
+                        flash(f"An error occurred: {e}", "danger")
                 else:
+                    logging.info("No profile fields to update.")
                     flash('No changes made to the profile.', 'info')
 
             else:
+                logging.info("No changes made to the profile.")
                 flash('No changes made to the profile.', 'info')
 
-    return render_settings_page(active_tab='profile')
-
+    return render_settings_page(active_tab='profile', error=None)
 
 
 
@@ -666,5 +719,6 @@ def block_reports():
         members=members,
         contributions=contributions,
         total_contributed=total_contributed,
-        detailed_contributions=detailed_contributions
+        detailed_contributions=detailed_contributions,
+        title='Dashboard | Block_Reports'
     )
