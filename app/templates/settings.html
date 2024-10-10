@@ -61,62 +61,96 @@
   
         <!-- Tab Panes -->
         <div class="tab-content d-flex justify-content-center">
-          <!-- PROFIILE -->
-          <div id="profile" class="tab-pane fade {% if active_tab == 'profile' %}show active{% endif %}">
-            
-            <form method="POST" enctype="multipart/form-data" action="{{ url_for('main.settings', active_tab='profile') }}">
-              {{ profile_form.hidden_tag() }}
+<!-- PROFILE -->
+<div id="profile" class="tab-pane fade {% if active_tab == 'profile' %}show active{% endif %}">
 
-              <img class="rounded-circle account-img" src="{{ url_for('static', filename='images/' + current_user.image_file) }}" alt="Profile_image"/>
+  <form method="POST" enctype="multipart/form-data" action="{{ url_for('main.settings', active_tab='profile') }}" novalidate>
+    {{ profile_form.hidden_tag() }}
+    
+    <div class="row p-2">
+      <div class="col-md-4">
+        <img class="rounded-circle ms-5" style="height: 170px; width: 170px;" 
+             src="{{ url_for('static', filename='images/' + current_user.image_file) }}" alt="Profile_image"/>
 
-              <div class="form-group">
-                {{ profile_form.picture.label() }} {{ profile_form.picture(class="profile_form-control-file") }}
-                {% if profile_form.picture.errors %} {% for error in profile_form.picture.errors %}
-                <span class="text-danger">{{ error }}</span><br />
-                {% endfor %} {% endif %}
-              </div>
+        <div class="form-group">
+          {{ profile_form.picture.label() }} 
+          {{ profile_form.picture() }}
+          {% if profile_form.picture.errors %}
+            {% for error in profile_form.picture.errors %}
+              <span class="text-danger">{{ error }}</span><br />
+            {% endfor %}
+          {% endif %}
+        </div>
+      </div>
 
-              <div class="row mb-5 mt-2">
-                <div class="col-md-6">
-                  <div class="mb-3">
-                      {{ profile_form.full_name.label }} {{ profile_form.full_name(class="input") }}  
-                     
-                  
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    {{ profile_form.id_number.label }} {{ profile_form.id_number(class="input") }}     
-            
-                  </div>
-                </div>
-              </div>
-  
-              <div class="row">
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    {{ profile_form.email.label }} {{ profile_form.email(class="input") }}      
-            
-  
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    {{ profile_form.password.label }} {{ profile_form.password(class="input") }}
-                    
-            
-                  </div>
-                </div>
-              </div>
-              <button type="submit" name="profile_submit" class="submit-btn">
-                {{ profile_form.submit.label.text }}
-            </button>       
-              
-            {{ render_flash_messages() }}
-  
-            </form>
+      <div class="col-md-8">
+        <div class="row mb-5 mt-2">
+          <div class="col-md-6">
+            <div class="mb-3">
+              {{ profile_form.full_name.label }} 
+              {{ profile_form.full_name(class="input") }}
+              <!-- Full name field errors -->
+              {% if profile_form.full_name.errors %}
+                {% for error in profile_form.full_name.errors %}
+                  <span class="text-danger">{{ error }}</span><br />
+                {% endfor %}
+              {% endif %}
+            </div>
           </div>
-          <!-- END OF PROFIILE -->
+          <div class="col-md-6">
+            <div class="mb-3">
+              {{ profile_form.id_number.label }} 
+              {{ profile_form.id_number(class="input", readonly="True") }} 
+              <!-- ID number field errors -->
+              {% if profile_form.id_number.errors %}
+                {% for error in profile_form.id_number.errors %}
+                  <span class="text-danger">{{ error }}</span><br />
+                {% endfor %}
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="mb-3">
+              {{ profile_form.email.label }} 
+              {{ profile_form.email(class="input") }}
+              <!-- Email field errors -->
+              {% if profile_form.email.errors %}
+                {% for error in profile_form.email.errors %}
+                  <span class="text-danger">{{ error }}</span><br />
+                {% endfor %}
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="mb-3">
+              {{ profile_form.password.label }} 
+              {{ profile_form.password(class="input") }}
+              <!-- Password field errors -->
+              {% if profile_form.password.errors %}
+                {% for error in profile_form.password.errors %}
+                  <span class="text-danger">{{ error }}</span><br />
+                {% endfor %}
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" name="profile_submit" class="submit-btn">
+      {{ profile_form.submit.label.text }}
+    </button>       
+
+    {{ render_flash_messages() }}
+
+  </form>
+</div>
+<!-- END OF PROFILE -->
+
   
           <!-- COMMITTEE TAB -->
           <div id="committee" class="tab-pane fade {% if active_tab == 'committee' %}show active{% endif %}">
