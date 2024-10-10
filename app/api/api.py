@@ -76,8 +76,10 @@ class BaseResource(Resource):
         try:
             args = self.args.parse_args()
             item = self.model.query.get_or_404(id)
+           # Only update fields that are provided (not None)
             for key, value in args.items():
-                setattr(item, key, value)
+                if value is not None:
+                    setattr(item, key, value)
             db.session.commit()
             return marshal(item, self.fields), 200
         except Exception as e:
