@@ -166,9 +166,7 @@ def handle_profile_update():
 
     if profile_form.validate_on_submit():
         logging.info("Form validated successfully.")
-    else:
-        logging.warning(f"Form validation failed: {profile_form.errors}")
-        # Initialize the update_data dictionary
+    
         update_data = {}
 
         # Handle profile picture update
