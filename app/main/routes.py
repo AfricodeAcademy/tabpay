@@ -463,13 +463,29 @@ def get_blocks_by_umbrella(umbrella_id):
 # Helper function to get zones of a specific block
 def get_zones_by_block(block_id):
     """Fetches zones associated with the specified block via API."""
-    response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/zones/", params={'parent_block_id': block_id})
-    
-    if response.status_code == 200:
+    try:
+        headers = {'Content-Type': 'application/json'}
+        response = requests.get(
+            f"{current_app.config['API_BASE_URL']}/api/v1/zones/",
+            params={'parent_block_id': block_id},
+            headers=headers,
+            timeout=10
+        )
+        
+        response.raise_for_status()
+        
+        # Check if the response is JSON
+        content_type = response.headers.get('Content-Type', '')
+        if 'application/json' not in content_type:
+            raise ValueError(f"Unexpected content type: {content_type}")
+
         zones = response.json()
-        return zones 
-    else:
-        flash('Error retrieving zones from the server.', 'danger')
+        return zones
+    except requests.exceptions.RequestException as e:
+        flash('Error retrieving zones from the server. Please try again later.', 'danger')
+        return []
+    except ValueError as e:
+        flash('Error processing server response. Please contact support.', 'danger')
         return []
 
 
