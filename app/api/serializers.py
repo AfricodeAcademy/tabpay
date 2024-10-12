@@ -8,7 +8,7 @@ user_fields = {
     "id_number": fields.Integer,
     "phone_number": fields.String,
     "active": fields.Boolean,
-    "bank": fields.Integer,
+    "bank_id": fields.Integer,
     "acc_number": fields.String,
     "image_file": fields.String,
     "registered_at": fields.DateTime,
@@ -66,10 +66,17 @@ zone_fields = {
     "created_by": fields.Integer
 }
 
+role_fields = {
+    "id": fields.Integer,
+    "name": fields.String,
+    "description": fields.String
+}
+
 meeting_fields = {
     "id": fields.Integer,
     "block_id": fields.Integer,
     "zone_id": fields.Integer,
+    "host_id": fields.Integer,
     "organizer_id": fields.Integer,
     "date": fields.DateTime
 }
@@ -89,7 +96,7 @@ user_args.add_argument('full_name', type=str)
 user_args.add_argument('email', type=str)
 user_args.add_argument('id_number', type=int)
 user_args.add_argument('phone_number', type=str)
-user_args.add_argument('bank', type=int)
+user_args.add_argument('bank_id', type=int)
 user_args.add_argument('acc_number', type=str)
 user_args.add_argument('zone_id', type=int)
 user_args.add_argument('image_file', type=str)
@@ -129,7 +136,13 @@ zone_args.add_argument('name', type=str, required=True, help='Zone Name is requi
 zone_args.add_argument('parent_block_id', type=int, required=True, help='Parent Block ID is required')
 zone_args.add_argument('created_by', type=int, required=True, help='Creator ID is required')
 
+role_args = reqparse.RequestParser()
+role_args.add_argument('name', type=str, required=True, help='Role Name is required')
+role_args.add_argument('description', type=int, required=True, help='Parent Block ID is required')
+
+
 meeting_args = reqparse.RequestParser()
+meeting_args.add_argument('host_id', type=int, required=True, help='Host ID is required')
 meeting_args.add_argument('block_id', type=int, required=True, help='Block ID is required')
 meeting_args.add_argument('zone_id', type=int, required=True, help='Zone ID is required')
 meeting_args.add_argument('organizer_id', type=int, required=True, help='Organizer ID is required')

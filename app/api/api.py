@@ -1,15 +1,15 @@
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import func
 from datetime import datetime
-from flask import Blueprint, jsonify
+from flask import Blueprint, request
 from werkzeug.exceptions import HTTPException
 from flask_restful import Api, Resource, marshal_with, marshal, abort
 from ..main.models import UserModel, CommunicationModel, \
-    PaymentModel, BankModel, BlockModel, UmbrellaModel, ZoneModel, MeetingModel
+    PaymentModel, BankModel, BlockModel, UmbrellaModel, ZoneModel, MeetingModel, RoleModel
 from .serializers import user_fields, user_args, communication_fields, \
     communication_args, payment_fields, payment_args, bank_fields, bank_args, \
     block_fields, block_args, umbrella_fields, umbrella_args, zone_fields, zone_args, \
-    meeting_fields, meeting_args, block_report_args, block_report_fields
+    meeting_fields, meeting_args, block_report_args, block_report_fields,role_args,role_fields
 from ..utils import db
 
 
@@ -118,6 +118,24 @@ class UsersResource(BaseResource):
     fields = user_fields
     args = user_args
 
+    def get(self, id=None):
+        try:
+            if id:
+                user = self.model.query.get_or_404(id)
+                return marshal(user, self.fields), 200
+
+            # Filter by role if provided in query parameters
+            role_name = request.args.get('role')
+            if role_name:
+                users = UserModel.query.join(UserModel.roles).filter(RoleModel.name == role_name).all()
+            else:
+                users = UserModel.query.all()
+
+            return marshal(users, self.fields), 200
+
+        except Exception as e:
+            return self.handle_error(e)
+
 class CommunicationsResource(BaseResource):
     model = CommunicationModel
     fields = communication_fields
@@ -143,10 +161,45 @@ class UmbrellasResource(BaseResource):
     fields = umbrella_fields
     args = umbrella_args
 
+class RolesResource(BaseResource):
+    model = RoleModel
+    fields = role_fields
+    args = role_args
+
 class MeetingsResource(BaseResource):
     model = MeetingModel
     fields = meeting_fields
     args = meeting_args
+
+    def post(self):
+        try:
+            # Parse the request arguments
+            args = self.args.parse_args()
+
+            # Convert the 'date' argument from string to a datetime object
+            try:
+                meeting_date = datetime.strptime(args['date'], '%Y-%m-%d %H:%M:%S')
+            except ValueError:
+                return {'error': 'Invalid date format, expected YYYY-MM-DD HH:MM:SS'}, 400
+
+            # Create the new meeting object with parsed date
+            new_meeting = self.model(
+                host_id=args['host_id'],
+                block_id=args['block_id'],
+                zone_id=args['zone_id'],
+                organizer_id=args['organizer_id'],
+                date=meeting_date
+            )
+
+            # Add and commit the new meeting to the database
+            db.session.add(new_meeting)
+            db.session.commit()
+
+            # Return the newly created meeting
+            return marshal(new_meeting, self.fields), 201
+
+        except Exception as e:
+            return self.handle_error(e)
 
 class ZonesResource(BaseResource):
     model = ZoneModel
@@ -243,4 +296,6 @@ api.add_resource(UmbrellasResource, '/umbrellas/', '/umbrellas/<int:id>')
 api.add_resource(ZonesResource, '/zones/', '/zones/<int:id>')
 api.add_resource(MeetingsResource, '/meetings/', '/meetings/<int:id>')
 api.add_resource(BlockReportsResource, '/block_reports/')
+api.add_resource(RolesResource, '/roles/','/roles/<int:id>')
+
 

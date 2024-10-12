@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SelectField, IntegerField, SubmitField,DateField
+from wtforms import StringField, PasswordField, SelectField, IntegerField, SubmitField,DateTimeField
 from flask_wtf.file import FileField,FileAllowed
 from wtforms.validators import DataRequired, Length, ValidationError,NumberRange,Email
 from ..api.api import UserModel
@@ -87,19 +87,15 @@ class ZoneForm(FlaskForm):
 
 # START OF HOST FORM
 class ScheduleForm(FlaskForm):
-    block =  SelectField('Select the relevant Block',validators=[DataRequired()])
-    zone =  SelectField('Select the zone',validators=[DataRequired()])
-    member =  SelectField('Select the member',validators=[DataRequired()])
-    date = DateField('Pick the date',validators=[DataRequired()])
+    block = SelectField('Select the relevant Block', validators=[DataRequired()])
+    zone = SelectField('Select the zone', validators=[DataRequired()])
+    member = SelectField('Select the member', validators=[DataRequired()])
+    date = DateTimeField('Pick the date and time', format='%Y-%m-%d %H:%M:%S', validators=[DataRequired()])
     submit = SubmitField('Submit')
 
     def validate_date(self, field):
         if field.data < datetime.now():
-            raise ValidationError('The meeting date cannot be in the past')
-        
-
-
-
+            raise ValidationError('The meeting date and time cannot be in the past.')
 
     
 
