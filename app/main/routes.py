@@ -47,6 +47,7 @@ def render_settings_page(active_tab=None, error=None):
     except Exception as e:
         flash('Error loading user details. Please try again later.', 'danger')
 
+    blocks, zones =  [], []
     # API call to get umbrella by user
     try:
         umbrella = get_umbrella_by_user(current_user.id)
@@ -57,12 +58,10 @@ def render_settings_page(active_tab=None, error=None):
             blocks = get_blocks_by_umbrella(umbrella['id'])
             zone_form.parent_block.choices = [(str(block['id']), block['name']) for block in blocks]
 
-            zones = []
             for block in blocks:
                 zones.extend(get_zones_by_block(block['id']))
             member_form.member_zone.choices = [(str(zone['id']), zone['name']) for zone in zones]
         else:
-            blocks, zones = [], []
             flash('No umbrella found. Please create one first.', 'info')
     except Exception as e:
         flash('Error loading umbrella data. Please try again later.', 'danger')
@@ -672,6 +671,7 @@ def render_host_page(active_tab=None, error=None):
     except Exception as e:
         flash('Error loading user details. Please try again later.', 'danger')
 
+    blocks, zones, members = [], [], []
     # API call to get umbrella by user
     try:
         umbrella = get_umbrella_by_user(current_user.id)
@@ -681,7 +681,6 @@ def render_host_page(active_tab=None, error=None):
             blocks = get_blocks_by_umbrella(umbrella['id'])
             schedule_form.block.choices = [(str(block['id']), block['name']) for block in blocks]
 
-            zones = []
             for block in blocks:
                 zones.extend(get_zones_by_block(block['id']))
             schedule_form.zone.choices = [(str(zone['id']), zone['name']) for zone in zones]
@@ -694,7 +693,6 @@ def render_host_page(active_tab=None, error=None):
                 schedule_form.member.choice = []
 
         else:
-            blocks, zones = [], []
             flash('No umbrella found. Please create one first.', 'info')
     except Exception as e:
         flash(f'Error loading umbrella data. Please try again later.', 'danger')
