@@ -73,6 +73,12 @@ def render_settings_page(active_tab=None, error=None):
     except Exception as e:
         flash('Error loading bank information. Please try again later.', 'danger')
 
+    try:
+        roles = get_roles()
+        committee_form.role.choices = [(str(role['id']), role['name']) for role in roles]
+    except Exception as e:
+        flash('Error loading role information. Please try again later.', 'danger')
+
 
     # Render the settings page
     return render_template('settings.html', title='Dashboard | Settings',
@@ -239,11 +245,19 @@ def handle_profile_update():
     return render_settings_page(active_tab='profile')
 
 
-
+def get_roles():
+    response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/roles/")
+    return response.json() if response.status_code == 200 else None    
+    
+    
 
 # Handle committee addition
 def handle_committee_addition():
     committee_form = AddCommitteForm()
+
+    roles = get_roles()
+    if roles:
+        committee_form.role.choices = [(str(role['id']), role['name']) for role in roles]
 
     if committee_form.validate_on_submit():
         id_number = committee_form.id_number.data
@@ -253,6 +267,14 @@ def handle_committee_addition():
         user = get_user_by_id_number(id_number)
 
         if user:
+            response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/",params={"role": "Member"})
+            users = response.json() if response.status_code == 200 else None
+            print (f'Users: {users}')
+            if not users:
+                flash('Error fetching users with role "Member" from the API.', 'danger')
+                return redirect(url_for('main.settings', active_tab='committee'))
+            
+
             # Check if user already has the "Member" role
             if 'Member' not in user['roles']:
                 flash(f"{user['full_name']} must first be a member before being assigned a committee role.", 'danger')
