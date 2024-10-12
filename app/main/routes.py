@@ -3,9 +3,10 @@ from flask import Blueprint, render_template, redirect, url_for, flash,request
 from flask_security import login_required, current_user, roles_accepted
 from ..utils import db
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm
-from .models import UserModel, BlockModel, ZoneModel, user_datastore,Role,PaymentModel,MeetingModel
+from .models import UserModel, BlockModel, ZoneModel, user_datastore,RoleModel,PaymentModel,MeetingModel
 from PIL import Image
 import os
+import logging
 import secrets
 from app import create_app as app
 from flask import current_app
@@ -46,6 +47,7 @@ def render_settings_page(active_tab=None, error=None):
     except Exception as e:
         flash('Error loading user details. Please try again later.', 'danger')
 
+    blocks, zones =  [], []
     # API call to get umbrella by user
     try:
         umbrella = get_umbrella_by_user(current_user.id)
@@ -56,12 +58,10 @@ def render_settings_page(active_tab=None, error=None):
             blocks = get_blocks_by_umbrella(umbrella['id'])
             zone_form.parent_block.choices = [(str(block['id']), block['name']) for block in blocks]
 
-            zones = []
             for block in blocks:
                 zones.extend(get_zones_by_block(block['id']))
             member_form.member_zone.choices = [(str(zone['id']), zone['name']) for zone in zones]
         else:
-            blocks, zones = [], []
             flash('No umbrella found. Please create one first.', 'info')
     except Exception as e:
         flash('Error loading umbrella data. Please try again later.', 'danger')
@@ -112,79 +112,125 @@ def settings():
 
 
 
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Function to save the profile picture
 def save_picture(form_picture):
-    random_hex = secrets.token_hex(8)
-    _, f_ext = os.path.splitext(form_picture.filename)
-    picture_fn = random_hex + f_ext
-    picture_path = os.path.join(current_app.root_path, 'static/images', picture_fn)
+    try:
+        # Generate a random hex for the filename and get the file extension
+        random_hex = secrets.token_hex(8)
+        _, f_ext = os.path.splitext(form_picture.filename)
+        picture_fn = random_hex + f_ext
 
-    output_size = (125, 125) 
-    i = Image.open(form_picture)
-    i.thumbnail(output_size)
-    i.save(picture_path)
+        # Ensure the directory exists and log the action
+        image_dir = os.path.join(current_app.root_path, 'static/images')
+        if not os.path.exists(image_dir):
+            logging.info(f"Directory {image_dir} does not exist. Creating directory...")
+            os.makedirs(image_dir)
+        else:
+            logging.info(f"Directory {image_dir} already exists.")
 
-    return picture_fn
+        # Create the path to save the image
+        picture_path = os.path.join(image_dir, picture_fn)
 
+        # Resize the image and save it
+        output_size = (125, 125)
+        i = Image.open(form_picture)
+        i.thumbnail(output_size)
+        i.save(picture_path)
 
+        logging.info(f"Profile picture saved at {picture_path}")
+        return picture_fn
 
+    except Exception as e:
+        logging.error(f"Error saving picture: {e}")
+        raise e
 
 # Handle profile update
 def handle_profile_update():
     profile_form = ProfileForm()
     api_url = f"{current_app.config['API_BASE_URL']}/api/v1/users/{current_user.id}"
 
+    # Log form validation status
+    logger.info("Profile update request received. Validating form...")
 
     if profile_form.validate_on_submit():
-        # Initialize the update_data dictionary
+        logging.info("Form validated successfully.")
+    
         update_data = {}
 
-        # If the user uploaded a picture, handle that first
+        # Handle profile picture update
         if profile_form.picture.data:
+            logging.info("User uploaded a new profile picture.")
 
             try:
+                # Save picture and get the file name
                 picture_file = save_picture(profile_form.picture.data)
-                image_path = os.path.join('static/images', picture_file)
+                image_path = os.path.join(current_app.root_path, 'static/images', picture_file)  # Use absolute path
 
-
-                # Prepare multipart data for the API
+                # Prepare multipart data for the API request
                 with open(image_path, 'rb') as f:
                     files = {'picture': (picture_file, f, 'image/png')}
                     response = requests.patch(api_url, files=files)
 
-
+                # Check API response
                 if response.status_code == 200:
+                    logging.info("Profile picture updated successfully via API.")
                     flash('Profile picture updated successfully!', 'success')
                     # Update the current user's image_file
                     current_user.image_file = picture_file
                 else:
+                    logging.error(f"Failed to update profile picture: {response.status_code} - {response.text}")
                     flash('Failed to update profile picture.', 'danger')
 
             except Exception as e:
+                logging.error(f"Error while updating profile picture: {e}")
                 flash('An error occurred while updating the profile picture.', 'danger')
 
         else:
-            # If no picture is uploaded, validate the other fields
-            if profile_form.full_name.data or profile_form.id_number.data or profile_form.email.data or profile_form.password.data:
+            logging.info("No profile picture uploaded.")
+
+            # Process other profile fields for updates
+            if profile_form.full_name.data or profile_form.email.data or profile_form.password.data:
+                logging.info("Processing other profile fields for update.")
 
                 # Collect the fields to update
                 if profile_form.full_name.data:
                     update_data['full_name'] = profile_form.full_name.data
                 if profile_form.email.data:
                     update_data['email'] = profile_form.email.data
+
+                # Only update the password if it meets the length requirement
                 if profile_form.password.data and len(profile_form.password.data) >= 6:
                     update_data['password'] = profile_form.password.data
+                elif profile_form.password.data and len(profile_form.password.data) < 6:
+                    logging.warning("Password update failed: Password must be at least 6 characters long.")
+                    flash('Password must be at least 6 characters long.', 'danger')
+                    return render_settings_page(active_tab='profile', error=None)
 
-                # Skip id_number validation since it's not editable
                 if update_data:
-                    response = requests.patch(api_url, json=update_data)
-                    if response.status_code == 200:
-                        flash('Profile updated successfully!', 'success')
-                    else:
-                        flash('Failed to update profile.', 'danger')
+                    try:
+                        response = requests.patch(api_url, json=update_data)
+                        if response.status_code == 200:
+                            logging.info("Profile fields updated successfully via API.")
+                            flash("Profile updated successfully!", "success")
+                        else:
+                            logging.error(f"Failed to update profile fields: {response.status_code} - {response.text}")
+                            errors = response.json().get('message', "An error occurred")
+                            flash(errors, "danger")
+                    except Exception as e:
+                        logging.error(f"Error while updating profile fields: {e}")
+                        flash(f"An error occurred: {e}", "danger")
                 else:
+                    logging.info("No profile fields to update.")
                     flash('No changes made to the profile.', 'info')
 
             else:
+                logging.info("No changes made to the profile.")
                 flash('No changes made to the profile.', 'info')
     else:
         for field, errors in profile_form.errors.items():
@@ -535,7 +581,7 @@ def statistics():
     included_roles = ['Member', 'Chairman', 'Secretary','SuperUser']
 
     # Query the users who have any of the roles in the included_roles list
-    total_members = UserModel.query.join(UserModel.roles).filter(Role.name.in_(included_roles)).count()
+    total_members = UserModel.query.join(UserModel.roles).filter(RoleModel.name.in_(included_roles)).count()
 
     # Get total number of blocks
     total_blocks = BlockModel.query.count()
@@ -549,100 +595,6 @@ def statistics():
 def manage_contribution():
     
     return render_template('manage_contribution.html', title='Dashboard | Manage Contributions')
-
-
-@main.route('/host', methods=['GET','POST'])
-def host():
-    schedule_form = ScheduleForm()
-
-     # Dynamically fetch the blocks,zones & members created by the current user
-    blocks = BlockModel.query.filter_by(created_by=current_user.id).all()
-    schedule_form.block.choices = [(str(block.id), block.name) for block in blocks]
-
-    zones = ZoneModel.query.filter_by(created_by=current_user.id).all()
-    schedule_form.zone.choices = [(str(zone.id), zone.name) for zone in zones]
-
-    members = UserModel.query.filter_by(zone_id=schedule_form.zone.data).all()
-    schedule_form.member.choices = [(str(member.id), member.full_name) for member in members]
-
-    block = schedule_form.block.data
-    
-    block = MeetingModel.query.filter_by(block_id=block).first()
-    zone = MeetingModel.query.filter_by(block_id=block).first()
-    host = MeetingModel.query.filter_by(block_id=block).first()
-    when = MeetingModel.query.filter_by(block_id=block).first()
-    return render_template('host.html', title='Dashboard | Host', user=current_user,schedule_form=schedule_form,zones=zones, members=members,blocks=blocks,block=block, when=when,host=host,zone=zone)
-
-
-# Route to schedule a block meeting
-@main.route('/host/schedule_meeting', methods=['GET', 'POST'])
-@login_required
-def schedule_meeting():
-    schedule_form = ScheduleForm()
-
-    blocks = BlockModel.query.filter_by(created_by=current_user.id).all()
-    schedule_form.block.choices = [(str(block.id), block.name) for block in blocks]
-
-    zones = ZoneModel.query.filter_by(created_by=current_user.id).all()
-    schedule_form.zone.choices = [(str(zone.id), zone.name) for zone in zones]
-
-    members = UserModel.query.filter_by(zone_id=schedule_form.zone.data).all()
-    schedule_form.member.choices = [(str(member.id), member.full_name) for member in members]
-    
-    if schedule_form.validate_on_submit():
-
-        # Dynamically fetch the blocks created by the current user
-        blocks = BlockModel.query.filter_by(created_by=current_user.id).all()
-        schedule_form.block.choices = [(str(block.id), block.name) for block in blocks]
-
-        if request.method == 'POST':
-            # Only filter zones if a block has been selected
-            if schedule_form.block.data:
-                zones = ZoneModel.query.filter_by(created_by=current_user.id).all()
-                schedule_form.zone.choices = [(str(zone.id), zone.name) for zone in zones]
-            else:
-                zones = ZoneModel.query.all()
-
-            # Only filter members if a zone has been selected
-            if schedule_form.zone.data:
-                roles = Role.query.filter_by(role='Member').all()
-                members = UserModel.query.filter_by(zone_id=schedule_form.zone.data,roles=roles).all()
-                schedule_form.member.choices = [(str(member.id), member.full_name) for member in members]
-            else:
-                roles = Role.query.filter_by(name='Member').all()
-                members = UserModel.query.filter_by(roles=roles).all()
-
-     
-            messages = []
-            if not blocks:
-                messages.append('No blocks available. Please go to the settings page to create one.')
-            if not zones:
-                messages.append('No zones available for the selected block. Please add zones in settings.')
-            if not members:
-                messages.append('No members available for the selected zone. Please add members in settings.')
-
-            if messages:
-                flash(' '.join(messages), 'danger')
-                return redirect(url_for('main.settings'))
-
-            new_meeting = MeetingModel(
-                block_id=schedule_form.block.data,
-                zone_id=schedule_form.zone.data,
-                members=schedule_form.members.data,
-                date=schedule_form.date.data,
-            )
-            db.session.add(new_meeting)
-            db.session.commit()
-            flash('Meeting scheduled successfully!', 'success')
-            return redirect(url_for('main.host'))
-    else:
-        # If we reach this point, the form was not validated
-        for field, errors in schedule_form.errors.items():
-            for error in errors:
-                flash(f'Error in {field}: {error}', 'danger')
-        
-        return redirect(url_for('main.host'))
-        
 
 
 
@@ -700,5 +652,274 @@ def block_reports():
         members=members,
         contributions=contributions,
         total_contributed=total_contributed,
-        detailed_contributions=detailed_contributions
+        detailed_contributions=detailed_contributions,
+        title='Dashboard | Block_Reports'
     )
+
+
+# Helper function to render the host page with forms
+def render_host_page(active_tab=None, error=None):
+    # Instantiate all forms
+    schedule_form = ScheduleForm()
+
+    if not active_tab:
+        active_tab = request.args.get('active_tab', 'schedule_meeting')
+
+     # Call API or database to get upcoming meeting details
+    meeting_details = get_upcoming_meeting_details(current_user.id)
+
+    if meeting_details:
+        block = meeting_details['block']
+        zone = meeting_details['zone']
+        host = meeting_details['host']
+        when = meeting_details['when']
+    else:
+        flash("No upcoming meeting found", "warning")
+        block = zone = host = when = None
+
+
+    
+    # API call to get user details
+    try:
+        user = get_user_from_api(current_user.id)
+        if not user:
+            flash('Unable to load user data.', 'danger')
+    except Exception as e:
+        flash('Error loading user details. Please try again later.', 'danger')
+
+    blocks, zones, members = [], [], []
+    # API call to get umbrella by user
+    try:
+        umbrella = get_umbrella_by_user(current_user.id)
+        if umbrella:
+
+            # API calls to dynamically fetch blocks and zones
+            blocks = get_blocks_by_umbrella(umbrella['id'])
+            schedule_form.block.choices = [(str(block['id']), block['name']) for block in blocks]
+
+            for block in blocks:
+                zones.extend(get_zones_by_block(block['id']))
+            schedule_form.zone.choices = [(str(zone['id']), zone['name']) for zone in zones]
+
+            # Fetch members
+            members = get_members()
+            if members:
+                schedule_form.member.choices = [(str(member['id']), member['full_name']) for member in members]
+            else:
+                schedule_form.member.choice = []
+
+        else:
+            flash('No umbrella found. Please create one first.', 'info')
+    except Exception as e:
+        flash(f'Error loading umbrella data. Please try again later.', 'danger')
+
+    # Render the host page
+    return render_template('host.html', title='Dashboard | Settings',
+                           schedule_form=schedule_form,
+                           user=current_user,
+                           blocks=blocks,
+                           zones=zones,
+                           members=members,
+                           active_tab=active_tab,  
+                           error=error,block=block,host=host,zone=zone,when=when)
+
+# Single route to handle all host form submissions
+@main.route('/host', methods=['GET', 'POST'])
+@roles_accepted('Admin', 'SuperUser', 'Chairman', 'Secretary')
+@login_required
+def host():
+    # Check which form was submitted
+    if 'schedule_submit' in request.form:
+        return handle_schedule_creation()
+    elif 'edit_member_submit' in request.form:  # Handling member edit submission
+        return update_member()
+    elif 'remove_member_submit' in request.form:  # Handling member removal submission
+        return remove_member()
+    
+    # Default GET request rendering the host page
+    return render_host_page(active_tab=request.args.get('active_tab', 'schedule_meeting'))
+
+
+# Handle schedule creation
+def handle_schedule_creation():
+    schedule_form = ScheduleForm()
+     # Retrieve the umbrella for the current user
+    umbrella = get_umbrella_by_user(current_user.id)
+
+    if not umbrella:
+        flash('You need to create an umbrella before scheduling a meeting!', 'danger')
+        return redirect(url_for('main.settings', active_tab='umbrella'))
+
+    # Fetch blocks associated with the umbrella
+    blocks = get_blocks_by_umbrella(umbrella['id'])
+    schedule_form.block.choices = [(str(block['id']), block['name']) for block in blocks]
+
+    # Fetch zones for the blocks
+    zones = []
+    for block in blocks:
+        zones.extend(get_zones_by_block(block['id']))
+    schedule_form.zone.choices = [(str(zone['id']), zone['name']) for zone in zones]
+
+    # Fetch members filtered by zone
+    members = get_members()
+    if members:
+        schedule_form.member.choices = [(str(member['id']), member['full_name']) for member in members]
+
+    if schedule_form.validate_on_submit():
+              # Check for existing meetings in the block
+        existing_meetings = get_existing_block_meeting(schedule_form.block.data)
+        
+        # If any meetings exist for the block, prevent scheduling
+        if existing_meetings:  
+            flash('A meeting has already been scheduled for this block!', 'danger')
+            logger.warning(f"Meeting already scheduled for block ID: {schedule_form.block.data}.")
+            return redirect(url_for('main.host', active_tab='schedule_meeting'))
+
+
+        # Format the date to a string that can be sent in JSON (ISO 8601 format)
+        meeting_date_str = schedule_form.date.data.strftime('%Y-%m-%d %H:%M:%S')
+
+
+        # Payload for creating the meeting
+        payload = {
+            'block_id': schedule_form.block.data,
+            'zone_id': schedule_form.zone.data,
+            'host_id': schedule_form.member.data,
+            'organizer_id': current_user.id,
+            'date': meeting_date_str
+        }
+
+        # Create meeting via API
+        try:
+            response = requests.post(f"{current_app.config['API_BASE_URL']}/api/v1/meetings/", json=payload)
+            if response.status_code == 201:
+                flash(f"Meeting for {schedule_form.block.data} has created successfully!", "success")
+                return redirect(url_for('main.host', active_tab='schedule_meeting'))
+            else:
+                flash('Meeting creation failed. Please try again later.', 'danger')
+        except Exception as e:
+            flash('Error creating meeting. Please try again later.', 'danger')
+
+    # Handle form errors
+    for field, errors in schedule_form.errors.items():
+        for error in errors:
+            flash(f'{error}', 'danger')
+
+    return render_host_page(active_tab='schedule_meeting')
+
+
+
+# Helper function to get upcoming meeting details from the API
+def get_upcoming_meeting_details(user_id):
+    # API URL for fetching upcoming meetings (update with your actual API URL)
+    api_url = f"{current_app.config['API_BASE_URL']}/api/v1/meetings/"
+    
+    try:
+        # Send a GET request to the API
+        response = requests.get(api_url,params={'organizer_id': user_id})
+
+        # Check if the request was successful
+        if response.status_code == 200:
+            meeting_data = response.json()
+
+            if meeting_data and isinstance(meeting_data, list) and len(meeting_data) > 0:
+                # Assuming the API returns a list of meetings, and you're interested in the first one
+                meeting = meeting_data[0]  # Get the first meeting in the list
+                
+                # Extract details from the API response
+                block_name = meeting.get('block', {}).get('name', 'Unknown Block')  # Nested data for block name
+                zone_name = meeting.get('zone', {}).get('name', 'Unknown Zone')     # Nested data for zone name
+                host_name = meeting.get('host', {}).get('full_name', 'Unknown Host')  # Host's full name
+                meeting_date = meeting.get('date', 'Unknown Date')
+
+                return {
+                    'block': block_name,
+                    'zone': zone_name,
+                    'host': host_name,
+                    'when': meeting_date
+                }
+            else:
+                print("No upcoming meetings found.")
+                return None
+        else:
+            print(f"Failed to fetch data from API. Status Code: {response.status_code}")
+            return None
+
+    except requests.exceptions.RequestException as e:
+        # Handle any exceptions that occur during the API call
+        print(f"An error occurred while fetching data from the API: {e}")
+        return None
+    
+# Function to handle member edit
+def update_member():
+    
+    members = get_members()
+
+
+    data = {
+        'full_name': request.form['full_name'],
+        'phone_number': request.form['phone_number'],
+    }
+    
+    # Assuming you consume an API here to update the member details
+    response = requests.patch(f"{current_app.config['API_BASE_URL']}/api/v1/users/",json=data)
+    
+    if response == 200:
+        flash('Member details updated successfully', 'success')
+    else:
+        flash('Failed to update member details', 'danger')
+    
+    return render_host_page(active_tab='block_members')
+
+
+# Function to handle member removal
+def remove_member(user_id):
+    response = requests.delete(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}")
+    
+    if response == 200:
+        flash('Member removed successfully', 'success')
+    else:
+        flash('Failed to remove member', 'danger')
+    
+    return render_host_page(active_tab='block_members')
+
+
+# Helper function to fetch members by role "Member"
+def get_members():
+    try:
+        logger.info("Fetching users with role 'Member'.")
+        # API call to retrieve members based on the role "Member"
+        response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Member'})
+        
+        if response.status_code == 200:
+            members = response.json()
+            logger.info(f"Users fetched successfully: {len(members)} members.")
+            return members
+        else:
+            flash("Error fetching members. Please try again later.", "danger")
+            logger.error(f"Error fetching members: Status Code {response.status_code}")
+            return []
+    except Exception as e:
+        flash(f"An error occurred while fetching members: {str(e)}", "danger")
+        logger.error(f"Exception during fetching members: {str(e)}")
+        return []
+
+# Helper function to check if a meeting already exists for the block
+def get_existing_block_meeting(block_id):
+    try:
+        logger.info(f"Checking for existing meetings for block ID: {block_id}.")
+        # API call to check existing meetings for the block
+        response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/meetings", params={'block_id': block_id})
+        
+        if response.status_code == 200:
+            meetings = response.json()
+            logger.info(f"Meetings found: {len(meetings)}")
+            return meetings
+        else:
+            flash("Error fetching meetings. Please try again later.", "danger")
+            logger.error(f"Error fetching meetings: Status Code {response.status_code}")
+            return []
+    except Exception as e:
+        flash(f"An error occurred while fetching meetings: {str(e)}", "danger")
+        logger.error(f"Exception during fetching meetings: {str(e)}")
+        return []

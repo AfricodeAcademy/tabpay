@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SelectField, IntegerField, SubmitField,DateField
+from wtforms import StringField, PasswordField, SelectField, IntegerField, SubmitField,DateTimeField
 from flask_wtf.file import FileField,FileAllowed
 from wtforms.validators import DataRequired, Length, ValidationError,NumberRange,Email
 from ..api.api import UserModel
@@ -13,7 +13,7 @@ class AddMemberForm(FlaskForm):
     member_zone = SelectField('Member Zone', validators=[DataRequired(message="Member Zone is required")])
     bank = SelectField('Select Bank',validators=[DataRequired(message="Bank is required")])
     acc_number = IntegerField('Bank Account Number',validators=[DataRequired()],render_kw={'placeholder':'xxxxxx'})
-    submit = SubmitField('SAVE')
+    submit = SubmitField('ADD MEMBER')
     
     def validate_id_number(self,field):
         user = UserModel.query.filter_by(id_number=field.data).first()
@@ -32,15 +32,15 @@ class ProfileForm(FlaskForm):
     full_name = StringField('Update Your Full Names',validators=[ Length(max=100,min=10)])
     id_number = IntegerField('Member ID Number',validators=[NumberRange(min=10000000, max=99999999, message="ID number must be exactly 8 digits.")])
     email = StringField('Update Your Email',validators=[Email(message="Invalid email")])
-    password = PasswordField('Your Password',validators=[ Length(max=100,min=6),],render_kw={'placeholder':'******'})
-    submit = SubmitField('SUBMIT')
+    password = PasswordField('Enter Password to Update Profile',validators=[ Length(max=100,min=6),],render_kw={'placeholder':'******'})
+    submit = SubmitField('UPDATE PROFILE')
 
         
-    def validate_email(self,email):
-        if email.data != current_user.email:
-            user = UserModel.query.filter_by(email=email.data).first()
+    def validate_email(self,password):
+        if password.data != current_user.password:
+            user = UserModel.query.filter_by(password=password.data).first()
             if user:
-                raise ValidationError("That email is taken.Please choose a different one!")    
+                raise ValidationError("Wrong password!")    
     
 
 
@@ -49,7 +49,7 @@ class AddCommitteForm(FlaskForm):
     id_number = IntegerField('Their ID Number',validators=[DataRequired(),NumberRange(min=10000000, max=99999999, message="ID number must be exactly 8 digits.")],render_kw={'placeholder':'xxxxxxxx'})
     role = SelectField('Role', choices=[('Chairman', 'Chairman'), ('Secretary', 'Secretary')],validators=[DataRequired(message='Please select a valid role!')])
     phone_number = StringField('Phone Number',validators=[DataRequired(),Length(min=10, max=16, message="Phone number must be between 10 and 16 digits.")],render_kw={'placeholder':'0700000000'}) 
-    submit = SubmitField('SUBMIT')
+    submit = SubmitField('ADD COMMITTEE')
 
     def validate_id_number(self,field):
         user = UserModel.query.filter_by(id_number=field.data).first()
@@ -66,20 +66,20 @@ class AddCommitteForm(FlaskForm):
 class UmbrellaForm(FlaskForm):
     umbrella_name = StringField('Umbrella Name',validators=[DataRequired(), Length(max=100,min=4)],render_kw={'placeholder':'Nyangores'})
     location = StringField('Location',validators=[DataRequired(), Length(max=100,min=4)],render_kw={'placeholder':'xxxxxxx'})
-    submit = SubmitField('SUBMIT')
+    submit = SubmitField('CREATE UMBRELLA')
 
 
 class BlockForm(FlaskForm):
     block_name = StringField('Block Name',validators=[DataRequired(), Length(max=100,min=4)],render_kw={'placeholder':'Block 5'})
     parent_umbrella = StringField('Parent Umbrella', render_kw={'readonly': True}) 
-    submit = SubmitField('SUBMIT')
+    submit = SubmitField('CREATE BLOCK')
 
 
     
 class ZoneForm(FlaskForm):
     zone_name = StringField('Zone Name',validators=[DataRequired(), Length(max=100,min=1)],render_kw={'placeholder':'Meja Estate zone'})
     parent_block =  SelectField('Parent Block',validators=[DataRequired()])
-    submit = SubmitField('SUBMIT')
+    submit = SubmitField('CREATE ZONE')
 
     
 # END OF SETTINGS FORM
@@ -87,19 +87,15 @@ class ZoneForm(FlaskForm):
 
 # START OF HOST FORM
 class ScheduleForm(FlaskForm):
-    block =  SelectField('Select the relevant Block',validators=[DataRequired()])
-    zone =  SelectField('Select the zone',validators=[DataRequired()])
-    member =  SelectField('Select the member',validators=[DataRequired()])
-    date = DateField('Pick the date',validators=[DataRequired()])
-    submit = SubmitField('Submit')
+    block = SelectField('Select the relevant Block', validators=[DataRequired()])
+    zone = SelectField('Select the zone', validators=[DataRequired()])
+    member = SelectField('Select the member', validators=[DataRequired()])
+    date = DateTimeField('Pick the date and time', format='%Y-%m-%d %H:%M:%S', validators=[DataRequired()])
+    submit = SubmitField('SCHEDULE MEETING')
 
     def validate_date(self, field):
         if field.data < datetime.now():
-            raise ValidationError('The meeting date cannot be in the past')
-        
-
-
-
+            raise ValidationError('The meeting date and time cannot be in the past.')
 
     
 
