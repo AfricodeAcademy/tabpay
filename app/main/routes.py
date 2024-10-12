@@ -687,6 +687,7 @@ def render_host_page(active_tab=None, error=None):
     meeting_details = get_upcoming_meeting_details(current_user.id)
 
     if meeting_details:
+        print(meeting_details)  # Debugging line to check the meeting details
         block = meeting_details['block']
         zone = meeting_details['zone']
         host = meeting_details['host']
@@ -826,30 +827,32 @@ def handle_schedule_creation():
     return render_host_page(active_tab='schedule_meeting')
 
 
+# Setup logging (you can configure it further as needed)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Helper function to get upcoming meeting details from the API
 def get_upcoming_meeting_details(user_id):
     # API URL for fetching upcoming meetings (update with your actual API URL)
     api_url = f"{current_app.config['API_BASE_URL']}/api/v1/meetings/"
-    
+        
     try:
         # Send a GET request to the API
-        response = requests.get(api_url,params={'organizer_id': user_id})
+        logging.info(f"Sending GET request to {api_url} with organizer_id={user_id}")
+        response = requests.get(api_url, params={'organizer_id': user_id})
 
         # Check if the request was successful
         if response.status_code == 200:
             meeting_data = response.json()
+            logging.info(f"API response received: {meeting_data}")
 
-            if meeting_data and isinstance(meeting_data, list) and len(meeting_data) > 0:
-                # Assuming the API returns a list of meetings, and you're interested in the first one
-                meeting = meeting_data[0]  # Get the first meeting in the list
-                
-                # Extract details from the API response
-                block_name = meeting.get('block', {}).get('name', 'Unknown Block')  # Nested data for block name
-                zone_name = meeting.get('zone', {}).get('name', 'Unknown Zone')     # Nested data for zone name
-                host_name = meeting.get('host', {}).get('full_name', 'Unknown Host')  # Host's full name
-                meeting_date = meeting.get('date', 'Unknown Date')
+            # Check if the response is a dictionary rather than a list
+            if isinstance(meeting_data, dict):
+                block_name = meeting_data.get('block', 'Unknown Block')
+                zone_name = meeting_data.get('zone', 'Unknown Zone')
+                host_name = meeting_data.get('host', 'Unknown Host')
+                meeting_date = meeting_data.get('when', 'Unknown Date')
 
+                logging.info(f"Extracted meeting details: Block - {block_name}, Zone - {zone_name}, Host - {host_name}, When - {meeting_date}")
                 return {
                     'block': block_name,
                     'zone': zone_name,
@@ -857,17 +860,18 @@ def get_upcoming_meeting_details(user_id):
                     'when': meeting_date
                 }
             else:
-                print("No upcoming meetings found.")
+                logging.warning("No upcoming meetings found or unexpected response format.")
                 return None
         else:
-            print(f"Failed to fetch data from API. Status Code: {response.status_code}")
+            logging.error(f"Failed to fetch data from API. Status Code: {response.status_code}")
             return None
 
     except requests.exceptions.RequestException as e:
         # Handle any exceptions that occur during the API call
-        print(f"An error occurred while fetching data from the API: {e}")
+        logging.error(f"An error occurred while fetching data from the API: {e}")
         return None
-    
+
+
 # Function to handle member edit
 def update_member():
     

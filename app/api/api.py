@@ -206,6 +206,28 @@ class MeetingsResource(BaseResource):
     fields = meeting_fields
     args = meeting_args
 
+    def get(self):
+        try:
+            # Assuming we are fetching meetings based on organizer_id
+            organizer_id = request.args.get('organizer_id')
+            if organizer_id:
+                meeting = db.session.query(MeetingModel)\
+                                    .filter(MeetingModel.organizer_id == organizer_id)\
+                                    .first()
+                if meeting:
+                    # Fetch related block, zone, and host details
+                    meeting_details = {
+                        'block': meeting.block.name if meeting.block else 'Unknown Block',
+                        'zone': meeting.zone.name if meeting.zone else 'Unknown Zone',
+                        'host': meeting.host.full_name if meeting.host else 'Unknown Host',
+                        'when': meeting.date.strftime('%a, %d %b %Y %H:%M:%S')
+                    }
+                    return meeting_details, 200
+            return {'error': 'Meeting not found'}, 404
+
+        except Exception as e:
+            return self.handle_error(e)
+
     def post(self):
         try:
             # Parse the request arguments
