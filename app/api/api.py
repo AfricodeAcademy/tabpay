@@ -1,7 +1,7 @@
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import func
 from datetime import datetime
-from flask import Blueprint, request
+from flask import Blueprint, jsonify, request
 from werkzeug.exceptions import HTTPException
 from flask_restful import Api, Resource, marshal_with, marshal, abort
 from ..main.models import UserModel, CommunicationModel, \
@@ -11,8 +11,7 @@ from .serializers import user_fields, user_args, communication_fields, \
     block_fields, block_args, umbrella_fields, umbrella_args, zone_fields, zone_args, \
     meeting_fields, meeting_args, block_report_args, block_report_fields,role_args,role_fields
 from ..utils import db
-
-
+import logging
 
 
 api_bp = Blueprint('api', __name__)
@@ -21,19 +20,22 @@ api = Api(api_bp)
 
 
 def handle_error(self, e):
-        db.session.rollback()
-        if isinstance(e, SQLAlchemyError):
-            error_message = {"success": False, "message": "Database error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        
-        elif isinstance(e, HTTPException):
-            error_message = {"success": False, "message": "HTTP error occurred", "details": str(e)}
-            abort(e.code, message=error_message)
-           
-        else:
-            error_message = {"success": False, "message": "Unexpected error occurred", "details": str(e)}
-            abort(500, message=error_message)
-        return error_message
+    db.session.rollback()
+    
+    if isinstance(e, SQLAlchemyError):
+        logging.error(f"Database error: {str(e)}", exc_info=True)
+        error_message = {"success": False, "message": "Database error occurred", "details": str(e)}
+        status_code = 500
+    elif isinstance(e, HTTPException):
+        logging.error(f"HTTP error: {str(e)}", exc_info=True)
+        error_message = {"success": False, "message": "HTTP error occurred", "details": str(e)}
+        status_code = e.code
+    else:
+        logging.error(f"Unexpected error: {str(e)}", exc_info=True)
+        error_message = {"success": False, "message": "Unexpected error occurred", "details": str(e)}
+        status_code = 500
+    
+    return jsonify(error_message), status_code
     
 
 def marshal_with_fields(fields):
@@ -205,6 +207,27 @@ class ZonesResource(BaseResource):
     model = ZoneModel
     fields = zone_fields
     args = zone_args
+
+    def get(self, id=None):
+        logging.debug(f"Received GET request for zones. ID: {id}, Args: {request.args}")
+        try:
+            if id:
+                return super().get(id)
+            
+            parent_block_id = request.args.get('parent_block_id')
+            logging.debug(f"Parent block ID from query params: {parent_block_id}")
+
+            query = self.model.query
+            if parent_block_id:
+                query = query.filter_by(parent_block_id=parent_block_id)
+
+            zones = query.all()
+            logging.debug(f"Found {len(zones)} zones")
+            result = marshal(zones, self.fields)
+            return result, 200
+        except Exception as e:
+            logging.error(f"Error in ZonesResource.get: {str(e)}", exc_info=True)
+            return self.handle_error(e)
 
 
 class BlockReportsResource(Resource):
