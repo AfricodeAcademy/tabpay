@@ -137,60 +137,40 @@
                 </div>
                 <!-- END OF PROFILE -->
 
+              <!-- COMMITTEE TAB -->
+              <div id="committee" class="tab-pane fade {% if active_tab == 'committee' %}show active{% endif %}">
+                <form method="POST" action="{{ url_for('main.settings', active_tab='committee') }}" novalidate>
+                    {{ committee_form.hidden_tag() }}
+                    <div class="row mb-5 mt-2">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ render_field(committee_form.id_number) }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="role">{{ committee_form.role_id.label }}</label>
+                                <select class="select" id="role" name="role_id">
+                                    <option value="" disabled selected>Please select a role</option>
+                                    {% for value, label in committee_form.role_id.choices %}
+                                        <option value="{{ value }}" {% if committee_form.role_id.data == value %} selected {% endif %}>
+                                            {{ label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" name="committee_submit" class="submit-btn">
+                        {{ committee_form.submit.label.text }}
+                    </button>
 
-  
-          <!-- COMMITTEE TAB -->
-          <div id="committee" class="tab-pane fade {% if active_tab == 'committee' %}show active{% endif %}">
-            <form method="POST" action="{{url_for('main.settings',active_tab='committee')}}" novalidate>
-              {{ committee_form.hidden_tag() }}
-              <div class="row mb-5 mt-2">
-                <div class="col-md-6">
-                  <div class="mb-3">
-                   {{ render_field(committee_form.full_name)}}
-                  
-                  
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="mb-3">
-                   {{ render_field(committee_form.id_number)}}
-                  
-  
-                  </div>
-                </div>
+                    {{ render_flash_messages() }}
+                </form>
               </div>
-  
-              <div class="row">
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="role">{{ committee_form.role.label }}</label>
-                    <select class="select" id="role" name="role">
-                        <option value="" disabled selected>Please select a role</option>  <!-- Disabled, placeholder option -->
-                        {% for value, label in committee_form.role.choices %}
-                            <option value="{{ value }}" {% if committee_form.role.data == value %} selected {% endif %}>
-                                {{ label }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="mb-3">
-                   {{ render_field(committee_form.phone_number)}}
-                
-  
-                  </div>
-                </div>
-              </div>
-              <button type="submit" name="committee_submit" class="submit-btn">
-                {{ committee_form.submit.label.text }}
-            </button>
-  
-            {{ render_flash_messages() }}
-  
-            </form>
-          </div>
-          <!--/ COMMITTEE TAB -->
+              <!--/ COMMITTEE TAB -->
+
+
   
           <!-- COMMUNITY UMBRELLA TAB -->
           <div id="umbrella" class="tab-pane fade {% if active_tab == 'umbrella' %}show active{% endif %}">

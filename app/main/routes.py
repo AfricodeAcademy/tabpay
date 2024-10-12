@@ -75,7 +75,7 @@ def render_settings_page(active_tab=None, error=None):
 
     try:
         roles = get_roles()
-        committee_form.role.choices = [(str(role['id']), role['name']) for role in roles]
+        committee_form.role_id.choices = [(str(role['id']), role['name']) for role in roles]
     except Exception as e:
         flash('Error loading role information. Please try again later.', 'danger')
 
@@ -249,66 +249,62 @@ def get_roles():
     response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/roles/")
     return response.json() if response.status_code == 200 else None    
     
-    
-
-# Handle committee addition
 def handle_committee_addition():
     committee_form = AddCommitteForm()
 
+    # Fetch available roles
     roles = get_roles()
     if roles:
-        committee_form.role.choices = [(str(role['id']), role['name']) for role in roles]
+        committee_form.role_id.choices = [(str(role['id']), role['name']) for role in roles]
 
     if committee_form.validate_on_submit():
-        id_number = committee_form.id_number.data
-        role_name = committee_form.role.data
+        id_number = committee_form.id_number.data  # Get the ID number
+        role_id = committee_form.role_id.data      # Get the selected role_id
 
-        # Fetch user by ID number
+        # Fetch user by ID number via API
         user = get_user_by_id_number(id_number)
 
         if user:
-            response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/",params={"role": "Member"})
-            users = response.json() if response.status_code == 200 else None
-            print (f'Users: {users}')
-            if not users:
-                flash('Error fetching users with role "Member" from the API.', 'danger')
-                return redirect(url_for('main.settings', active_tab='committee'))
-            
-
-            # Check if user already has the "Member" role
-            if 'Member' not in user['roles']:
+            # Check if user has the "Member" role
+            if not any(role['name'] == 'Member' for role in user['roles']):
                 flash(f"{user['full_name']} must first be a member before being assigned a committee role.", 'danger')
                 return redirect(url_for('main.settings', active_tab='committee'))
 
-            # Check if the user already has the committee role
-            if role_name in user['roles']:
-                flash(f"{user['full_name']} is already a {role_name}!", 'danger')
+            # Check if user already has the committee role
+            if any(role['id'] == role_id for role in user['roles']):
+                flash(f"{user['full_name']} is already a {role_id}!", 'danger')
                 return redirect(url_for('main.settings', active_tab='committee'))
 
-            # Retrieve the role to assign
-            committee_role = user_datastore.find_role(role_name)
+            # API PATCH request to update the user's role
+            try:
+                response = requests.patch(
+                    f"{current_app.config['API_BASE_URL']}/api/v1/users/{user['id']}/roles/",
+                    json={"role_id": role_id}  # Sending role_id in the request body
+                )
 
-            # If the role exists, assign it to the user
-            if committee_role:
-                user_datastore.add_role_to_user(user['id'], committee_role)
+                # Check if the response is successful
+                if response.status_code == 200:
+                    flash(f"{user['full_name']} added as {role_id} successfully!", 'success')
+                else:
+                    flash(f"An error occurred: {response.json().get('message')}", 'danger')
 
-                # Commit changes to the database
-                db.session.commit()
+            except Exception as e:
+                flash(f"An error occurred while updating the role: {str(e)}", 'danger')
 
-                flash(f"{user['full_name']} added as {role_name} successfully!", 'success')
-            else:
-                flash(f"Role '{role_name}' does not exist.", 'danger')
         else:
             flash('User not found.', 'danger')
 
         return redirect(url_for('main.settings', active_tab='committee'))
 
-    # Collect any form errors
+    # Handle form errors
     else:
         for field, errors in committee_form.errors.items():
             for error in errors:
                 flash(f'{error}', 'danger')
+
     return render_settings_page(active_tab='committee')
+
+
 
 
 # Handle umbrella creation
