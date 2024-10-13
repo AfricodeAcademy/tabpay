@@ -45,10 +45,17 @@ def create_app(config_name):
         user_datastore.find_or_create_role(name='Member', description='Regular member')
         
         # Create Admin
+<<<<<<< Updated upstream
         if not user_datastore.find_user(email='enockbett427@gmail.com'):
             hashed_password = hash_password('123456')
             user_datastore.create_user(email='enockbett427@gmail.com', password=hashed_password,
                                        id_number=42635058, full_name='Enock Bett', phone_number='0798354820',
+=======
+        if not user_datastore.find_user(email='chelangatgladwel9@gmail.com'):
+            hashed_password = hash_password('Gladwel 254')
+            user_datastore.create_user(email='chelangatgladwel9@gmail.com', password=hashed_password,
+                                       id_number=12345678, full_name='Cpt. Bett',
+>>>>>>> Stashed changes
                                        roles=[user_datastore.find_role('Admin')])
             db.session.commit()
             print('Admin created successfully')
