@@ -2,8 +2,8 @@ import requests
 from flask import Blueprint, render_template, redirect, url_for, flash,request
 from flask_security import login_required, current_user, roles_accepted
 from ..utils import db
-from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm
-from .models import UserModel, BlockModel, ZoneModel, user_datastore,RoleModel,PaymentModel,MeetingModel
+from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm
+from .models import UserModel, BlockModel, ZoneModel,RoleModel,PaymentModel
 from PIL import Image
 import os
 import logging
@@ -69,7 +69,7 @@ def render_settings_page(active_tab=None, error=None):
     # API call to get banks
     try:
         banks = get_banks()
-        member_form.bank.choices = [(str(bank['id']), bank['name']) for bank in banks]
+        member_form.bank_id.choices = [(str(bank['id']), bank['name']) for bank in banks]
     except Exception as e:
         flash('Error loading bank information. Please try again later.', 'danger')
 
@@ -443,7 +443,7 @@ def handle_member_creation():
     member_form.member_zone.choices = [(str(zone['id']), zone['name']) for zone in zones]
 
     banks = get_banks()
-    member_form.bank.choices = [(str(bank['id']), bank['name']) for bank in banks]
+    member_form.bank_id.choices = [(str(bank['id']), bank['name']) for bank in banks]
 
     if member_form.validate_on_submit():
         # Check for duplicate members via the API
@@ -460,7 +460,7 @@ def handle_member_creation():
             'id_number': member_form.id_number.data,
             'phone_number': member_form.phone_number.data,
             'zone_id': member_form.member_zone.data,
-            'bank': member_form.bank.data,
+            'bank_id': member_form.bank_id.data,
             'acc_number': member_form.acc_number.data,
             'role_id': 5  # Automatically assign "Member" role
         }
@@ -669,6 +669,7 @@ def block_reports():
 def render_host_page(active_tab=None, error=None):
     # Instantiate all forms
     schedule_form = ScheduleForm()
+    update_form = EditMemberForm()
 
     if not active_tab:
         active_tab = request.args.get('active_tab', 'schedule_meeting')
@@ -863,25 +864,65 @@ def get_upcoming_meeting_details(user_id):
 
 
 # Function to handle member edit
-def update_member():
-    
-    members = get_members()
+# Function to handle member edit# Function to handle member edit
+def update_member(user_id):
+    update_form = EditMemberForm()
 
+    if update_form.validate_on_submit():
+        member_id = update_form.member_id.data  # Get member_id from the form
+        additional_role = update_form.additional_role.data  # Get additional role (if any)
 
-    data = {
-        'full_name': request.form['full_name'],
-        'phone_number': request.form['phone_number'],
-    }
-    
-    # Assuming you consume an API here to update the member details
-    response = requests.patch(f"{current_app.config['API_BASE_URL']}/api/v1/users/",json=data)
-    
-    if response == 200:
-        flash('Member details updated successfully', 'success')
-    else:
-        flash('Failed to update member details', 'danger')
-    
-    return render_host_page(active_tab='block_members')
+        # Handle role logic (popping the additional role)
+        if additional_role:
+            # Assuming a helper function exists to remove the additional role
+            role_removed = remove_role(member_id, additional_role)
+            if role_removed:
+                flash(f"{additional_role} role has been removed from the member.", "info")
+            else:
+                flash(f"Failed to remove the {additional_role} role. Please try again.", "danger")
+
+        # Update other member details if they were changed
+        payload = {}
+
+        if update_form.full_name.data:
+            payload['full_name'] = update_form.full_name.data
+
+        if update_form.phone_number.data:
+            payload['phone_number'] = update_form.phone_number.data
+
+        # Only send the update request if there is something to update
+        if payload:
+            try:
+                response = requests.patch(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}", json=payload)
+                if response.status_code == 200:
+                    flash(f"Member details updated successfully.", "success")
+                else:
+                    flash("Failed to update member details. Please try again.", "danger")
+            except Exception as e:
+                flash("Error updating member details. Please try again later.", "danger")
+        else:
+            flash("No changes were made to the member details.", "info")
+
+    # Handle form validation errors
+    for field, errors in update_form.errors.items():
+        for error in errors:
+            flash(f'{error}', 'danger')
+
+    return redirect(url_for('main.host', active_tab='block_members'))
+
+# Helper function to remove the additional role from a member
+def remove_role(member_id, role_id):
+    try:
+        # Make API call to remove role
+        response = requests.delete(f"{current_app.config['API_BASE_URL']}/api/v1/users/{member_id}/",params={"role_id":update_form.role_id.data})
+        if response.status_code == 200:
+            return True
+        else:
+            logging.error(f"Failed to remove role {role_id} for member {member_id}. Status code: {response.status_code}")
+            return False
+    except Exception as e:
+        logging.error(f"Error removing role {role_id} for member {member_id}: {e}")
+        return False
 
 
 # Function to handle member removal
