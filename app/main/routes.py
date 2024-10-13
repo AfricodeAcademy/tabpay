@@ -406,7 +406,8 @@ def handle_zone_creation():
             'created_by': current_user.id
         })
         flash('Zone created successfully!', 'success')
-        return redirect(url_for('main.settings', active_tab='zone'))
+        # Persist block selection for convenience
+        return redirect(url_for('main.settings', active_tab='zone', block_id=zone_form.parent_block.data))
 
     else:
         for field, errors in zone_form.errors.items():
@@ -461,7 +462,7 @@ def handle_member_creation():
             'zone_id': member_form.member_zone.data,
             'bank': member_form.bank.data,
             'acc_number': member_form.acc_number.data,
-            'role_id': 1  # Automatically assign "Member" role
+            'role_id': 5  # Automatically assign "Member" role
         }
 
         # Create the member via API
@@ -471,8 +472,9 @@ def handle_member_creation():
             flash('Member created and assigned Member role successfully!', 'success')
         else:
             flash('Failed to create member.', 'danger')
-
-        return redirect(url_for('main.settings', active_tab='member'))
+        
+        # Persist zone selection for convenience
+        return redirect(url_for('main.settings', active_tab='member', zone_id=member_form.member_zone.data))
 
     # Collect any form errors
     else:
