@@ -452,34 +452,22 @@ def handle_member_creation():
             flash('A member with this ID number already exists in that zone!', 'danger')
             return redirect(url_for('main.settings', active_tab='member'))
 
+   
+        # Add "Member" role via the API by passing role_id (assuming 'Member' role_id is 1)
         payload = {
             'full_name': member_form.full_name.data,
             'id_number': member_form.id_number.data,
             'phone_number': member_form.phone_number.data,
             'zone_id': member_form.member_zone.data,
             'bank': member_form.bank.data,
-            'acc_number': member_form.acc_number.data
+            'acc_number': member_form.acc_number.data,
+            'role_id': 1  # Automatically assign "Member" role
         }
 
         # Create the member via API
         response = requests.post(f"{current_app.config['API_BASE_URL']}/api/v1/users/", json=payload)
 
         if response.status_code == 201:
-          # Retrieve the user ID from the response
-            user_id = response.json()['id']
-
-            # Retrieve the "Member" role
-            member_role = user_datastore.find_role("Member")
-
-            # Fetch the user using the appropriate method
-            user = user_datastore.find_user(id=user_id)  # Correct method to fetch user by ID
-
-            if user:  # Check if user is found
-                user_datastore.add_role_to_user(user, member_role)
-
-                # Commit changes to the database
-                db.session.commit()
-
             flash('Member created and assigned Member role successfully!', 'success')
         else:
             flash('Failed to create member.', 'danger')

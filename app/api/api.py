@@ -120,6 +120,35 @@ class UsersResource(BaseResource):
     fields = user_fields
     args = user_args
 
+
+    def post(self):
+        try:
+            args = self.args.parse_args()
+
+            # Create the new user
+            new_user = self.model(
+                full_name=args['full_name'],
+                id_number=args['id_number'],
+                phone_number=args['phone_number'],
+                zone_id=args['zone_id'],
+                bank_id=args['bank_id'],
+                acc_number=args['acc_number']
+            )
+
+            # Assign the role if role_id is provided
+            if 'role_id' in args and args['role_id'] is not None:
+                role = RoleModel.query.get(args['role_id'])
+                if role:
+                    new_user.roles.append(role)
+
+            db.session.add(new_user)
+            db.session.commit()
+
+            return marshal(new_user, self.fields), 201
+
+        except Exception as e:
+            return self.handle_error(e)
+        
     def get(self, id=None):
         try:
             if id:
