@@ -73,6 +73,12 @@ def render_settings_page(active_tab=None, error=None):
     except Exception as e:
         flash('Error loading bank information. Please try again later.', 'danger')
 
+    try:
+        roles = get_roles()
+        committee_form.role_id.choices = [(str(role['id']), role['name']) for role in roles]
+    except Exception as e:
+        flash('Error loading role information. Please try again later.', 'danger')
+
 
     # Render the settings page
     return render_template('settings.html', title='Dashboard | Settings',
@@ -239,54 +245,66 @@ def handle_profile_update():
     return render_settings_page(active_tab='profile')
 
 
-
-
-# Handle committee addition
+def get_roles():
+    response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/roles/")
+    return response.json() if response.status_code == 200 else None    
+    
 def handle_committee_addition():
     committee_form = AddCommitteForm()
 
-    if committee_form.validate_on_submit():
-        id_number = committee_form.id_number.data
-        role_name = committee_form.role.data
+    # Fetch available roles
+    roles = get_roles()
+    if roles:
+        committee_form.role_id.choices = [(str(role['id']), role['name']) for role in roles]
 
-        # Fetch user by ID number
+    if committee_form.validate_on_submit():
+        id_number = committee_form.id_number.data  # Get the ID number
+        role_id = committee_form.role_id.data      # Get the selected role_id
+
+        # Fetch user by ID number via API
         user = get_user_by_id_number(id_number)
 
         if user:
-            # Check if user already has the "Member" role
-            if 'Member' not in user['roles']:
+            # Check if user has the "Member" role
+            if not any(role['name'] == 'Member' for role in user['roles']):
                 flash(f"{user['full_name']} must first be a member before being assigned a committee role.", 'danger')
                 return redirect(url_for('main.settings', active_tab='committee'))
 
-            # Check if the user already has the committee role
-            if role_name in user['roles']:
-                flash(f"{user['full_name']} is already a {role_name}!", 'danger')
+            # Check if user already has the committee role
+            if any(role['id'] == role_id for role in user['roles']):
+                flash(f"{user['full_name']} is already a {role_id}!", 'danger')
                 return redirect(url_for('main.settings', active_tab='committee'))
 
-            # Retrieve the role to assign
-            committee_role = user_datastore.find_role(role_name)
+            # API PATCH request to update the user's role
+            try:
+                response = requests.patch(
+                    f"{current_app.config['API_BASE_URL']}/api/v1/users/{user['id']}/roles/",
+                    json={"role_id": role_id}  # Sending role_id in the request body
+                )
 
-            # If the role exists, assign it to the user
-            if committee_role:
-                user_datastore.add_role_to_user(user['id'], committee_role)
+                # Check if the response is successful
+                if response.status_code == 200:
+                    flash(f"{user['full_name']} added as {role_id} successfully!", 'success')
+                else:
+                    flash(f"An error occurred: {response.json().get('message')}", 'danger')
 
-                # Commit changes to the database
-                db.session.commit()
+            except Exception as e:
+                flash(f"An error occurred while updating the role: {str(e)}", 'danger')
 
-                flash(f"{user['full_name']} added as {role_name} successfully!", 'success')
-            else:
-                flash(f"Role '{role_name}' does not exist.", 'danger')
         else:
             flash('User not found.', 'danger')
 
         return redirect(url_for('main.settings', active_tab='committee'))
 
-    # Collect any form errors
+    # Handle form errors
     else:
         for field, errors in committee_form.errors.items():
             for error in errors:
                 flash(f'{error}', 'danger')
+
     return render_settings_page(active_tab='committee')
+
+
 
 
 # Handle umbrella creation
@@ -669,6 +687,7 @@ def render_host_page(active_tab=None, error=None):
     meeting_details = get_upcoming_meeting_details(current_user.id)
 
     if meeting_details:
+        print(meeting_details)  # Debugging line to check the meeting details
         block = meeting_details['block']
         zone = meeting_details['zone']
         host = meeting_details['host']
@@ -808,30 +827,32 @@ def handle_schedule_creation():
     return render_host_page(active_tab='schedule_meeting')
 
 
+# Setup logging (you can configure it further as needed)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Helper function to get upcoming meeting details from the API
 def get_upcoming_meeting_details(user_id):
     # API URL for fetching upcoming meetings (update with your actual API URL)
     api_url = f"{current_app.config['API_BASE_URL']}/api/v1/meetings/"
-    
+        
     try:
         # Send a GET request to the API
-        response = requests.get(api_url,params={'organizer_id': user_id})
+        logging.info(f"Sending GET request to {api_url} with organizer_id={user_id}")
+        response = requests.get(api_url, params={'organizer_id': user_id})
 
         # Check if the request was successful
         if response.status_code == 200:
             meeting_data = response.json()
+            logging.info(f"API response received: {meeting_data}")
 
-            if meeting_data and isinstance(meeting_data, list) and len(meeting_data) > 0:
-                # Assuming the API returns a list of meetings, and you're interested in the first one
-                meeting = meeting_data[0]  # Get the first meeting in the list
-                
-                # Extract details from the API response
-                block_name = meeting.get('block', {}).get('name', 'Unknown Block')  # Nested data for block name
-                zone_name = meeting.get('zone', {}).get('name', 'Unknown Zone')     # Nested data for zone name
-                host_name = meeting.get('host', {}).get('full_name', 'Unknown Host')  # Host's full name
-                meeting_date = meeting.get('date', 'Unknown Date')
+            # Check if the response is a dictionary rather than a list
+            if isinstance(meeting_data, dict):
+                block_name = meeting_data.get('block', 'Unknown Block')
+                zone_name = meeting_data.get('zone', 'Unknown Zone')
+                host_name = meeting_data.get('host', 'Unknown Host')
+                meeting_date = meeting_data.get('when', 'Unknown Date')
 
+                logging.info(f"Extracted meeting details: Block - {block_name}, Zone - {zone_name}, Host - {host_name}, When - {meeting_date}")
                 return {
                     'block': block_name,
                     'zone': zone_name,
@@ -839,17 +860,18 @@ def get_upcoming_meeting_details(user_id):
                     'when': meeting_date
                 }
             else:
-                print("No upcoming meetings found.")
+                logging.warning("No upcoming meetings found or unexpected response format.")
                 return None
         else:
-            print(f"Failed to fetch data from API. Status Code: {response.status_code}")
+            logging.error(f"Failed to fetch data from API. Status Code: {response.status_code}")
             return None
 
     except requests.exceptions.RequestException as e:
         # Handle any exceptions that occur during the API call
-        print(f"An error occurred while fetching data from the API: {e}")
+        logging.error(f"An error occurred while fetching data from the API: {e}")
         return None
-    
+
+
 # Function to handle member edit
 def update_member():
     

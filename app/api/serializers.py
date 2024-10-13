@@ -91,6 +91,8 @@ user_args.add_argument('bank_id', type=int)
 user_args.add_argument('acc_number', type=str)
 user_args.add_argument('zone_id', type=int)
 user_args.add_argument('image_file', type=str)
+user_args.add_argument('role_id', type=int, required=True, help="Role ID is required.")
+
 
 communication_args = reqparse.RequestParser()
 communication_args.add_argument('content', type=str, required=True, help='Content is required')

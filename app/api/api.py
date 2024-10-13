@@ -137,6 +137,37 @@ class UsersResource(BaseResource):
 
         except Exception as e:
             return self.handle_error(e)
+            
+    def patch(self, id):
+        try:
+            args = self.args.parse_args()
+            print(f"Received arguments for user {id}: {args}")  # Log received arguments
+            user = self.model.query.get_or_404(id)
+
+            # Check current roles
+            print(f"Current roles for user {id}: {[role.id for role in user.roles]}")
+
+            # Update user's roles
+            if 'role_id' in args and args['role_id'] is not None:
+                role_id = args['role_id']
+                role = RoleModel.query.get(role_id)
+                if role is None:
+                    return {'success': False, 'message': 'Role not found.'}, 404
+
+                # Add the new role if not already assigned
+                if role not in user.roles:
+                    user.roles.append(role)
+                    print(f"Added role ID: {role_id} to user {id}")
+                else:
+                    print(f"Role ID: {role_id} already assigned to user {id}")
+
+            db.session.commit()
+            return marshal(user, self.fields), 200
+            
+        except Exception as e:
+            db.session.rollback()  # Rollback in case of error
+            return {'success': False, 'message': str(e)}, 500
+
 
 class CommunicationsResource(BaseResource):
     model = CommunicationModel
@@ -168,10 +199,34 @@ class RolesResource(BaseResource):
     fields = role_fields
     args = role_args
 
+
+
 class MeetingsResource(BaseResource):
     model = MeetingModel
     fields = meeting_fields
     args = meeting_args
+
+    def get(self):
+        try:
+            # Assuming we are fetching meetings based on organizer_id
+            organizer_id = request.args.get('organizer_id')
+            if organizer_id:
+                meeting = db.session.query(MeetingModel)\
+                                    .filter(MeetingModel.organizer_id == organizer_id)\
+                                    .first()
+                if meeting:
+                    # Fetch related block, zone, and host details
+                    meeting_details = {
+                        'block': meeting.block.name if meeting.block else 'Unknown Block',
+                        'zone': meeting.zone.name if meeting.zone else 'Unknown Zone',
+                        'host': meeting.host.full_name if meeting.host else 'Unknown Host',
+                        'when': meeting.date.strftime('%a, %d %b %Y %H:%M:%S')
+                    }
+                    return meeting_details, 200
+            return {'error': 'Meeting not found'}, 404
+
+        except Exception as e:
+            return self.handle_error(e)
 
     def post(self):
         try:
@@ -310,7 +365,7 @@ class BlockReportsResource(Resource):
 
 
 # API routes
-api.add_resource(UsersResource, '/users/', '/users/<int:id>')
+api.add_resource(UsersResource, '/users/', '/users/<int:id>', '/users/<int:id>/roles/')
 api.add_resource(CommunicationsResource, '/communications/', '/communications/<int:id>')
 api.add_resource(BanksResource, '/banks/', '/banks/<int:id>')
 api.add_resource(PaymentsResource, '/payments/', '/payments/<int:id>')
