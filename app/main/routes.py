@@ -550,7 +550,7 @@ def get_members_by_zone(zone_id):
     if response.status_code == 200:
         return response.json()  
     else:
-        flash('Error retrieving members from the server.', 'danger')
+        print('Error retrieving members from the server.', 'danger')
         return [] 
 
 # Helper function to get banks
