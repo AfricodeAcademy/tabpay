@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SelectField, IntegerField, SubmitField,DateTimeField
+from wtforms import StringField, PasswordField, SelectField, IntegerField, SubmitField,DateTimeField,HiddenField
 from flask_wtf.file import FileField,FileAllowed
-from wtforms.validators import DataRequired, Length, ValidationError,NumberRange,Email
+from wtforms.validators import DataRequired, Length, ValidationError,NumberRange,Email,Optional
 from ..api.api import UserModel
 from datetime import datetime
 from flask_security import current_user
@@ -11,7 +11,7 @@ class AddMemberForm(FlaskForm):
     id_number = IntegerField('Member ID Number',validators=[DataRequired(message="Member Id is required"),NumberRange(min=10000000, max=99999999, message="ID number must be exactly 8 digits.")],render_kw={'placeholder':'xxxxxxxx'})
     phone_number = StringField('Phone Number',validators=[DataRequired("Phone Number is required"),Length(min=10, max=16, message="Phone number must be between 10 and 16 digits.")],render_kw={'placeholder':'0700000000'})
     member_zone = SelectField('Member Zone', validators=[DataRequired(message="Member Zone is required")])
-    bank = SelectField('Select Bank',validators=[DataRequired(message="Bank is required")])
+    bank_id = SelectField('Select Bank',validators=[DataRequired(message="Bank is required")])
     acc_number = IntegerField('Bank Account Number',validators=[DataRequired()],render_kw={'placeholder':'xxxxxx'})
     submit = SubmitField('ADD MEMBER')
     
@@ -88,5 +88,16 @@ class ScheduleForm(FlaskForm):
             raise ValidationError('The meeting date and time cannot be in the past.')
 
     
-
+class EditMemberForm(FlaskForm):
+    full_name = StringField('Full Name', validators=[DataRequired(), Length(min=3, max=100)])
+    phone_number = StringField('Phone Number', validators=[DataRequired(), Length(min=10, max=15)])
+    id_number = StringField('ID Number', validators=[DataRequired(), Length(min=5, max=20)])
+    member_zone = StringField('Member Zone', render_kw={'readonly': True}) 
+    bank_id = StringField('Bank', render_kw={'readonly': True}) 
+    account_number = StringField('Account Number', render_kw={'readonly': True}) 
+    
+    # Role management: A hidden field to store the additional committee role (if any)
+    additional_role = HiddenField('Additional Role', validators=[Optional()])
+    
+    submit = SubmitField('Save Changes')
       

@@ -2,8 +2,8 @@ import requests
 from flask import Blueprint, render_template, redirect, url_for, flash,request
 from flask_security import login_required, current_user, roles_accepted
 from ..utils import db
-from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm
-from .models import UserModel, BlockModel, ZoneModel, user_datastore,RoleModel,PaymentModel,MeetingModel
+from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm
+from .models import UserModel, BlockModel, ZoneModel,RoleModel,PaymentModel
 from PIL import Image
 import os
 import logging
@@ -69,7 +69,7 @@ def render_settings_page(active_tab=None, error=None):
     # API call to get banks
     try:
         banks = get_banks()
-        member_form.bank.choices = [(str(bank['id']), bank['name']) for bank in banks]
+        member_form.bank_id.choices = [(str(bank['id']), bank['name']) for bank in banks]
     except Exception as e:
         flash('Error loading bank information. Please try again later.', 'danger')
 
@@ -248,7 +248,21 @@ def handle_profile_update():
 def get_roles():
     response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/roles/")
     return response.json() if response.status_code == 200 else None    
-    
+
+# Helper function to get user by ID number
+def get_user_by_id_number(id_number):
+    try:
+        response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'id_number': id_number})
+        current_app.logger.debug(f"API Response: {response.json()}")  # Log response for debugging
+        if response.status_code == 200:
+            user = response.json()  # Expecting a single user, not a list
+            return user
+        return None
+    except Exception as e:
+        current_app.logger.error(f"Error fetching user by id_number: {e}")
+        return None
+
+
 def handle_committee_addition():
     committee_form = AddCommitteForm()
 
@@ -265,20 +279,26 @@ def handle_committee_addition():
         user = get_user_by_id_number(id_number)
 
         if user:
+            # Ensure 'roles' is a list before checking the role
+            user_roles = user.get('roles', [])
+            if not isinstance(user_roles, list):
+                flash(f"Unexpected error: 'roles' should be a list for {user['full_name']}.", 'danger')
+                return redirect(url_for('main.settings', active_tab='committee'))
+
             # Check if user has the "Member" role
-            if not any(role['name'] == 'Member' for role in user['roles']):
+            if not any(role.get('name') == 'Member' for role in user_roles):
                 flash(f"{user['full_name']} must first be a member before being assigned a committee role.", 'danger')
                 return redirect(url_for('main.settings', active_tab='committee'))
 
             # Check if user already has the committee role
-            if any(role['id'] == role_id for role in user['roles']):
+            if any(role.get('id') == role_id for role in user_roles):
                 flash(f"{user['full_name']} is already a {role_id}!", 'danger')
                 return redirect(url_for('main.settings', active_tab='committee'))
 
             # API PATCH request to update the user's role
             try:
                 response = requests.patch(
-                    f"{current_app.config['API_BASE_URL']}/api/v1/users/{user['id']}/roles/",
+                    f"{current_app.config['API_BASE_URL']}/api/v1/users/{user['id']}",
                     json={"role_id": role_id}  # Sending role_id in the request body
                 )
 
@@ -303,7 +323,6 @@ def handle_committee_addition():
                 flash(f'{error}', 'danger')
 
     return render_settings_page(active_tab='committee')
-
 
 
 
@@ -406,7 +425,8 @@ def handle_zone_creation():
             'created_by': current_user.id
         })
         flash('Zone created successfully!', 'success')
-        return redirect(url_for('main.settings', active_tab='zone'))
+        # Persist block selection for convenience
+        return redirect(url_for('main.settings', active_tab='zone', block_id=zone_form.parent_block.data))
 
     else:
         for field, errors in zone_form.errors.items():
@@ -442,7 +462,7 @@ def handle_member_creation():
     member_form.member_zone.choices = [(str(zone['id']), zone['name']) for zone in zones]
 
     banks = get_banks()
-    member_form.bank.choices = [(str(bank['id']), bank['name']) for bank in banks]
+    member_form.bank_id.choices = [(str(bank['id']), bank['name']) for bank in banks]
 
     if member_form.validate_on_submit():
         # Check for duplicate members via the API
@@ -452,39 +472,32 @@ def handle_member_creation():
             flash('A member with this ID number already exists in that zone!', 'danger')
             return redirect(url_for('main.settings', active_tab='member'))
 
+   
+        # Add "Member" role via the API by passing role_id (assuming 'Member' role_id is 1)
         payload = {
             'full_name': member_form.full_name.data,
             'id_number': member_form.id_number.data,
             'phone_number': member_form.phone_number.data,
             'zone_id': member_form.member_zone.data,
+<<<<<<< Updated upstream
+            'bank_id': member_form.bank_id.data,
+=======
             'bank': member_form.bank.data,
-            'acc_number': member_form.acc_number.data
+>>>>>>> Stashed changes
+            'acc_number': member_form.acc_number.data,
+            'role_id': 5  # Automatically assign "Member" role
         }
 
         # Create the member via API
         response = requests.post(f"{current_app.config['API_BASE_URL']}/api/v1/users/", json=payload)
 
         if response.status_code == 201:
-          # Retrieve the user ID from the response
-            user_id = response.json()['id']
-
-            # Retrieve the "Member" role
-            member_role = user_datastore.find_role("Member")
-
-            # Fetch the user using the appropriate method
-            user = user_datastore.find_user(id=user_id)  # Correct method to fetch user by ID
-
-            if user:  # Check if user is found
-                user_datastore.add_role_to_user(user, member_role)
-
-                # Commit changes to the database
-                db.session.commit()
-
             flash('Member created and assigned Member role successfully!', 'success')
         else:
             flash('Failed to create member.', 'danger')
-
-        return redirect(url_for('main.settings', active_tab='member'))
+        
+        # Persist zone selection for convenience
+        return redirect(url_for('main.settings', active_tab='member', zone_id=member_form.member_zone.data))
 
     # Collect any form errors
     else:
@@ -500,11 +513,7 @@ def get_user_from_api(user_id):
     response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}")
     return response.json() if response.status_code == 200 else None
 
-# Helper function to get user by ID number
-def get_user_by_id_number(id_number):
-    response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'id_number': id_number})
-    users = response.json() if response.status_code == 200 else None
-    return users[0] if users else None
+
 
 # Helper function to get umbrella by user
 def get_umbrella_by_user(user_id):
@@ -562,7 +571,7 @@ def get_members_by_zone(zone_id):
     if response.status_code == 200:
         return response.json()  
     else:
-        flash('Error retrieving members from the server.', 'danger')
+        print('Error retrieving members from the server.', 'danger')
         return [] 
 
 # Helper function to get banks
@@ -679,6 +688,7 @@ def block_reports():
 def render_host_page(active_tab=None, error=None):
     # Instantiate all forms
     schedule_form = ScheduleForm()
+    update_form = EditMemberForm()
 
     if not active_tab:
         active_tab = request.args.get('active_tab', 'schedule_meeting')
@@ -735,6 +745,7 @@ def render_host_page(active_tab=None, error=None):
     # Render the host page
     return render_template('host.html', title='Dashboard | Settings',
                            schedule_form=schedule_form,
+                           update_form=update_form,
                            user=current_user,
                            blocks=blocks,
                            zones=zones,
@@ -750,11 +761,14 @@ def host():
     # Check which form was submitted
     if 'schedule_submit' in request.form:
         return handle_schedule_creation()
-    elif 'edit_member_submit' in request.form:  # Handling member edit submission
-        return update_member()
-    elif 'remove_member_submit' in request.form:  # Handling member removal submission
-        return remove_member()
-    
+    elif 'edit_member_submit' in request.form:  
+        user_id = request.args.get('user_id')  
+        return update_member(user_id)
+    elif 'remove_member_submit' in request.form: 
+        if request.form.get('_method') == 'DELETE':
+            user_id = request.args.get('user_id')   
+            return remove_member(user_id)
+        
     # Default GET request rendering the host page
     return render_host_page(active_tab=request.args.get('active_tab', 'schedule_meeting'))
 
@@ -827,8 +841,6 @@ def handle_schedule_creation():
     return render_host_page(active_tab='schedule_meeting')
 
 
-# Setup logging (you can configure it further as needed)
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Helper function to get upcoming meeting details from the API
 def get_upcoming_meeting_details(user_id):
@@ -872,26 +884,68 @@ def get_upcoming_meeting_details(user_id):
         return None
 
 
-# Function to handle member edit
-def update_member():
-    
-    members = get_members()
+def update_member(user_id):
+    update_form = EditMemberForm()
+
+    if update_form.validate_on_submit():
+        additional_role = update_form.additional_role.data  # Get additional role (if any)
+
+        # Handle role logic (removing the additional role, if needed)
+        if additional_role:
+            try:
+                # Assuming an API call to remove a role from the user
+                response = requests.delete(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}",
+                                           json={'role_id': additional_role})
+                if response.status_code == 200:
+                    flash(f"Successfully removed {additional_role} role from the member.", "info")
+                    return redirect(url_for('main.host', active_tab='block_members', open_modal=user_id))
+                else:
+                    flash(f"Failed to remove the {additional_role} role. Please try again.", "danger")
+                    return redirect(url_for('main.host', active_tab='block_members', open_modal=user_id))
+
+            except Exception as e:
+                flash("Error removing the role. Please try again later.", "danger")
+                return redirect(url_for('main.host', active_tab='block_members', open_modal=user_id))
 
 
-    data = {
-        'full_name': request.form['full_name'],
-        'phone_number': request.form['phone_number'],
-    }
-    
-    # Assuming you consume an API here to update the member details
-    response = requests.patch(f"{current_app.config['API_BASE_URL']}/api/v1/users/",json=data)
-    
-    if response == 200:
-        flash('Member details updated successfully', 'success')
-    else:
-        flash('Failed to update member details', 'danger')
-    
+        # Prepare payload to update other member details
+        payload = {}
+
+        if update_form.full_name.data:
+            payload['full_name'] = update_form.full_name.data
+
+        if update_form.phone_number.data:
+            payload['phone_number'] = update_form.phone_number.data
+
+        # Only make the request if there is something to update
+        if payload:
+            try:
+                response = requests.patch(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}", json=payload)
+                if response.status_code == 200:
+                    flash("Member details updated successfully.", "success")
+                else:
+                    flash("Failed to update member details. Please try again.", "danger")
+                    return redirect(url_for('main.host', active_tab='block_members', open_modal=user_id))
+
+
+            except Exception as e:
+                flash("Error updating member details. Please try again later.", "danger")
+                return redirect(url_for('main.host', active_tab='block_members', open_modal=user_id))
+
+
+        else:
+            flash("No changes were made to the member details.", "info")
+            return redirect(url_for('main.host', active_tab='block_members', open_modal=user_id))
+
+
+
+    # Handle form validation errors
+    for field, errors in update_form.errors.items():
+        for error in errors:
+            flash(f'{field}: {error}', 'danger')
+
     return render_host_page(active_tab='block_members')
+
 
 
 # Function to handle member removal
@@ -900,8 +954,12 @@ def remove_member(user_id):
     
     if response == 200:
         flash('Member removed successfully', 'success')
+        return redirect(url_for('main.host', active_tab='block_members', open_modal=user_id))
+
     else:
         flash('Failed to remove member', 'danger')
+        return redirect(url_for('main.host', active_tab='block_members', open_modal=user_id))
+
     
     return render_host_page(active_tab='block_members')
 

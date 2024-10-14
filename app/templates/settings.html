@@ -181,7 +181,7 @@
               top-level umbrella, under which you can create distinct blocks,
               fostering collaboration and organization at the local level.
             </p>
-            <form method="POST" action="{{url_for('main.settings',tab='umbrella')}}" novalidate>
+            <form method="POST" action="{{url_for('main.settings',active_tab='umbrella')}}" novalidate>
               {{ umbrella_form.hidden_tag() }}
   
               <div class="row p-2 d-flex justify-content-center">
@@ -244,7 +244,7 @@
               Define zones within each block to make it easier when allocating
               block event to zone members.
             </p>
-            <form method="POST" action="{{url_for('main.settings')}}" novalidate>
+            <form method="POST" action="{{url_for('main.settings',active_tab='zone')}}" novalidate>
               {{ zone_form.hidden_tag() }}
               <div class="row p-4">
                 <div class="col-md-6">
@@ -275,7 +275,7 @@
           Each zone has distinct members, please add the different members of
           the zone.
         </p>
-        <form action="{{url_for('main.settings',tab='member')}}" method="POST" novalidate>
+        <form action="{{url_for('main.settings',active_tab='member')}}" method="POST" novalidate>
           {{ member_form.hidden_tag() }}            
           <div class="row">
             <div class="col-md-6">
@@ -304,7 +304,7 @@
           <div class="row">
             <div class="col-md-6">
               <div class="mb-3">
-                {{ render_field(member_form.bank)}}
+                {{ render_field(member_form.bank_id)}}
               </div>
             </div>
             <div class="col-md-6">

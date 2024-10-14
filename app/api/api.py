@@ -3,7 +3,7 @@ from sqlalchemy import func
 from datetime import datetime
 from flask import Blueprint, jsonify, request
 from werkzeug.exceptions import HTTPException
-from flask_restful import Api, Resource, marshal_with, marshal, abort
+from flask_restful import Api, Resource, marshal_with, marshal, abort,reqparse
 from ..main.models import UserModel, CommunicationModel, \
     PaymentModel, BankModel, BlockModel, UmbrellaModel, ZoneModel, MeetingModel, RoleModel
 from .serializers import user_fields, user_args, communication_fields, \
@@ -18,6 +18,10 @@ api_bp = Blueprint('api', __name__)
 api = Api(api_bp)
 
 
+
+# Basic logging setup
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 def handle_error(self, e):
     db.session.rollback()
@@ -113,60 +117,201 @@ class BaseResource(Resource):
             abort(500, message=error_message)
         return error_message
 
-
+class UsersResource(BaseResource):
+    model = UserModel
+    fields = user_fields
+    args = user_args
 
 class UsersResource(BaseResource):
     model = UserModel
     fields = user_fields
     args = user_args
 
+
+    def post(self):
+        try:
+            args = self.args.parse_args()
+
+            # Create the new user
+            new_user = self.model(
+                full_name=args['full_name'],
+                id_number=args['id_number'],
+                phone_number=args['phone_number'],
+                zone_id=args['zone_id'],
+                bank_id=args['bank_id'],
+                acc_number=args['acc_number']
+            )
+
+            # Assign the role if role_id is provided
+            if 'role_id' in args and args['role_id'] is not None:
+                role = RoleModel.query.get(args['role_id'])
+                if role:
+                    new_user.roles.append(role)
+
+            db.session.add(new_user)
+            db.session.commit()
+
+            return marshal(new_user, self.fields), 201
+
+        except Exception as e:
+            return self.handle_error(e)
+        
     def get(self, id=None):
         try:
             if id:
+                logger.info(f"GET request received for user {id}")
                 user = self.model.query.get_or_404(id)
                 return marshal(user, self.fields), 200
 
-            # Filter by role if provided in query parameters
+            # Check for query parameters: role and id_number
             role_name = request.args.get('role')
+            id_number = request.args.get('id_number')
+
+            # Fetch user by id_number if provided
+            if id_number:
+                logger.info(f"GET request received for user with id_number {id_number}")
+                user = self.model.query.filter_by(id_number=id_number).first()
+                if not user:
+                    return {"message": "User not found"}, 404
+                return marshal(user, self.fields), 200
+
+            # Fetch users by role if role_name is provided
             if role_name:
-                users = UserModel.query.join(UserModel.roles).filter(RoleModel.name == role_name).all()
-            else:
-                users = UserModel.query.all()
+                logger.info(f"GET request received for users with role {role_name}")
+                users = self.model.query.join(UserModel.roles).filter(RoleModel.name == role_name).all()
+                return marshal(users, self.fields), 200
+
+            # Otherwise, return all users
+            logger.info("GET request received for all users")
+            users = self.model.query.all()
 
             return marshal(users, self.fields), 200
 
         except Exception as e:
+            logger.error(f"Error retrieving users: {str(e)}")
             return self.handle_error(e)
-            
+
+
+    def post(self):
+        try:
+            args = self.args.parse_args()
+            logger.info(f"POST request received to create new user. Payload: {args}")
+
+            # Create the new user
+            new_user = UserModel(
+                full_name=args['full_name'],
+                id_number=args['id_number'],
+                phone_number=args['phone_number'],
+                zone_id=args['zone_id'],
+                bank_id=args['bank_id'],
+                acc_number=args['acc_number']
+            )
+
+           # Assign the role if role_id is provided
+            if 'role_id' in args and args['role_id'] is not None:
+                role = RoleModel.query.get(args['role_id'])
+                if role:
+                    new_user.roles.append(role)
+                    
+            db.session.add(new_user)
+            db.session.commit()
+            logger.info(f"Successfully created user {new_user.id} with roles {[r.name for r in new_user.roles]}")
+
+            return marshal(new_user, self.fields), 201
+
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error creating new user: {str(e)}. Rolling back changes.")
+            return self.handle_error(e)
+ 
+
     def patch(self, id):
         try:
             args = self.args.parse_args()
-            print(f"Received arguments for user {id}: {args}")  # Log received arguments
-            user = self.model.query.get_or_404(id)
+            logger.info(f"PATCH request received to update user {id}. Payload: {args}")
 
-            # Check current roles
-            print(f"Current roles for user {id}: {[role.id for role in user.roles]}")
+            # Find the user by ID
+            user = UserModel.query.get_or_404(id)
 
-            # Update user's roles
-            if 'role_id' in args and args['role_id'] is not None:
-                role_id = args['role_id']
-                role = RoleModel.query.get(role_id)
-                if role is None:
-                    return {'success': False, 'message': 'Role not found.'}, 404
+            # Check which fields are provided and update accordingly
+            updated = False
+            if args['full_name'] is not None:
+                user.full_name = args['full_name']
+                updated = True
+            if args['id_number'] is not None:
+                user.id_number = args['id_number']
+                updated = True
+            if args['phone_number'] is not None:
+                user.phone_number = args['phone_number']
+                updated = True
+            if args['zone_id'] is not None:
+                user.zone_id = args['zone_id']
+                updated = True
+            if args['bank_id'] is not None:
+                user.bank_id = args['bank_id']
+                updated = True
+            if args['acc_number'] is not None:
+                user.acc_number = args['acc_number']
+                updated = True
 
-                # Add the new role if not already assigned
-                if role not in user.roles:
-                    user.roles.append(role)
-                    print(f"Added role ID: {role_id} to user {id}")
-                else:
-                    print(f"Role ID: {role_id} already assigned to user {id}")
-
-            db.session.commit()
-            return marshal(user, self.fields), 200
+            # If role_id is provided, update the user's roles
+            if args['role_id'] is not None:
+                role = RoleModel.query.get(args['role_id'])
+                if role:
+                    if role not in user.roles:
+                        user.roles.append(role)  # Add the role if it's not already assigned
+                        logger.info(f"Assigned additional role {role.name} to user {user.id}")
+                        updated = True
             
+            # Commit only if there are updates
+            if updated:
+                db.session.commit()
+                logger.info(f"Successfully updated user {user.id} with roles {[r.name for r in user.roles]}")
+                return marshal(user, self.fields), 200
+            else:
+                logger.info(f"No updates made for user {user.id}.")
+                return {"message": "No updates made."}, 400
+
         except Exception as e:
-            db.session.rollback()  # Rollback in case of error
-            return {'success': False, 'message': str(e)}, 500
+            db.session.rollback()
+            logger.error(f"Error updating user {id}: {str(e)}. Rolling back changes.")
+            return self.handle_error(e)
+
+    def delete(self, id=None):
+        try:
+            if not id:
+                return {"message": "User ID is required for deletion or role removal"}, 400
+
+            user = self.model.query.get_or_404(id)
+            args = self.args.parse_args()
+            role_id = args.get('role_id')
+
+            # If role_id is provided, remove the role
+            if role_id:
+                role = RoleModel.query.get(role_id)
+                if not role:
+                    return {"message": f"Role with ID {role_id} not found"}, 404
+
+                # Check if the role is assigned to the user
+                if role in user.roles:
+                    user.roles.remove(role)
+                    db.session.commit()  # Commit changes to the database
+                    logger.info(f"Removed role {role.name} from user {user.id}")
+                    return {"message": f"Role {role.name} removed from user {user.id}"}, 200
+                else:
+                    return {"message": "User does not have this role"}, 400
+
+            # If no role_id is provided, delete the user
+            else:
+                db.session.delete(user)
+                db.session.commit()
+                logger.info(f"Deleted user {user.id}")
+                return {"message": f"User {user.full_name} with ID {user.id} has been deleted"}, 200
+
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error during deletion: {str(e)}")
+            return self.handle_error(e)
 
 
 class CommunicationsResource(BaseResource):
