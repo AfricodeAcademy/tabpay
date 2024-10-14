@@ -92,6 +92,8 @@ user_args.add_argument('acc_number', type=str)
 user_args.add_argument('zone_id', type=int)
 user_args.add_argument('image_file', type=str)
 user_args.add_argument('role_id', type=int)
+user_args.add_argument('action', type=str)
+
 
 
 communication_args = reqparse.RequestParser()
