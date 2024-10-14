@@ -316,102 +316,99 @@
                         aria-label="Close"
                       ></button>
                     </div>
+                    <!-- Flash messages here -->
+                    {% with messages =
+                    get_flashed_messages(with_categories=true) %} {% if messages
+                    %}
+                    <div class="alert alert-dismissible fade show" role="alert">
+                      {% for category, message in messages %}
+                      <div class="alert alert-{{ category }}">
+                        {{ message }}
+                      </div>
+                      {% endfor %}
+                      <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="alert"
+                        aria-label="Close"
+                      ></button>
+                    </div>
+                    {% endif %} {% endwith %}
                     <div class="modal-body">
                       <form
                         id="editForm{{ member.id }}"
                         method="post"
-                        action="{{ url_for('main.host', member_id=member.id) }}"
+                        action="{{ url_for('main.host', user_id=member.id,active_tab='block_members') }}"
+                        novalidate
                       >
+                        {{ update_form.hidden_tag() }}
+
                         <div class="mb-3">
-                          <label
-                            for="fullName{{ member.id }}"
-                            class="form-label"
-                            >Full Name</label
-                          >
-                          <input
-                            type="text"
-                            class="form-control"
-                            id="fullName{{ member.id }}"
-                            name="full_name"
-                            value="{{ member.full_name }}"
-                            required
-                          />
+                          {{
+                          update_form.full_name.label(class="update_form-label")
+                          }} {{
+                          update_form.full_name(class="update_form-control",
+                          value=member.full_name) }} {% if
+                          update_form.full_name.errors %}
+                          <div class="text-danger">
+                            {{ update_form.full_name.errors[0] }}
+                          </div>
+                          {% endif %}
                         </div>
                         <div class="mb-3">
-                          <label
-                            for="phoneNumber{{ member.id }}"
-                            class="form-label"
-                            >Phone Number</label
-                          >
-                          <input
-                            type="text"
-                            class="form-control"
-                            id="phoneNumber{{ member.id }}"
-                            name="phone_number"
-                            value="{{ member.phone_number }}"
-                            required
-                          />
+                          {{
+                          update_form.phone_number.label(class="update_form-label")
+                          }} {{
+                          update_form.phone_number(class="update_form-control",
+                          value=member.phone_number) }} {% if
+                          update_form.phone_number.errors %}
+                          <div class="text-danger">
+                            {{ update_form.phone_number.errors[0] }}
+                          </div>
+                          {% endif %}
                         </div>
                         <div class="mb-3">
-                          <label
-                            for="idNumber{{ member.id }}"
-                            class="form-label"
-                            >ID Number</label
-                          >
-                          <input
-                            type="text"
-                            class="form-control"
-                            id="idNumber{{ member.id }}"
-                            name="id_number"
-                            value="{{ member.id_number }}"
-                            readonly
-                          />
+                          {{
+                          update_form.id_number.label(class="update_form-label")
+                          }} {{
+                          update_form.id_number(class="update_form-control",
+                          value=member.id_number, readonly=True) }}
                         </div>
                         <div class="mb-3">
-                          <label
-                            for="idNumber{{ member.id }}"
-                            class="form-label"
-                            >Member Zone</label
-                          >
-                          <input
-                            type="text"
-                            class="form-control"
-                            id="idNumber{{ member.id }}"
-                            name="id_number"
-                            value="{{ member.zone_id }}"
-                            readonly
-                          />
+                          {{
+                          update_form.member_zone.label(class="update_form-label")
+                          }} {{
+                          update_form.member_zone(class="update_form-control",
+                          value=member.zone_id, readonly=True) }}
                         </div>
                         <div class="mb-3">
-                          <label
-                            for="idNumber{{ member.id }}"
-                            class="form-label"
-                            >Bank</label
-                          >
-                          <input
-                            type="text"
-                            class="form-control"
-                            id="idNumber{{ member.id }}"
-                            name="id_number"
-                            value="{{ member.bank_id }}"
-                            readonly
-                          />
+                          {{
+                          update_form.bank_id.label(class="update_form-label")
+                          }} {{ update_form.bank_id(class="update_form-control",
+                          value=member.bank_id, readonly=True) }}
                         </div>
                         <div class="mb-3">
-                          <label
-                            for="idNumber{{ member.id }}"
-                            class="form-label"
-                            >Account Number</label
-                          >
-                          <input
-                            type="text"
-                            class="form-control"
-                            id="idNumber{{ member.id }}"
-                            name="id_number"
-                            value="{{ member.acc_number }}"
-                            readonly
-                          />
+                          {{
+                          update_form.account_number.label(class="update_form-label")
+                          }} {{
+                          update_form.account_number(class="update_form-control",
+                          value=member.acc_number, readonly=True) }}
                         </div>
+
+                        <!-- Hidden role management field, only rendered if the user has an additional role -->
+                        {% if member.additional_role %}
+                        <div class="mb-3">
+                          {{
+                          update_form.additional_role.label(class="update_form-label")
+                          }} {{
+                          update_form.additional_role(class="update_form-control",
+                          value=member.roles) }}
+                          <small class="text-warning"
+                            >You can pop this role from the member</small
+                          >
+                        </div>
+                        {% endif %}
+
                         <button
                           type="submit"
                           class="submit-btn"
@@ -450,6 +447,23 @@
                         aria-label="Close"
                       ></button>
                     </div>
+                    {% with messages =
+                    get_flashed_messages(with_categories=true) %} {% if messages
+                    %}
+                    <div class="alert alert-dismissible fade show" role="alert">
+                      {% for category, message in messages %}
+                      <div class="alert alert-{{ category }}">
+                        {{ message }}
+                      </div>
+                      {% endfor %}
+                      <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="alert"
+                        aria-label="Close"
+                      ></button>
+                    </div>
+                    {% endif %} {% endwith %}
                     <div class="modal-body">
                       Are you sure you want to remove {{ member.full_name }}?
                     </div>
@@ -457,7 +471,7 @@
                       <form
                         id="removeForm{{ member.id }}"
                         method="post"
-                        action="{{ url_for('main.host', member_id=member.id) }}"
+                        action="{{ url_for('main.host', user_id=member.id) }}"
                       >
                         <button
                           type="button"
@@ -466,6 +480,14 @@
                         >
                           Cancel
                         </button>
+                        <input type="hidden" name="_method" value="DELETE" />
+
+                        <input
+                          type="hidden"
+                          name="csrf_token"
+                          value="{{ csrf_token() }}"
+                        />
+
                         <button
                           type="submit"
                           class="btn btn-danger"
@@ -482,6 +504,16 @@
             </tbody>
           </table>
         </div>
+        {% if open_modal %}
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            // Reopen the modal for the specific member using their ID
+            var modalId = "#editModal{{ open_modal }}";
+            var modal = new bootstrap.Modal(document.querySelector(modalId));
+            modal.show();
+          });
+        </script>
+        {% endif %}
         <!--/ Block Members -->
 
         <!-- Contribution Status -->

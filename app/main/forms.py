@@ -93,7 +93,7 @@ class EditMemberForm(FlaskForm):
     phone_number = StringField('Phone Number', validators=[DataRequired(), Length(min=10, max=15)])
     id_number = StringField('ID Number', validators=[DataRequired(), Length(min=5, max=20)])
     member_zone = StringField('Member Zone', render_kw={'readonly': True}) 
-    bank = StringField('Bank', render_kw={'readonly': True}) 
+    bank_id = StringField('Bank', render_kw={'readonly': True}) 
     account_number = StringField('Account Number', render_kw={'readonly': True}) 
     
     # Role management: A hidden field to store the additional committee role (if any)

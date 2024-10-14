@@ -122,6 +122,11 @@ class UsersResource(BaseResource):
     fields = user_fields
     args = user_args
 
+class UsersResource(BaseResource):
+    model = UserModel
+    fields = user_fields
+    args = user_args
+
     def get(self, id=None):
         try:
             if id:
@@ -129,20 +134,33 @@ class UsersResource(BaseResource):
                 user = self.model.query.get_or_404(id)
                 return marshal(user, self.fields), 200
 
+            # Check for query parameters: role and id_number
             role_name = request.args.get('role')
+            id_number = request.args.get('id_number')
+
+            # Fetch user by id_number if provided
+            if id_number:
+                logger.info(f"GET request received for user with id_number {id_number}")
+                user = self.model.query.filter_by(id_number=id_number).first()
+                if not user:
+                    return {"message": "User not found"}, 404
+                return marshal(user, self.fields), 200
+
+            # Fetch users by role if role_name is provided
             if role_name:
                 logger.info(f"GET request received for users with role {role_name}")
-                users = UserModel.query.join(UserModel.roles).filter(RoleModel.name == role_name).all()
-            else:
-                logger.info("GET request received for all users")
-                users = UserModel.query.all()
+                users = self.model.query.join(UserModel.roles).filter(RoleModel.name == role_name).all()
+                return marshal(users, self.fields), 200
+
+            # Otherwise, return all users
+            logger.info("GET request received for all users")
+            users = self.model.query.all()
 
             return marshal(users, self.fields), 200
 
         except Exception as e:
             logger.error(f"Error retrieving users: {str(e)}")
             return self.handle_error(e)
-
 
 
     def post(self):
@@ -160,12 +178,12 @@ class UsersResource(BaseResource):
                 acc_number=args['acc_number']
             )
 
-            # Assign the default "Member" role
-            member_role = RoleModel.query.filter_by(name='Member').first()
-            if member_role:
-                new_user.roles.append(member_role)
-                logger.info(f"Assigned default Member role to user {new_user.id}")
-
+           # Assign the role if role_id is provided
+            if 'role_id' in args and args['role_id'] is not None:
+                role = RoleModel.query.get(args['role_id'])
+                if role:
+                    new_user.roles.append(role)
+                    
             db.session.add(new_user)
             db.session.commit()
             logger.info(f"Successfully created user {new_user.id} with roles {[r.name for r in new_user.roles]}")
