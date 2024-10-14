@@ -225,15 +225,27 @@ class UsersResource(BaseResource):
                 user.acc_number = args['acc_number']
                 updated = True
 
-            # If role_id is provided, update the user's roles
-            if args['role_id'] is not None:
-                role = RoleModel.query.get(args['role_id'])
-                if role:
-                    if role not in user.roles:
-                        user.roles.append(role)  # Add the role if it's not already assigned
-                        logger.info(f"Assigned additional role {role.name} to user {user.id}")
-                        updated = True
             
+         # Handle role assignment or removal based on action
+            role_id = args.get('role_id')
+            action = args.get('action')
+
+            if role_id is not None:
+                role = RoleModel.query.get(role_id)
+                if role:
+                    if action == 'remove':
+                        if role in user.roles:
+                            user.roles.remove(role)
+                            logger.info(f"Removed role {role.name} from user {user.id}")
+                            updated = True
+                        else:
+                            return {"message": "User does not have this role"}, 400
+                    elif action == 'add':
+                        if role not in user.roles:
+                            user.roles.append(role)  # Add the role if it's not already assigned
+                            logger.info(f"Assigned additional role {role.name} to user {user.id}")
+                            updated = True
+
             # Commit only if there are updates
             if updated:
                 db.session.commit()
@@ -242,46 +254,10 @@ class UsersResource(BaseResource):
             else:
                 logger.info(f"No updates made for user {user.id}.")
                 return {"message": "No updates made."}, 400
-
+            
         except Exception as e:
             db.session.rollback()
             logger.error(f"Error updating user {id}: {str(e)}. Rolling back changes.")
-            return self.handle_error(e)
-
-    def delete(self, id=None):
-        try:
-            if not id:
-                return {"message": "User ID is required for deletion or role removal"}, 400
-
-            user = self.model.query.get_or_404(id)
-            args = self.args.parse_args()
-            role_id = args.get('role_id')
-
-            # If role_id is provided, remove the role
-            if role_id:
-                role = RoleModel.query.get(role_id)
-                if not role:
-                    return {"message": f"Role with ID {role_id} not found"}, 404
-
-                # Check if the role is assigned to the user
-                if role in user.roles:
-                    user.roles.remove(role)
-                    db.session.commit()  # Commit changes to the database
-                    logger.info(f"Removed role {role.name} from user {user.id}")
-                    return {"message": f"Role {role.name} removed from user {user.id}"}, 200
-                else:
-                    return {"message": "User does not have this role"}, 400
-
-            # If no role_id is provided, delete the user
-            else:
-                db.session.delete(user)
-                db.session.commit()
-                logger.info(f"Deleted user {user.id}")
-                return {"message": f"User {user.full_name} with ID {user.id} has been deleted"}, 200
-
-        except Exception as e:
-            db.session.rollback()
-            logger.error(f"Error during deletion: {str(e)}")
             return self.handle_error(e)
 
 
@@ -322,9 +298,15 @@ class MeetingsResource(BaseResource):
     fields = meeting_fields
     args = meeting_args
 
-    def get(self):
+
+    def get(self, id=None):
         try:
-            # Assuming we are fetching meetings based on organizer_id
+            if id:
+                # Fetch a specific meeting by ID
+                meeting = self.model.query.get_or_404(id)               
+                return marshal(meeting,self.fields), 200
+
+            # Check for query parameters for filtering
             organizer_id = request.args.get('organizer_id')
             if organizer_id:
                 meeting = db.session.query(MeetingModel)\
@@ -339,7 +321,14 @@ class MeetingsResource(BaseResource):
                         'when': meeting.date.strftime('%a, %d %b %Y %H:%M:%S')
                     }
                     return meeting_details, 200
-            return {'error': 'Meeting not found'}, 404
+                return {'error': 'Meeting not found'}, 404
+
+            # If no filters are applied, fetch all meetings
+            meetings = MeetingModel.query.all()
+            if meetings:
+                return marshal(meetings, self.fields), 200
+            
+            return {'message': 'No meetings found'}, 404
 
         except Exception as e:
             return self.handle_error(e)
