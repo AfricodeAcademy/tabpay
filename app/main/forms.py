@@ -1,10 +1,9 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SelectField, IntegerField, SubmitField,DateTimeField,HiddenField
+from wtforms import StringField, SelectField, IntegerField, SubmitField,DateTimeField,HiddenField
 from flask_wtf.file import FileField,FileAllowed
 from wtforms.validators import DataRequired, Length, ValidationError,NumberRange,Email,Optional
 from ..api.api import UserModel
 from datetime import datetime
-from flask_security import current_user
 
 class AddMemberForm(FlaskForm):
     full_name = StringField('Member Full Name',validators=[DataRequired(message="Member Full Name is required"), Length(max=100,min=5)],render_kw={'placeholder':'John Doe'})
@@ -32,7 +31,7 @@ class ProfileForm(FlaskForm):
     full_name = StringField('Update Your Full Names',validators=[ Length(max=100,min=10)])
     id_number = IntegerField('Your ID Number',render_kw={'readonly':True})
     email = StringField('Update Your Email',validators=[Email(message="Invalid email")])
-    phone_number = StringField('Update Your Phone Number',validators=[DataRequired("Phone Number is required"),Length(min=10, max=16, message="Phone number must be between 10 and 16 digits.")],render_kw={'placeholder':'0700000000'})
+    phone_number = StringField('Add Phone Number',render_kw={'placeholder':'0700000000'})
     submit = SubmitField('UPDATE PROFILE')
  
     
@@ -88,6 +87,6 @@ class EditMemberForm(FlaskForm):
     member_zone = StringField('Member Zone', render_kw={'readonly': True}) 
     bank_id = StringField('Bank', render_kw={'readonly': True}) 
     account_number = StringField('Account Number', render_kw={'readonly': True}) 
-    committee_role = SelectField('Roles',  validators=[Optional()])
+    committee_role = SelectField('Roles', choices=[], validators=[Optional()])
         
     submit = SubmitField('Save Changes')

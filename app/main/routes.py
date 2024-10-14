@@ -4,11 +4,9 @@ from flask_security import login_required, current_user, roles_accepted
 from ..utils import db
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm
 from .models import UserModel, BlockModel, ZoneModel,RoleModel,PaymentModel
-from PIL import Image
-import os
 import logging
-import secrets
-from app import create_app as app
+import os
+from ..utils import save_picture
 from flask import current_app
 
 
@@ -124,38 +122,6 @@ def settings():
     return render_settings_page(active_tab=request.args.get('active_tab', 'profile'))
 
 
-# Function to save the profile picture
-def save_picture(form_picture):
-    try:
-        # Generate a random hex for the filename and get the file extension
-        random_hex = secrets.token_hex(8)
-        _, f_ext = os.path.splitext(form_picture.filename)
-        picture_fn = random_hex + f_ext
-
-        # Ensure the directory exists and log the action
-        image_dir = os.path.join(current_app.root_path, 'static/images')
-        if not os.path.exists(image_dir):
-            logging.info(f"Directory {image_dir} does not exist. Creating directory...")
-            os.makedirs(image_dir)
-        else:
-            logging.info(f"Directory {image_dir} already exists.")
-
-        # Create the path to save the image
-        picture_path = os.path.join(image_dir, picture_fn)
-
-        # Resize the image and save it
-        output_size = (125, 125)
-        i = Image.open(form_picture)
-        i.thumbnail(output_size)
-        i.save(picture_path)
-
-        logging.info(f"Profile picture saved at {picture_path}")
-        return picture_fn
-
-    except Exception as e:
-        logging.error(f"Error saving picture: {e}")
-        raise e
-
 # Handle profile update
 def handle_profile_update():
     profile_form = ProfileForm()
@@ -165,78 +131,79 @@ def handle_profile_update():
     logger.info("Profile update request received. Validating form...")
 
     if profile_form.validate_on_submit():
-        logging.info("Form validated successfully.")
-    
+        logger.info("Form validated successfully.")
+
         update_data = {}
+        user_changed = False  # To track if any changes are made
 
         # Handle profile picture update
         if profile_form.picture.data:
-            logging.info("User uploaded a new profile picture.")
-
             try:
-                # Save picture and get the file name
                 picture_file = save_picture(profile_form.picture.data)
-                image_path = os.path.join(current_app.root_path, 'static/images', picture_file)  # Use absolute path
+                image_path = os.path.join(current_app.root_path, 'static/images', picture_file)
 
-                # Prepare multipart data for the API request
-                with open(image_path, 'rb') as f:
-                    files = {'picture': (picture_file, f, 'image/png')}
-                    response = requests.patch(api_url, files=files)
+                if current_user.image_file != picture_file:
+                    # Prepare multipart data for the API request
+                    with open(image_path, 'rb') as f:
+                        files = {'picture': (picture_file, f, 'image/png')}
+                        response = requests.patch(api_url, files=files)
 
-                # Check API response
-                if response.status_code == 200:
-                    logging.info("Profile picture updated successfully via API.")
-                    flash('Profile picture updated successfully!', 'success')
-                    # Update the current user's image_file
-                    current_user.image_file = picture_file
+                    if response.status_code == 200:
+                        flash('Profile picture updated successfully!', 'success')
+                        current_user.image_file = picture_file
+                        user_changed = True
+                    else:
+                        flash('Failed to update profile picture.', 'danger')
                 else:
-                    logging.error(f"Failed to update profile picture: {response.status_code} - {response.text}")
-                    flash('Failed to update profile picture.', 'danger')
+                    flash('The new profile picture is the same as the current one.', 'info')
 
             except Exception as e:
-                logging.error(f"Error while updating profile picture: {e}")
                 flash('An error occurred while updating the profile picture.', 'danger')
 
+
+        # Handle other profile field updates (name, email, phone number)
+        if (profile_form.full_name.data != current_user.full_name or
+            profile_form.email.data != current_user.email or
+            profile_form.phone_number.data != current_user.phone_number):
+            
+            logger.info("Processing other profile fields for update.")
+
+            # Collect the fields to update if they are different
+            if profile_form.full_name.data and profile_form.full_name.data != current_user.full_name:
+                update_data['full_name'] = profile_form.full_name.data
+            if profile_form.email.data and profile_form.email.data != current_user.email:
+                update_data['email'] = profile_form.email.data
+            if profile_form.phone_number.data and profile_form.phone_number.data != current_user.phone_number:
+                update_data['phone_number'] = profile_form.phone_number.data
+
+            # Make API call to update the profile fields
+            if update_data:
+                try:
+                    response = requests.patch(api_url, json=update_data)
+                    if response.status_code == 200:
+                        logger.info("Profile fields updated successfully via API.")
+                        flash("Profile updated successfully!", "success")
+                        user_changed = True
+                    else:
+                        logger.error(f"Failed to update profile fields: {response.status_code} - {response.text}")
+                        errors = response.json().get('message', "An error occurred")
+                        flash(errors, "danger")
+                except Exception as e:
+                    logger.error(f"Error while updating profile fields: {e}")
+                    flash(f"An error occurred: {e}", "danger")
         else:
-            logging.info("No profile picture uploaded.")
-
-            # Process other profile fields for updates
-            if profile_form.full_name.data or profile_form.email.data or profile_form.password.data:
-                logging.info("Processing other profile fields for update.")
-
-                # Collect the fields to update
-                if profile_form.full_name.data:
-                    update_data['full_name'] = profile_form.full_name.data
-                if profile_form.email.data:
-                    update_data['email'] = profile_form.email.data
-                if profile_form.phone_number.data:
-                    update_data['phone_number'] = profile_form.phone_number.data
-
-              
-                if update_data:
-                    try:
-                        response = requests.patch(api_url, json=update_data)
-                        if response.status_code == 200:
-                            logging.info("Profile fields updated successfully via API.")
-                            flash("Profile updated successfully!", "success")
-                        else:
-                            logging.error(f"Failed to update profile fields: {response.status_code} - {response.text}")
-                            errors = response.json().get('message', "An error occurred")
-                            flash(errors, "danger")
-                    except Exception as e:
-                        logging.error(f"Error while updating profile fields: {e}")
-                        flash(f"An error occurred: {e}", "danger")
-                else:
-                    logging.info("No profile fields to update.")
-                    flash('No changes made to the profile.', 'info')
-
-            else:
-                logging.info("No changes made to the profile.")
-                flash('No changes made to the profile.', 'info')
+            logger.info("No changes made to profile fields.")
+            flash("No changes made to the profile details.", "info")
+        
+        if not user_changed:
+            logger.info("No updates were made to the profile.")
+            flash('No changes made to your profile.', 'info')
+        
     else:
         for field, errors in profile_form.errors.items():
             for error in errors:
                 flash(f'{error}', 'danger')
+
     return render_settings_page(active_tab='profile')
 
 
@@ -268,7 +235,7 @@ def handle_committee_addition():
 
     if committee_form.validate_on_submit():
         id_number = committee_form.id_number.data  # Get the ID number
-        role_id = committee_form.role_id.data      # Get the selected role_id
+        role_id = int(committee_form.role_id.data)  # Get the selected role_id (convert to int)
 
         # Fetch user by ID number via API
         user = get_user_by_id_number(id_number)
@@ -285,31 +252,36 @@ def handle_committee_addition():
                 flash(f"{user['full_name']} must first be a member before being assigned a committee role.", 'danger')
                 return redirect(url_for('main.settings', active_tab='committee'))
 
-            # Check if user already has the committee role
+            # Check if user already has the selected committee role
             if any(role.get('id') == role_id for role in user_roles):
-                flash(f"{user['full_name']} is already a {role_id}!", 'danger')
+                flash(f"{user['full_name']} already has the role '{role_id}'!", 'danger')
+                return redirect(url_for('main.settings', active_tab='committee'))
+
+            # Check if user already has 'Chairman' and is trying to assign 'Secretary', and vice versa
+            if role_id == 3 and any(role.get('id') == 4 for role in user_roles):
+                flash(f"{user['full_name']} cannot be assigned as Chairman while being Secretary.", 'danger')
+                return redirect(url_for('main.settings', active_tab='committee'))
+            if role_id == 4 and any(role.get('id') == 3 for role in user_roles):
+                flash(f"{user['full_name']} cannot be assigned as Secretary while being Chairman.", 'danger')
                 return redirect(url_for('main.settings', active_tab='committee'))
 
             # API PATCH request to update the user's role
             try:
                 response = requests.patch(
                     f"{current_app.config['API_BASE_URL']}/api/v1/users/{user['id']}",
-                    json={"role_id": role_id,'action': 'add'}
+                    json={"role_id": role_id, 'action': 'add'}
                 )
 
                 # Check if the response is successful
                 if response.status_code == 200:
                     flash(f"{user['full_name']} added as {role_id} successfully!", 'success')
                     return redirect(url_for('main.settings', active_tab='committee'))
-
                 else:
                     flash(f"An error occurred: {response.json().get('message')}", 'danger')
                     return redirect(url_for('main.settings', active_tab='committee'))
 
-
             except Exception as e:
                 flash(f"An error occurred while updating the role: {str(e)}", 'danger')
-
         else:
             flash('User not found.', 'danger')
 
@@ -322,6 +294,7 @@ def handle_committee_addition():
                 flash(f'{error}', 'danger')
 
     return render_settings_page(active_tab='committee')
+
 
 
 # Handle umbrella creation
@@ -996,6 +969,5 @@ def get_existing_block_meeting(block_id):
             logger.error(f"Error fetching meetings: Status Code {response.status_code}")
             return []
     except Exception as e:
-        flash(f"An error occurred while fetching meetings: {str(e)}", "danger")
         logger.error(f"Exception during fetching meetings: {str(e)}")
         return []
