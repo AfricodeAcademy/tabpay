@@ -15,6 +15,13 @@ from flask import current_app
 
 main = Blueprint('main', __name__)
 
+
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 @main.route('/', methods=['GET'])
 def home():
     if current_user.is_authenticated:
@@ -117,13 +124,6 @@ def settings():
     return render_settings_page(active_tab=request.args.get('active_tab', 'profile'))
 
 
-
-import logging
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
 # Function to save the profile picture
 def save_picture(form_picture):
     try:
@@ -209,15 +209,10 @@ def handle_profile_update():
                     update_data['full_name'] = profile_form.full_name.data
                 if profile_form.email.data:
                     update_data['email'] = profile_form.email.data
+                if profile_form.phone_number.data:
+                    update_data['phone_number'] = profile_form.phone_number.data
 
-                # Only update the password if it meets the length requirement
-                if profile_form.password.data and len(profile_form.password.data) >= 6:
-                    update_data['password'] = profile_form.password.data
-                elif profile_form.password.data and len(profile_form.password.data) < 6:
-                    logging.warning("Password update failed: Password must be at least 6 characters long.")
-                    flash('Password must be at least 6 characters long.', 'danger')
-                    return render_settings_page(active_tab='profile', error=None)
-
+              
                 if update_data:
                     try:
                         response = requests.patch(api_url, json=update_data)
@@ -327,7 +322,6 @@ def handle_committee_addition():
                 flash(f'{error}', 'danger')
 
     return render_settings_page(active_tab='committee')
-
 
 
 # Handle umbrella creation

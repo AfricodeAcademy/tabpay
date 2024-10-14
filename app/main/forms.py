@@ -30,25 +30,19 @@ class AddMemberForm(FlaskForm):
 class ProfileForm(FlaskForm):
     picture = FileField('Update Profile Picture',validators=[FileAllowed(['jpg','jpeg','png'],'Images only')])
     full_name = StringField('Update Your Full Names',validators=[ Length(max=100,min=10)])
-    id_number = IntegerField('Member ID Number',validators=[NumberRange(min=10000000, max=99999999, message="ID number must be exactly 8 digits.")])
+    id_number = IntegerField('Your ID Number',render_kw={'readonly':True})
     email = StringField('Update Your Email',validators=[Email(message="Invalid email")])
-    password = PasswordField('Enter Password to Update Profile',validators=[ Length(max=100,min=6),],render_kw={'placeholder':'******'})
+    phone_number = StringField('Update Your Phone Number',validators=[DataRequired("Phone Number is required"),Length(min=10, max=16, message="Phone number must be between 10 and 16 digits.")],render_kw={'placeholder':'0700000000'})
     submit = SubmitField('UPDATE PROFILE')
-
-        
-    def validate_email(self,password):
-        if password.data != current_user.password:
-            user = UserModel.query.filter_by(password=password.data).first()
-            if user:
-                raise ValidationError("Wrong password!")    
+ 
     
 
 
 class AddCommitteForm(FlaskForm):
-    # full_name = StringField('Committee Full Name',validators=[Length(max=100,min=10)],render_kw={'placeholder':'e.g John Doe'})
+    full_name = StringField('Committee Full Name')
     id_number = IntegerField('Their ID Number',validators=[DataRequired(),NumberRange(min=10000000, max=99999999, message="ID number must be exactly 8 digits.")],render_kw={'placeholder':'xxxxxxxx'})
     role_id =  SelectField('Role', validators=[DataRequired(message='Please select a valid role!')])
-    # phone_number = StringField('Phone Number',validators=[Length(min=10, max=16)],render_kw={'placeholder':'0700000000'}) 
+    phone_number = StringField('Phone Number') 
     submit = SubmitField('ADD COMMITTEE')
 
  
