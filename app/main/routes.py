@@ -299,14 +299,18 @@ def handle_committee_addition():
             try:
                 response = requests.patch(
                     f"{current_app.config['API_BASE_URL']}/api/v1/users/{user['id']}",
-                    json={"role_id": role_id}  # Sending role_id in the request body
+                    json={"role_id": role_id,'action': 'add'}
                 )
 
                 # Check if the response is successful
                 if response.status_code == 200:
                     flash(f"{user['full_name']} added as {role_id} successfully!", 'success')
+                    return redirect(url_for('main.settings', active_tab='committee'))
+
                 else:
                     flash(f"An error occurred: {response.json().get('message')}", 'danger')
+                    return redirect(url_for('main.settings', active_tab='committee'))
+
 
             except Exception as e:
                 flash(f"An error occurred while updating the role: {str(e)}", 'danger')
@@ -601,7 +605,7 @@ def create_zone(payload):
 @roles_accepted('SuperUser', 'Admin')
 def statistics():
     # Define the roles to include
-    included_roles = ['Member', 'Chairman', 'Secretary','SuperUser']
+    included_roles = ['Member']
 
     # Query the users who have any of the roles in the included_roles list
     total_members = UserModel.query.join(UserModel.roles).filter(RoleModel.name.in_(included_roles)).count()
@@ -880,29 +884,32 @@ def get_upcoming_meeting_details(user_id):
         return None
 
 
+
 def update_member(user_id):
     update_form = EditMemberForm()
 
     if update_form.validate_on_submit():
-        additional_role = update_form.additional_role.data  # Get additional role (if any)
+        committee_role = update_form.committee_role.data  
 
         # Handle role logic (removing the additional role, if needed)
-        if additional_role:
+        if committee_role:
             try:
-                # Assuming an API call to remove a role from the user
-                response = requests.delete(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}",
-                                           json={'role_id': additional_role})
+                # Assuming the action is to remove the role
+                response = requests.patch(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}/roles/",
+                                           json={'role_id': committee_role, 'action': 'remove'})  
+
                 if response.status_code == 200:
-                    flash(f"Successfully removed {additional_role} role from the member.", "info")
-                    return redirect(url_for('main.host', active_tab='block_members', open_modal=user_id))
+                    flash(f"Successfully removed {committee_role} role from the member.", "info")
+                    return redirect(url_for('main.host', active_tab='block_members'))
                 else:
-                    flash(f"Failed to remove the {additional_role} role. Please try again.", "danger")
-                    return redirect(url_for('main.host', active_tab='block_members', open_modal=user_id))
+                    flash(f"Failed to remove the {committee_role} role. Please try again.", "danger")
+                    return redirect(url_for('main.host', active_tab='block_members'))
 
             except Exception as e:
                 flash("Error removing the role. Please try again later.", "danger")
-                return redirect(url_for('main.host', active_tab='block_members', open_modal=user_id))
+                return redirect(url_for('main.host', active_tab='block_members'))
 
+    
 
         # Prepare payload to update other member details
         payload = {}
@@ -919,19 +926,20 @@ def update_member(user_id):
                 response = requests.patch(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}", json=payload)
                 if response.status_code == 200:
                     flash("Member details updated successfully.", "success")
+                    return redirect(url_for('main.host', active_tab='block_members'))
                 else:
                     flash("Failed to update member details. Please try again.", "danger")
-                    return redirect(url_for('main.host', active_tab='block_members', open_modal=user_id))
+                    return redirect(url_for('main.host', active_tab='block_members'))
 
 
             except Exception as e:
                 flash("Error updating member details. Please try again later.", "danger")
-                return redirect(url_for('main.host', active_tab='block_members', open_modal=user_id))
+                return redirect(url_for('main.host', active_tab='block_members'))
 
 
         else:
             flash("No changes were made to the member details.", "info")
-            return redirect(url_for('main.host', active_tab='block_members', open_modal=user_id))
+            return redirect(url_for('main.host', active_tab='block_members'))
 
 
 
@@ -940,7 +948,6 @@ def update_member(user_id):
         for error in errors:
             flash(f'{field}: {error}', 'danger')
 
-    return render_host_page(active_tab='block_members')
 
 
 
@@ -950,14 +957,13 @@ def remove_member(user_id):
     
     if response == 200:
         flash('Member removed successfully', 'success')
-        return redirect(url_for('main.host', active_tab='block_members', open_modal=user_id))
+        return redirect(url_for('main.host', active_tab='block_members'))
 
     else:
         flash('Failed to remove member', 'danger')
-        return redirect(url_for('main.host', active_tab='block_members', open_modal=user_id))
+        return redirect(url_for('main.host', active_tab='block_members'))
 
     
-    return render_host_page(active_tab='block_members')
 
 
 # Helper function to fetch members by role "Member"

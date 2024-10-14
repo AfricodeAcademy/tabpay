@@ -395,17 +395,39 @@
                           value=member.acc_number, readonly=True) }}
                         </div>
 
-                        <!-- Hidden role management field, only rendered if the user has an additional role -->
-                        {% if member.additional_role %}
-                        <div class="mb-3">
+                        {% if member.roles|length > 1 %}
+                        <div class="mb-2">
                           {{
-                          update_form.additional_role.label(class="update_form-label")
+                          update_form.committee_role.label(class="update_form-label")
                           }} {{
-                          update_form.additional_role(class="update_form-control",
-                          value=member.roles) }}
-                          <small class="text-warning"
-                            >You can pop this role from the member</small
+                          update_form.committee_role(class="update_form-select")
+                          }}
+
+                          <form
+                            id="removeForm{{ member.id }}"
+                            method="post"
+                            action="{{ url_for('main.host', user_id=member.id, active_tab='block_members') }}"
                           >
+                            <input
+                              type="hidden"
+                              name="csrf_token"
+                              value="{{ csrf_token() }}"
+                            />
+                            <input
+                              type="hidden"
+                              name="user_id"
+                              value="{{ user.id }}"
+                            />
+
+                            <!-- Remove role button linked to the selected additional role -->
+                            <button
+                              type="submit"
+                              class="btn btn-danger btn-sm"
+                              name="remove_role_submit"
+                            >
+                              X
+                            </button>
+                          </form>
                         </div>
                         {% endif %}
 

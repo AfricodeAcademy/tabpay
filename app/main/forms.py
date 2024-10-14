@@ -87,7 +87,6 @@ class ScheduleForm(FlaskForm):
         if field.data < datetime.now():
             raise ValidationError('The meeting date and time cannot be in the past.')
 
-    
 class EditMemberForm(FlaskForm):
     full_name = StringField('Full Name', validators=[DataRequired(), Length(min=3, max=100)])
     phone_number = StringField('Phone Number', validators=[DataRequired(), Length(min=10, max=15)])
@@ -95,9 +94,6 @@ class EditMemberForm(FlaskForm):
     member_zone = StringField('Member Zone', render_kw={'readonly': True}) 
     bank_id = StringField('Bank', render_kw={'readonly': True}) 
     account_number = StringField('Account Number', render_kw={'readonly': True}) 
-    
-    # Role management: A hidden field to store the additional committee role (if any)
-    additional_role = HiddenField('Additional Role', validators=[Optional()])
-    
+    committee_role = SelectField('Roles',  validators=[Optional()])
+        
     submit = SubmitField('Save Changes')
-      
