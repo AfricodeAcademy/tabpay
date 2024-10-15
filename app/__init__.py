@@ -43,6 +43,7 @@ def create_app(config_name):
         user_datastore.find_or_create_role(name='Chairman', description='Block chairman')
         user_datastore.find_or_create_role(name='Secretary', description='Block secretary')
         user_datastore.find_or_create_role(name='Member', description='Regular member')
+        user_datastore.find_or_create_role(name='Treasurer',description='Block Treasurer')
         
         # Create Admin
         if not user_datastore.find_user(email='enockbett427@gmail.com'):

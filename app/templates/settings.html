@@ -141,7 +141,7 @@
               <div id="committee" class="tab-pane fade {% if active_tab == 'committee' %}show active{% endif %}">
                 <form method="POST" action="{{ url_for('main.settings', active_tab='committee') }}" novalidate>
                     {{ committee_form.hidden_tag() }}
-                    <div id="user-details" style="display:none;">
+                    <!-- <div id="user-details" style="display:none;">
                         <div class="row mb-5 mt-2">
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -156,14 +156,18 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
+                    </div> -->
+                        <div class="row">
                             <div class="mb-3">
                                 {{ render_field(committee_form.id_number) }}
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="row">
+                          <div class="mb-3">
+                              {{ render_field(committee_form.block_id) }}
+                          </div>
+                      </div>
+                        <div class="row">
                             <div class="mb-3">
                                 <label for="role_id">{{ committee_form.role_id.label }}</label>
                                 <select class="select" id="role_id" name="role_id">
@@ -176,7 +180,7 @@
                                 </select>
                             </div>
                         </div>
-                    </div>
+                    
                     <button type="submit" name="committee_submit" class="submit-btn">
                         {{ committee_form.submit.label.text }}
                     </button>
