@@ -1,5 +1,5 @@
 import requests
-from flask import Blueprint, render_template, redirect, url_for, flash,request
+from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify
 from flask_security import login_required, current_user, roles_accepted
 from ..utils import db
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm
@@ -223,6 +223,20 @@ def get_user_by_id_number(id_number):
     except Exception as e:
         current_app.logger.error(f"Error fetching user by id_number: {e}")
         return None
+
+@main.route('/get_user_by_id_number/<int:id_number>', methods=['GET'])
+def get_user(id_number):
+    current_app.logger.debug(f"Received GET request for user with ID: {id_number}")
+    user = get_user_by_id_number(id_number)  # Reuse your existing function
+    if user:
+        current_app.logger.debug(f"User found: {user}")
+        return jsonify({
+            'full_name': user['full_name'],
+            'phone_number': user['phone_number'],
+            'roles': user.get('roles', [])
+        }), 200
+    current_app.logger.debug("User not found")
+    return jsonify({'error': 'User not found'}), 404
 
 
 def handle_committee_addition():
