@@ -394,8 +394,8 @@ class MeetingsResource(BaseResource):
                 if meeting:
                     # Fetch related block, zone, and host details
                     meeting_details = {
-                        'block': meeting.block.name if meeting.block else 'Unknown Block',
-                        'zone': meeting.zone.name if meeting.zone else 'Unknown Zone',
+                        'meeting_block': meeting.block.name if meeting.block else 'Unknown Block',
+                        'meeting_zone': meeting.zone.name if meeting.zone else 'Unknown Zone',
                         'host': meeting.host.full_name if meeting.host else 'Unknown Host',
                         'when': meeting.date.strftime('%a, %d %b %Y %H:%M:%S')
                     }
