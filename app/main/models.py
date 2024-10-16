@@ -23,7 +23,7 @@ class RoleModel(db.Model, RoleMixin):
     name = db.Column(db.String(80), unique=True, nullable=False)
     description = db.Column(db.String(255))
 
-    def _repr_(self):
+    def __repr__(self):
         return f"<Role {self.name}>"
 
 class UserModel(db.Model, UserMixin):
@@ -52,7 +52,7 @@ class UserModel(db.Model, UserMixin):
     webauth = db.relationship('WebAuth', backref='user', uselist=False)
     hosted_meetings = db.relationship('MeetingModel', backref='host', foreign_keys='MeetingModel.host_id')
 
-    def _repr_(self):
+    def __repr__(self):
         return f"<User {self.full_name}>"
 
 class WebAuth(db.Model):
@@ -69,7 +69,7 @@ class UmbrellaModel(db.Model):
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     blocks = db.relationship('BlockModel', backref='parent_umbrella', lazy=True)
 
-    def _repr_(self):
+    def __repr__(self):
         return f"<Umbrella {self.name}>"
 
 class BlockModel(db.Model):
@@ -94,7 +94,7 @@ class BlockModel(db.Model):
     treasurer = db.relationship('UserModel', foreign_keys=[treasurer_id], backref='treasurer_blocks')
 
 
-    def _repr_(self):
+    def __repr__(self):
         return f"<Block {self.name}>"
 class ZoneModel(db.Model):
     __tablename__ = 'zones'
@@ -109,7 +109,7 @@ class ZoneModel(db.Model):
     # Members of the zone (users)
     members = db.relationship('UserModel', foreign_keys='UserModel.zone_id', backref='zone', lazy=True)
 
-    def _repr_(self):
+    def __repr__(self):
         return f"<Zone {self.name}>"
 
 
@@ -122,7 +122,7 @@ class MeetingModel(db.Model):
     organizer_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     date = db.Column(db.DateTime, nullable=False)
 
-    def _repr_(self):
+    def __repr__(self):
         return f"<Meeting {self.id} on {self.date}>"
 
 class BankModel(db.Model):
@@ -133,7 +133,7 @@ class BankModel(db.Model):
     total_transactions = db.relationship('PaymentModel', backref='bank', lazy=True)
     users = db.relationship('UserModel', backref='bank', lazy=True)
 
-    def _repr_(self):
+    def __repr__(self):
         return f"<Bank {self.name}>"
 
 class PaymentModel(db.Model):
@@ -149,7 +149,7 @@ class PaymentModel(db.Model):
     block_id = db.Column(db.Integer, db.ForeignKey('blocks.id'), nullable=False)
     payer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
-    def _repr_(self):
+    def __repr__(self):
         return f"<Payment {self.amount} by {self.payer_id}>"
 
 class CommunicationModel(db.Model):
@@ -159,7 +159,7 @@ class CommunicationModel(db.Model):
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     member_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
-    def _repr_(self):
+    def __repr__(self):
         return f"<Message from {self.member_id}>"
 
     
