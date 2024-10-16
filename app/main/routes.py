@@ -900,7 +900,9 @@ def get_upcoming_meeting_details(user_id):
                 host_name = meeting_data.get('host', 'Unknown Host')
                 meeting_date = meeting_data.get('when', 'Unknown Date')
 
+
                 logging.info(f"Extracted meeting details: Meeting_block - {block_name}, Meeting_zone - {zone_name}, Host - {host_name}, When - {meeting_date}")              
+
                 return {
                     'meeting_block': block_name,
                     'meeting_zone': zone_name,
