@@ -733,14 +733,14 @@ def render_host_page(active_tab=None, error=None):
     meeting_details = get_upcoming_meeting_details(current_user.id)
 
     if meeting_details:
-        print(meeting_details)  # Debugging line to check the meeting details
-        block = meeting_details['block']
-        zone = meeting_details['zone']
+        print(meeting_details)  
+        meeting_block = meeting_details['meeting_block']
+        meeting_zone = meeting_details['meeting_zone']
         host = meeting_details['host']
         when = meeting_details['when']
     else:
         flash("No upcoming meeting found", "warning")
-        block = zone = host = when = None
+        meeting_block = meeting_zone = host = when = None
 
 
     
@@ -787,7 +787,7 @@ def render_host_page(active_tab=None, error=None):
                            zones=zones,
                            members=members,
                            active_tab=active_tab,  
-                           error=error,block=block,host=host,zone=zone,when=when)
+                           error=error,meeting_block=meeting_block,host=host,meeting_zone=meeting_zone,when=when)
 
 # Single route to handle all host form submissions
 @main.route('/host', methods=['GET', 'POST'])
@@ -895,15 +895,15 @@ def get_upcoming_meeting_details(user_id):
 
             # Check if the response is a dictionary rather than a list
             if isinstance(meeting_data, dict):
-                block_name = meeting_data.get('block', 'Unknown Block')
-                zone_name = meeting_data.get('zone', 'Unknown Zone')
+                block_name = meeting_data.get('meeting_block', 'Unknown Block')
+                zone_name = meeting_data.get('meeting_zone', 'Unknown Zone')
                 host_name = meeting_data.get('host', 'Unknown Host')
                 meeting_date = meeting_data.get('when', 'Unknown Date')
 
-                logging.info(f"Extracted meeting details: Block - {block_name}, Zone - {zone_name}, Host - {host_name}, When - {meeting_date}")
+                logging.info(f"Extracted meeting details: Meeting_block - {block_name}, Meeting_zone - {zone_name}, Host - {host_name}, When - {meeting_date}")
                 return {
-                    'block': block_name,
-                    'zone': zone_name,
+                    'meeting_block': block_name,
+                    'meeting_zone': zone_name,
                     'host': host_name,
                     'when': meeting_date
                 }
@@ -1034,7 +1034,7 @@ def get_existing_block_meeting(block_id):
             logger.info(f"Meetings found: {len(meetings)}")
             return meetings
         else:
-            flash("Error fetching meetings. Please try again later.", "danger")
+            print("Error fetching meetings. Please try again later.", "danger")
             logger.error(f"Error fetching meetings: Status Code {response.status_code}")
             return []
     except Exception as e:
