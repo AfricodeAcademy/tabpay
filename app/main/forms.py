@@ -38,10 +38,11 @@ class ProfileForm(FlaskForm):
 
 
 class AddCommitteForm(FlaskForm):
-    full_name = StringField('Committee Full Name')
-    id_number = IntegerField('Their ID Number',validators=[DataRequired(),NumberRange(min=10000000, max=99999999, message="ID number must be exactly 8 digits.")],render_kw={'placeholder':'xxxxxxxx'})
-    role_id =  SelectField('Role', validators=[DataRequired(message='Please select a valid role!')])
-    phone_number = StringField('Phone Number') 
+    full_name = StringField("Committee's Full Name")
+    block_id =  SelectField("Committee's Block",validators=[DataRequired()])
+    id_number = IntegerField("Committee's ID Number",validators=[DataRequired(),NumberRange(min=10000000, max=99999999, message="ID number must be exactly 8 digits.")],render_kw={'placeholder':'xxxxxxxx'})
+    role_id =  SelectField('Committee Role', validators=[DataRequired(message='Please select a valid role!')])
+    phone_number = StringField("Committee's Phone Number") 
     submit = SubmitField('ADD COMMITTEE')
 
  

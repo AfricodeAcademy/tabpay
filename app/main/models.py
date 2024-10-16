@@ -74,6 +74,7 @@ class UmbrellaModel(db.Model):
 
 class BlockModel(db.Model):
     __tablename__ = 'blocks'
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False)
     parent_umbrella_id = db.Column(db.Integer, db.ForeignKey('umbrellas.id'), nullable=False)
@@ -81,6 +82,21 @@ class BlockModel(db.Model):
     zones = db.relationship('ZoneModel', backref='parent_block', lazy=True)
     payments = db.relationship('PaymentModel', backref='block', lazy=True)
     meetings = db.relationship('MeetingModel', backref='block', lazy=True)
+
+        # Role-specific relationships (Chairman, Secretary, Treasurer)
+    chairman_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    chairman = db.relationship('UserModel', foreign_keys=[chairman_id], backref='chaired_blocks')
+
+    secretary_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    secretary = db.relationship('UserModel', foreign_keys=[secretary_id], backref='secretary_blocks')
+
+    treasurer_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    treasurer = db.relationship('UserModel', foreign_keys=[treasurer_id], backref='treasurer_blocks')
+
+    zones = db.relationship('ZoneModel', backref='parent_block', lazy=True)
+    payments = db.relationship('PaymentModel', backref='block', lazy=True)
+    meetings = db.relationship('MeetingModel', backref='block', lazy=True)
+
 
     def __repr__(self):
         return f"<Block {self.name}>"

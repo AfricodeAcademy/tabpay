@@ -130,7 +130,7 @@ zone_args.add_argument('created_by', type=int, required=True, help='Creator ID i
 
 role_args = reqparse.RequestParser()
 role_args.add_argument('name', type=str, required=True, help='Role Name is required')
-role_args.add_argument('description', type=int, required=True, help='Parent Block ID is required')
+role_args.add_argument('description', type=int, required=True, help='Description is required')
 
 
 meeting_args = reqparse.RequestParser()
