@@ -1,0 +1,370 @@
+{% extends "base.html" %} {% block heading %}Committee Members{% endblock %} {%
+block content %} {% macro render_flash_messages() %} {% with messages =
+get_flashed_messages(with_categories=true) %} {% if messages %}
+<div class="container mt-3" id="flash-container" style="max-width: 600px">
+  <!-- Adjust the max-width here -->
+  {% for category, message in messages %}
+  <div
+    class="alert alert-{{ category }} alert-dismissible fade show"
+    role="alert"
+  >
+    {{ message }}
+    <button
+      type="button"
+      class="btn-close"
+      data-bs-dismiss="alert"
+      aria-label="Close"
+    ></button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %} {% endwith %} {% endmacro %}
+
+<div class="dashboard">
+  <div class="container">
+    <p class="committeee">
+      Confirm the committee members for each block and manage their roles.
+    </p>
+    <div class="dashboard-content">
+      <!-- Tab Navigation -->
+      <ul class="nav nav-tabs p-3">
+        <li class="nav-item">
+          <a
+            class="nav-link {% if active_tab == 'chairmen' %}active{% endif %}"
+            href="{{ url_for('main.committee', active_tab='chairmen') }}"
+            >Chairmen</a
+          >
+        </li>
+
+        <li class="nav-item">
+          <a
+            class="nav-link {% if active_tab == 'secretaries' %}active{% endif %}"
+            href="{{ url_for('main.committee', active_tab='secretaries') }}"
+            >Secretaries</a
+          >
+        </li>
+
+        <li class="nav-item">
+          <a
+            class="nav-link {% if active_tab == 'treasurers' %}active{% endif %}"
+            href="{{ url_for('main.committee', active_tab='treasurers') }}"
+            >Treasurers</a
+          >
+        </li>
+      </ul>
+
+      <!-- Tab Panes -->
+      <div class="tab-content p-5">
+        <!-- Chairmen Tab -->
+        <div
+          id="chairmen"
+          class="tab-pane fade {% if active_tab == 'chairmen' %}show active{% endif %}"
+        >
+          <h3>Chairmen</h3>
+          <table class="table table-responsive text-center">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Name</th>
+                <th scope="col">Block</th>
+                <th scope="col">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for chairman in committee_members.chairmen %}
+              <tr>
+                <th scope="row">{{ loop.index }}</th>
+                <td>{{ chairman.full_name }}</td>
+                <td>
+                  {% if chairman.chaired_blocks %}{{
+                  chairman.chaired_blocks[0].name }}{% else %}No block
+                  assigned{% endif %}
+                </td>
+                <td>
+                  <!-- Button to trigger modal -->
+                  <button
+                    class="btn btn-danger btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#removeChairmanModal{{ chairman.id }}"
+                  >
+                    Remove Chairman
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+          <!-- Modals for Removing Chairmen -->
+          {% for chairman in committee_members.chairmen %}
+          <div
+            class="modal fade"
+            id="removeChairmanModal{{ chairman.id }}"
+            tabindex="-1"
+            aria-labelledby="removeChairmanLabel"
+            aria-hidden="true"
+          >
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="removeChairmanLabel">
+                    Remove Chairman
+                  </h5>
+                  <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                  ></button>
+                </div>
+                {{ render_flash_messages() }}
+
+                <div class="modal-body">
+                  Are you sure you want to remove {{ chairman.full_name }}'s
+                  Chairman role?
+                </div>
+                <div class="modal-footer">
+                  <form
+                    id="removeChairman{{ chairman.id }}"
+                    method="POST"
+                    action="{{ url_for('main.committee', user_id=chairman.id) }}"
+                  >
+                    <input type="hidden" name="role_id" value="3" />
+
+                    <input
+                      type="hidden"
+                      name="csrf_token"
+                      value="{{ csrf_token() }}"
+                    />
+                    <button
+                      type="submit"
+                      name="remove_role_submit"
+                      class="btn btn-danger"
+                    >
+                      Yes, Remove
+                    </button>
+                  </form>
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Secretaries Tab -->
+        <div
+          id="secretaries"
+          class="tab-pane fade {% if active_tab == 'secretaries' %}show active{% endif %}"
+        >
+          <h3>Secretaries</h3>
+          <table class="table table-responsive text-center">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Name</th>
+                <th scope="col">Block</th>
+                <th scope="col">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for secretary in committee_members.secretaries %}
+              <tr>
+                <th scope="row">{{ loop.index }}</th>
+                <td>{{ secretary.full_name }}</td>
+                <td>
+                  {% if secretary.secretary_blocks %}{{
+                  secretary.secretary_blocks[0].name }}{% else %}No block
+                  assigned{% endif %}
+                </td>
+                <td>
+                  <!-- Button to trigger modal -->
+                  <button
+                    class="btn btn-danger btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#removeSecretaryModal{{ secretary.id }}"
+                  >
+                    Remove Secretary
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+          <!-- Modals for Removing Secretaries -->
+          {% for secretary in committee_members.secretaries %}
+          <div
+            class="modal fade"
+            id="removeSecretaryModal{{ secretary.id }}"
+            tabindex="-1"
+            aria-labelledby="removeSecretaryLabel"
+            aria-hidden="true"
+          >
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="removeSecretaryLabel">
+                    Remove Secretary
+                  </h5>
+                  <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                  ></button>
+                </div>
+                {{ render_flash_messages() }}
+
+                <div class="modal-body">
+                  Are you sure you want to remove {{ secretary.full_name }}'s
+                  Secretary role?
+                </div>
+                <div class="modal-footer">
+                  <form
+                    id="removeSecretary{{ secretary.id }}"
+                    method="POST"
+                    action="{{ url_for('main.committee', user_id=secretary.id) }}"
+                  >
+                    <input type="hidden" name="role_id" value="4" />
+
+                    <input
+                      type="hidden"
+                      name="csrf_token"
+                      value="{{ csrf_token() }}"
+                    />
+                    <button
+                      type="submit"
+                      name="remove_role_submit"
+                      class="btn btn-danger"
+                    >
+                      Yes, Remove
+                    </button>
+                  </form>
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+        <!-- Treasurers Tab -->
+        <div
+          id="treasurers"
+          class="tab-pane fade {% if active_tab == 'treasurers' %}show active{% endif %}"
+        >
+          <h3>Treasurers</h3>
+          <table class="table table-responsive text-center">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Name</th>
+                <th scope="col">Block</th>
+                <th scope="col">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for treasurer in committee_members.treasurers %}
+              <tr>
+                <th scope="row">{{ loop.index }}</th>
+                <td>{{ treasurer.full_name }}</td>
+                <td>
+                  {% if treasurer.treasurer_blocks %}{{
+                  treasurer.treasurer_blocks[0].name }}{% else %}No block
+                  assigned{% endif %}
+                </td>
+                <td>
+                  <!-- Button to trigger modal -->
+                  <button
+                    class="btn btn-danger btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#removeTreasurerModal{{ treasurer.id }}"
+                  >
+                    Remove Treasurer
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+          <!-- Modals for Removing Treasurers -->
+          {% for treasurer in committee_members.treasurers %}
+          <div
+            class="modal fade"
+            id="removeTreasurerModal{{ treasurer.id }}"
+            tabindex="-1"
+            aria-labelledby="removeTreasurerLabel"
+            aria-hidden="true"
+          >
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="removeTreasurerLabel">
+                    Remove Treasurer
+                  </h5>
+                  <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                  ></button>
+                </div>
+                {{ render_flash_messages() }}
+
+                <div class="modal-body">
+                  Are you sure you want to remove {{ treasurer.full_name }}'s
+                  Treasurer role?
+                </div>
+                <div class="modal-footer">
+                  <form
+                    id="removeTreasurer{{ treasurer.id }}"
+                    method="POST"
+                    action="{{ url_for('main.committee', user_id=treasurer.id) }}"
+                  >
+                    <input type="hidden" name="role_id" value="5" />
+
+                    <input
+                      type="hidden"
+                      name="csrf_token"
+                      value="{{ csrf_token() }}"
+                    />
+                    <button
+                      type="submit"
+                      name="remove_role_submit"
+                      class="btn btn-danger"
+                    >
+                      Yes, Remove
+                    </button>
+                  </form>
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    data-bs-dismiss="modal"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

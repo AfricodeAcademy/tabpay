@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, IntegerField, SubmitField,DateTimeField,HiddenField
+from wtforms import StringField, SelectField, IntegerField, SubmitField,DateTimeField
 from flask_wtf.file import FileField,FileAllowed
-from wtforms.validators import DataRequired, Length, ValidationError,NumberRange,Email,Optional
+from wtforms.validators import DataRequired, Length, ValidationError,NumberRange,Email
 from ..api.api import UserModel
 from datetime import datetime
 
@@ -88,6 +88,5 @@ class EditMemberForm(FlaskForm):
     member_zone = StringField('Member Zone', render_kw={'readonly': True}) 
     bank_id = StringField('Bank', render_kw={'readonly': True}) 
     account_number = StringField('Account Number', render_kw={'readonly': True}) 
-    committee_role = SelectField('Roles', choices=[], validators=[Optional()])
         
     submit = SubmitField('Save Changes')

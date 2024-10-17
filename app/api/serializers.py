@@ -1,24 +1,49 @@
 from flask_restful import fields, reqparse
 
 # Fields for serialization
-user_fields = {
-    "id": fields.Integer,
-    "email": fields.String,
-    "full_name": fields.String,
-    "id_number": fields.Integer,
-    "phone_number": fields.String,
-    "active": fields.Boolean,
-    "bank_id": fields.Integer,
-    "acc_number": fields.String,
-    "image_file": fields.String,
-    "registered_at": fields.DateTime,
-    "updated_at": fields.DateTime,
-    "zone_id": fields.Integer,
-    "confirmed_at": fields.DateTime,
-    "roles": fields.List(fields.Nested({"id": fields.Integer, "name": fields.String})),
-    "block_memberships": fields.List(fields.Nested({"id": fields.Integer, "name": fields.String}))
-}
+def get_user_fields():
+    block_fields = {
+        "id": fields.Integer,
+        "name": fields.String,
+        
+    }
 
+    user_fields = {
+        "id": fields.Integer,
+        "email": fields.String,
+        "full_name": fields.String,
+        "id_number": fields.Integer,
+        "phone_number": fields.String,
+        "active": fields.Boolean,
+        "bank_id": fields.Integer,
+        "acc_number": fields.String,
+        "image_file": fields.String,
+        "registered_at": fields.DateTime,
+        "updated_at": fields.DateTime,
+        "zone_id": fields.Integer,
+        "confirmed_at": fields.DateTime,
+        "roles": fields.List(fields.Nested({
+            "id": fields.Integer,
+            "name": fields.String
+        })),
+        "block_memberships": fields.List(fields.Nested({
+            "id": fields.Integer,
+            "name": fields.String
+        })),
+
+        # Add chaired blocks, secretary blocks, and treasurer blocks fields here
+        "chaired_blocks": fields.List(fields.Nested(block_fields)),
+        "secretary_blocks": fields.List(fields.Nested(block_fields)),
+        "treasurer_blocks": fields.List(fields.Nested(block_fields))
+    }
+    return user_fields
+
+block_fields = {
+    "id": fields.Integer,
+    "name": fields.String,
+    "parent_umbrella_id": fields.Integer,
+    "created_by": fields.Integer
+}
 communication_fields = {
     "id": fields.Integer,
     "content": fields.String,
@@ -45,12 +70,7 @@ bank_fields = {
     "paybill_no": fields.Integer
 }
 
-block_fields = {
-    "id": fields.Integer,
-    "name": fields.String,
-    "parent_umbrella_id": fields.Integer,
-    "created_by": fields.Integer
-}
+
 
 umbrella_fields = {
     "id": fields.Integer,
@@ -93,6 +113,7 @@ user_args.add_argument('zone_id', type=int)
 user_args.add_argument('image_file', type=str)
 user_args.add_argument('role_id', type=int)
 user_args.add_argument('action', type=str)
+user_args.add_argument('block_id', type=int)  
 
 
 
