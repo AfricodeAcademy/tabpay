@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 def home():
     if current_user.is_authenticated:
         return redirect(url_for('main.statistics'))
-    return render_template('index.html', title='TabPay | Home')
+    return render_template('index.html')
 
 # Helper function to render the settings page with forms
 def render_settings_page(active_tab=None, error=None):
@@ -64,10 +64,18 @@ def render_settings_page(active_tab=None, error=None):
             zone_form.parent_block.choices = [(str(block['id']), block['name']) for block in blocks]
             committee_form.block_id.choices = [(str(block['id']), block['name']) for block in blocks]
 
-
+            # Prepare a mapping for zones with block names
+            zone_map = {}  # Store a mapping of zone_id to (zone_name, block_name)
             for block in blocks:
-                zones.extend(get_zones_by_block(block['id']))
-            member_form.member_zone.choices = [(str(zone['id']), zone['name']) for zone in zones]
+                # Fetch zones associated with the current block
+                block_zones = get_zones_by_block(block['id'])
+                block_name = block['name']  # Get block name from the block data
+                for zone in block_zones:
+                    zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
+
+            # Set the choices for the member_zone field in the form
+            member_form.member_zone.choices = [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
+
         else:
             flash('No umbrella found. Please create one first.', 'info')
     except Exception as e:
@@ -94,7 +102,7 @@ def render_settings_page(active_tab=None, error=None):
 
 
     # Render the settings page
-    return render_template('settings.html', title='Dashboard | Settings',
+    return render_template('settings.html', title=' Settings | Dashboard',
                            profile_form=profile_form, 
                            umbrella_form=umbrella_form,
                            committee_form=committee_form,
@@ -283,6 +291,10 @@ def handle_committee_addition():
         role_id = int(committee_form.role_id.data)  
         block_id = committee_form.block_id.data 
 
+        # Get the role name from the filtered_roles list
+        role_name = next((role['name'] for role in filtered_roles if role['id'] == role_id), 'Unknown Role')
+
+
         # Fetch user by ID number via API
         user = get_user_by_id_number(id_number)
 
@@ -290,7 +302,7 @@ def handle_committee_addition():
             # Ensure 'roles' is a list before checking the role
             user_roles = user.get('roles', [])
             if not isinstance(user_roles, list):
-                flash(f"Unexpected error: 'roles' should be a list for {user['full_name']}.", 'danger')
+                flash(f"Oops!An unexpected error occurred.", 'danger')
                 return redirect(url_for('main.settings', active_tab='committee'))
 
             # Check if user has the "Member" role
@@ -300,7 +312,7 @@ def handle_committee_addition():
 
             # Check if user already has the selected committee role
             if any(role.get('id') == role_id for role in user_roles):
-                flash(f"{user['full_name']} already has the role '{role_id}'!", 'danger')
+                flash(f"{user['full_name']} is already assigned a '{role_name}' role !", 'danger')
                 return redirect(url_for('main.settings', active_tab='committee'))
 
             # Check for role conflicts: Chairman <-> Secretary, or Chairman/Secretary <-> Treasurer
@@ -319,18 +331,18 @@ def handle_committee_addition():
                 block_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/blocks/{block_id}")
                 if block_response.status_code == 200:
                     block = block_response.json()
-
+                    block_name = block['name']
                     # Ensure the block doesn't already have a chairman, secretary, or treasurer
                     if role_id == 3 and block.get('chairman_id'):
-                        flash(f"{block['name']} already has a chairman assigned.", 'danger')
+                        flash(f"{block_name} already has a chairman assigned.", 'danger')
                         return redirect(url_for('main.settings', active_tab='committee'))
 
                     if role_id == 4 and block.get('secretary_id'):
-                        flash(f"{block['name']} already has a secretary assigned.", 'danger')
+                        flash(f"{block_name} already has a secretary assigned.", 'danger')
                         return redirect(url_for('main.settings', active_tab='committee'))
 
                     if role_id == 6 and block.get('treasurer_id'):
-                        flash(f"{block['name']} already has a treasurer assigned.", 'danger')
+                        flash(f"{block_name} already has a treasurer assigned.", 'danger')
                         return redirect(url_for('main.settings', active_tab='committee'))
 
                     response = requests.patch(
@@ -340,7 +352,7 @@ def handle_committee_addition():
 
                     # Check if the response is successful
                     if response.status_code == 200:
-                        flash(f"{user['full_name']} added as {role_id} successfully in {block['name']}!", 'success')
+                        flash(f"{user['full_name']} has been assigned '{role_name}' role in {block_name} successfully!", 'success')
                         return redirect(url_for('main.settings', active_tab='committee'))
                     else:
                         flash(f"An error occurred: {response.json().get('message')}", 'danger')
@@ -349,7 +361,8 @@ def handle_committee_addition():
                     flash(f"An error occurred while fetching the block: {block_response.json().get('message')}", 'danger')
 
             except Exception as e:
-                flash(f"An error occurred: {str(e)}", 'danger')
+                print ( f'{e}')
+                flash(f"Sorry, an error occurred.", 'danger')
                 return redirect(url_for('main.settings', active_tab='committee'))
         else:
             flash('User not found.', 'danger')
@@ -409,7 +422,7 @@ def handle_block_creation():
         existing_blocks = get_blocks_by_umbrella(umbrella['id'])
 
         if any(block['name'] == block_form.block_name.data for block in existing_blocks):
-            flash('A block with this name already exists in the umbrella!', 'danger')
+            flash('A block with that name already exists in the umbrella!', 'danger')
             return redirect(url_for('main.settings', active_tab='block'))
 
         # Proceed to create the block via the API
@@ -455,7 +468,7 @@ def handle_zone_creation():
 
         # Ensure no duplicate zones in the selected block
         if any(zone['name'] == zone_form.zone_name.data for zone in existing_zones):
-            flash('A zone with this name already exists in this block!', 'danger')
+            flash('A zone with that name already exists in this block!', 'danger')
             return redirect(url_for('main.settings', active_tab='zone'))
 
         # Proceed to create the zone via the API
@@ -493,13 +506,17 @@ def handle_member_creation():
         current_app.logger.error(f"Error fetching blocks: {e}")
         return "An error occurred while fetching data.", 500  
     
-    # Fetch zones associated with the blocks
-    zones = []
+    # Prepare a mapping for zones with block names
+    zone_map = {}  # Store a mapping of zone_id to (zone_name, block_name)
     for block in blocks:
-        zones.extend(get_zones_by_block(block['id']))  
+        # Fetch zones associated with the current block
+        block_zones = get_zones_by_block(block['id'])
+        block_name = block['name']  # Get block name from the block data
+        for zone in block_zones:
+            zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
 
     # Set the choices for the member_zone field in the form
-    member_form.member_zone.choices = [(str(zone['id']), zone['name']) for zone in zones]
+    member_form.member_zone.choices = [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
 
     banks = get_banks()
     member_form.bank_id.choices = [(str(bank['id']), bank['name']) for bank in banks]
@@ -509,11 +526,10 @@ def handle_member_creation():
         existing_members = get_members_by_zone(member_form.member_zone.data)
 
         if any(member['id_number'] == member_form.id_number.data for member in existing_members):
-            flash('A member with this ID number already exists in that zone!', 'danger')
+            flash('A member with that ID number already exists!', 'danger')
             return redirect(url_for('main.settings', active_tab='member'))
 
    
-        # Add "Member" role via the API by passing role_id (assuming 'Member' role_id is 1)
         payload = {
             'full_name': member_form.full_name.data,
             'id_number': member_form.id_number.data,
@@ -528,12 +544,18 @@ def handle_member_creation():
         response = requests.post(f"{current_app.config['API_BASE_URL']}/api/v1/users/", json=payload)
 
         if response.status_code == 201:
-            flash('Member created and assigned Member role successfully!', 'success')
+            # Get the zone name using the selected zone_id
+            zone_name = zone_map.get(int(member_form.member_zone.data))
+            flash(f'{member_form.full_name.data} added to {zone_name} successfully!', 'success')
         else:
             flash('Failed to create member.', 'danger')
         
         # Persist zone selection for convenience
         return redirect(url_for('main.settings', active_tab='member', zone_id=member_form.member_zone.data))
+    
+    zone_id = request.args.get('zone_id')
+    if zone_id:
+        member_form.member_zone.data = str(zone_id)
 
     # Collect any form errors
     else:
@@ -590,6 +612,7 @@ def get_zones_by_block(block_id):
 
         zones = response.json()
         return zones
+        zone_name
     except requests.exceptions.RequestException as e:
         flash('Error retrieving zones from the server. Please try again later.', 'danger')
         return []
@@ -649,7 +672,7 @@ def statistics():
     # Get total number of blocks
     total_blocks = BlockModel.query.count()
 
-    return render_template('statistics.html', title='Dashboard | Statistics', total_members=total_members,
+    return render_template('statistics.html', title='Statistics | Dashboard ', total_members=total_members,
         total_blocks=total_blocks, user=current_user
     )
 
@@ -657,7 +680,7 @@ def statistics():
 @main.route('/manage_contribution', methods=['GET'])
 def manage_contribution():
     
-    return render_template('manage_contribution.html', title='Dashboard | Manage Contributions')
+    return render_template('manage_contribution.html', title='Manage Contributions | Dashboard')
 
 
 
@@ -716,7 +739,7 @@ def block_reports():
         contributions=contributions,
         total_contributed=total_contributed,
         detailed_contributions=detailed_contributions,
-        title='Dashboard | Block_Reports'
+        title='Block_Reports | Dashboard'
     )
 
 
@@ -779,7 +802,7 @@ def render_host_page(active_tab=None, error=None):
         flash(f'Error loading umbrella data. Please try again later.', 'danger')
 
     # Render the host page
-    return render_template('host.html', title='Dashboard | Settings',
+    return render_template('host.html', title='Host | Dashboard',
                            schedule_form=schedule_form,
                            update_form=update_form,
                            user=current_user,

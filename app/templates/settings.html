@@ -4,7 +4,7 @@
 {% macro render_flash_messages() %}
 {% with messages = get_flashed_messages(with_categories=true) %}
 {% if messages %}
-<div class="container mt-3" id="flash-container" style="max-width: 300px;"> <!-- Adjust the max-width here -->
+<div class="container mt-3" id="flash-container" style="max-width: 600px;"> <!-- Adjust the max-width here -->
   {% for category, message in messages %}
   <div
     class="alert alert-{{ category }} alert-dismissible fade show"
@@ -157,6 +157,7 @@
                             </div>
                         </div>
                     </div> -->
+                    <div class="col">
                         <div class="row">
                             <div class="mb-3">
                                 {{ render_field(committee_form.id_number) }}
@@ -180,8 +181,8 @@
                                 </select>
                             </div>
                         </div>
-                    
-                    <button type="submit" name="committee_submit" class="submit-btn">
+                    </div>
+                    <button type="submit" name="committee_submit" class="submit-btn" style="min-width:45%;">
                         {{ committee_form.submit.label.text }}
                     </button>
                     {{ render_flash_messages() }}

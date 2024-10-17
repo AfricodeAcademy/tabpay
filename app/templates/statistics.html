@@ -13,13 +13,18 @@ current_user.full_name }}{% endblock %} {% block content %}
       <!-- Stats -->
       <div class="row mb-4">
         <div class="col-lg-3 col-md-6 mb-3">
-          <div
-            class="glass-card stats-card text-dark"
-            style="background-color: #abf7b13f"
+          <a
+            href="{{url_for('main.host', active_tab='block_members')}}"
+            style="text-decoration: none"
           >
-            <p>All Members</p>
-            <h2>{{total_members}}</h2>
-          </div>
+            <div
+              class="glass-card stats-card text-dark"
+              style="background-color: #abf7b13f"
+            >
+              <p>All Members</p>
+              <h2>{{total_members}}</h2>
+            </div>
+          </a>
         </div>
         <div class="col-lg-3 col-md-6 mb-3">
           <div
