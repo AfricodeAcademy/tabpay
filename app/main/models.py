@@ -14,7 +14,8 @@ member_blocks = db.Table('member_blocks',
 
 roles_users = db.Table('roles_users',
     db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
-    db.Column('role_id', db.Integer, db.ForeignKey('roles.id'), primary_key=True)
+    db.Column('role_id', db.Integer, db.ForeignKey('roles.id'), primary_key=True),
+    db.Column('block_id', db.Integer, db.ForeignKey('blocks.id'))  
 )
 
 class RoleModel(db.Model, RoleMixin):
@@ -96,6 +97,7 @@ class BlockModel(db.Model):
 
     def __repr__(self):
         return f"<Block {self.name}>"
+    
 class ZoneModel(db.Model):
     __tablename__ = 'zones'
 
