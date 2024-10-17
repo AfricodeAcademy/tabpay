@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 def home():
     if current_user.is_authenticated:
         return redirect(url_for('main.statistics'))
-    return render_template('index.html', title='TabPay | Home')
+    return render_template('index.html')
 
 # Helper function to render the settings page with forms
 def render_settings_page(active_tab=None, error=None):
@@ -102,7 +102,7 @@ def render_settings_page(active_tab=None, error=None):
 
 
     # Render the settings page
-    return render_template('settings.html', title='Dashboard | Settings',
+    return render_template('settings.html', title=' Settings | Dashboard',
                            profile_form=profile_form, 
                            umbrella_form=umbrella_form,
                            committee_form=committee_form,
@@ -672,7 +672,7 @@ def statistics():
     # Get total number of blocks
     total_blocks = BlockModel.query.count()
 
-    return render_template('statistics.html', title='Dashboard | Statistics', total_members=total_members,
+    return render_template('statistics.html', title='Statistics | Dashboard ', total_members=total_members,
         total_blocks=total_blocks, user=current_user
     )
 
@@ -680,7 +680,7 @@ def statistics():
 @main.route('/manage_contribution', methods=['GET'])
 def manage_contribution():
     
-    return render_template('manage_contribution.html', title='Dashboard | Manage Contributions')
+    return render_template('manage_contribution.html', title='Manage Contributions | Dashboard')
 
 
 
@@ -739,7 +739,7 @@ def block_reports():
         contributions=contributions,
         total_contributed=total_contributed,
         detailed_contributions=detailed_contributions,
-        title='Dashboard | Block_Reports'
+        title='Block_Reports | Dashboard'
     )
 
 
@@ -802,7 +802,7 @@ def render_host_page(active_tab=None, error=None):
         flash(f'Error loading umbrella data. Please try again later.', 'danger')
 
     # Render the host page
-    return render_template('host.html', title='Dashboard | Settings',
+    return render_template('host.html', title='Host | Dashboard',
                            schedule_form=schedule_form,
                            update_form=update_form,
                            user=current_user,
