@@ -12,6 +12,7 @@ from .serializers import user_fields, user_args, communication_fields, \
     meeting_fields, meeting_args, block_report_args, block_report_fields,role_args,role_fields
 from ..utils import db
 import logging
+from ..main.routes import save_picture
 
 
 api_bp = Blueprint('api', __name__)
@@ -224,56 +225,127 @@ class UsersResource(BaseResource):
             logger.error(f"Error creating new user: {str(e)}. Rolling back changes.")
             return self.handle_error(e)
  
-
+    
     def patch(self, id):
         try:
-            args = self.args.parse_args()
-            logger.info(f"PATCH request received to update user {id}. Payload: {args}")
-
-            # Find the user by ID
+             # Find the user by ID
             user = UserModel.query.get_or_404(id)
 
-            # Check which fields are provided and update accordingly
             updated = False
-            if args['full_name'] is not None:
-                user.full_name = args['full_name']
-                updated = True
-            if args['id_number'] is not None:
-                user.id_number = args['id_number']
-                updated = True
-            if args['phone_number'] is not None:
-                user.phone_number = args['phone_number']
-                updated = True
-            if args['zone_id'] is not None:
-                user.zone_id = args['zone_id']
-                updated = True
-            if args['bank_id'] is not None:
-                user.bank_id = args['bank_id']
-                updated = True
-            if args['acc_number'] is not None:
-                user.acc_number = args['acc_number']
-                updated = True
 
-            
-         # Handle role assignment or removal based on action
-            role_id = args.get('role_id')
-            action = args.get('action')
+            if 'multipart/form-data' in request.content_type:
+            # Handle file uploads
+                logger.info("Handling multipart form data for profile update")
 
-            if role_id is not None:
-                role = RoleModel.query.get(role_id)
-                if role:
-                    if action == 'remove':
-                        if role in user.roles:
-                            user.roles.remove(role)
-                            logger.info(f"Removed role {role.name} from user {user.id}")
-                            updated = True
-                        else:
-                            return {"message": "User does not have this role"}, 400
-                    elif action == 'add':
-                        if role not in user.roles:
-                            user.roles.append(role)  # Add the role if it's not already assigned
-                            logger.info(f"Assigned additional role {role.name} to user {user.id}")
-                            updated = True
+                # Extract image from request files
+                if 'picture' in request.files:
+                    image_file = request.files['picture']
+                    if image_file:
+                        # Save the picture (ensure save_picture is available here)
+                        saved_filename = save_picture(image_file)
+                        user.image_file = saved_filename
+                        updated = True
+                    else:
+                        logger.error("No image file provided in multipart request")
+                        return {"message": "No image file provided."}, 400
+            else:
+                args = self.args.parse_args()
+                logger.info(f"PATCH request received to update user {id}. Payload: {args}")
+
+
+                # Keep track of changes
+                unchanged_fields = []
+
+                # Compare and update fields
+                if args['full_name'] is not None:
+                    if user.full_name != args['full_name']:
+                        user.full_name = args['full_name']
+                        updated = True
+                    else:
+                        unchanged_fields.append('full_name')
+
+                if args['id_number'] is not None:
+                    if user.id_number != args['id_number']:
+                        user.id_number = args['id_number']
+                        updated = True
+                    else:
+                        unchanged_fields.append('id_number')
+
+                if args['phone_number'] is not None:
+                    if user.phone_number != args['phone_number']:
+                        user.phone_number = args['phone_number']
+                        updated = True
+                    else:
+                        unchanged_fields.append('phone_number')
+
+                if args['zone_id'] is not None:
+                    if user.zone_id != args['zone_id']:
+                        user.zone_id = args['zone_id']
+                        updated = True
+                    else:
+                        unchanged_fields.append('zone_id')
+
+                if args['bank_id'] is not None:
+                    if user.bank_id != args['bank_id']:
+                        user.bank_id = args['bank_id']
+                        updated = True
+                    else:
+                        unchanged_fields.append('bank_id')
+
+                if args['acc_number'] is not None:
+                    if user.acc_number != args['acc_number']:
+                        user.acc_number = args['acc_number']
+                        updated = True
+                    else:
+                        unchanged_fields.append('acc_number')
+
+                if args['email'] is not None:
+                    if user.email != args['email']:
+                        user.email = args['email']
+                        updated = True
+                    else:
+                        unchanged_fields.append('email')
+                
+                if args['image_file'] is not None:
+                    if user.image_file != args['image_file']:
+                        user.image_file = args['image_file']
+                        updated = True
+                    else:
+                        unchanged_fields.append('image_file')
+
+                # Handle role assignment or removal based on action
+                role_id = args.get('role_id')
+                action = args.get('action')
+
+                if role_id is not None:
+                    role = RoleModel.query.get(role_id)
+                    if role:
+                        # Ensure Chairman (role_id=3) and Secretary (role_id=4) are mutually exclusive
+                        if role_id == 3 and any(r.id == 4 for r in user.roles):
+                            logger.warning("Cannot assign Chairman role when the user already has the Secretary role.")
+                            return {"message": "Cannot assign Chairman when the user is already a Secretary."}, 400
+                        elif role_id == 4 and any(r.id == 3 for r in user.roles):
+                            logger.warning("Cannot assign Secretary role when the user already has the Chairman role.")
+                            return {"message": "Cannot assign Secretary when the user is already a Chairman."}, 400
+                        
+                        # Handle role removal
+                        if action == 'remove':
+                            if role in user.roles:
+                                user.roles.remove(role)
+                                logger.info(f"Removed role {role.name} from user {user.id}")
+                                updated = True
+                            else:
+                                return {"message": "User does not have this role"}, 400
+                        
+                        # Handle role addition
+                        elif action == 'add':
+                            if role in user.roles:
+                                logger.info(f"User {user.id} already has the role {role.name}.")
+                                return {"message": f"User already has the role '{role.name}'."}, 400
+                            else:
+                                user.roles.append(role)  # Add the role if it's not already assigned
+                                logger.info(f"Assigned additional role {role.name} to user {user.id}")
+                                updated = True
 
             # Commit only if there are updates
             if updated:
@@ -281,13 +353,20 @@ class UsersResource(BaseResource):
                 logger.info(f"Successfully updated user {user.id} with roles {[r.name for r in user.roles]}")
                 return marshal(user, self.fields), 200
             else:
-                logger.info(f"No updates made for user {user.id}.")
-                return {"message": "No updates made."}, 400
-            
+                # No updates were made
+                if unchanged_fields:
+                    unchanged_message = f"No changes were made to the following fields: {', '.join(unchanged_fields)}"
+                    logger.info(unchanged_message)
+                    return {"message": unchanged_message}, 400
+                else:
+                    logger.info(f"No updates made for user {user.id}.")
+                    return {"message": "No updates made."}, 400
+
         except Exception as e:
             db.session.rollback()
             logger.error(f"Error updating user {id}: {str(e)}. Rolling back changes.")
             return self.handle_error(e)
+
 
 
 class CommunicationsResource(BaseResource):
@@ -344,8 +423,8 @@ class MeetingsResource(BaseResource):
                 if meeting:
                     # Fetch related block, zone, and host details
                     meeting_details = {
-                        'block': meeting.block.name if meeting.block else 'Unknown Block',
-                        'zone': meeting.zone.name if meeting.zone else 'Unknown Zone',
+                        'meeting_block': meeting.block.name if meeting.block else 'Unknown Block',
+                        'meeting_zone': meeting.zone.name if meeting.zone else 'Unknown Zone',
                         'host': meeting.host.full_name if meeting.host else 'Unknown Host',
                         'when': meeting.date.strftime('%a, %d %b %Y %H:%M:%S')
                     }

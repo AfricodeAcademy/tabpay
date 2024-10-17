@@ -1,10 +1,9 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SelectField, IntegerField, SubmitField,DateTimeField,HiddenField
+from wtforms import StringField, SelectField, IntegerField, SubmitField,DateTimeField,HiddenField
 from flask_wtf.file import FileField,FileAllowed
 from wtforms.validators import DataRequired, Length, ValidationError,NumberRange,Email,Optional
 from ..api.api import UserModel
 from datetime import datetime
-from flask_security import current_user
 
 class AddMemberForm(FlaskForm):
     full_name = StringField('Member Full Name',validators=[DataRequired(message="Member Full Name is required"), Length(max=100,min=5)],render_kw={'placeholder':'John Doe'})
@@ -30,25 +29,20 @@ class AddMemberForm(FlaskForm):
 class ProfileForm(FlaskForm):
     picture = FileField('Update Profile Picture',validators=[FileAllowed(['jpg','jpeg','png'],'Images only')])
     full_name = StringField('Update Your Full Names',validators=[ Length(max=100,min=10)])
-    id_number = IntegerField('Member ID Number',validators=[NumberRange(min=10000000, max=99999999, message="ID number must be exactly 8 digits.")])
+    id_number = IntegerField('Your ID Number',render_kw={'readonly':True})
     email = StringField('Update Your Email',validators=[Email(message="Invalid email")])
-    password = PasswordField('Enter Password to Update Profile',validators=[ Length(max=100,min=6),],render_kw={'placeholder':'******'})
+    phone_number = StringField('Add Phone Number',render_kw={'placeholder':'0700000000'})
     submit = SubmitField('UPDATE PROFILE')
-
-        
-    def validate_email(self,password):
-        if password.data != current_user.password:
-            user = UserModel.query.filter_by(password=password.data).first()
-            if user:
-                raise ValidationError("Wrong password!")    
+ 
     
 
 
 class AddCommitteForm(FlaskForm):
-    # full_name = StringField('Committee Full Name',validators=[Length(max=100,min=10)],render_kw={'placeholder':'e.g John Doe'})
-    id_number = IntegerField('Their ID Number',validators=[DataRequired(),NumberRange(min=10000000, max=99999999, message="ID number must be exactly 8 digits.")],render_kw={'placeholder':'xxxxxxxx'})
-    role_id =  SelectField('Role', validators=[DataRequired(message='Please select a valid role!')])
-    # phone_number = StringField('Phone Number',validators=[Length(min=10, max=16)],render_kw={'placeholder':'0700000000'}) 
+    full_name = StringField("Committee's Full Name")
+    block_id =  SelectField("Committee's Block",validators=[DataRequired()])
+    id_number = IntegerField("Committee's ID Number",validators=[DataRequired(),NumberRange(min=10000000, max=99999999, message="ID number must be exactly 8 digits.")],render_kw={'placeholder':'xxxxxxxx'})
+    role_id =  SelectField('Committee Role', validators=[DataRequired(message='Please select a valid role!')])
+    phone_number = StringField("Committee's Phone Number") 
     submit = SubmitField('ADD COMMITTEE')
 
  
@@ -87,7 +81,6 @@ class ScheduleForm(FlaskForm):
         if field.data < datetime.now():
             raise ValidationError('The meeting date and time cannot be in the past.')
 
-    
 class EditMemberForm(FlaskForm):
     full_name = StringField('Full Name', validators=[DataRequired(), Length(min=3, max=100)])
     phone_number = StringField('Phone Number', validators=[DataRequired(), Length(min=10, max=15)])
@@ -95,9 +88,6 @@ class EditMemberForm(FlaskForm):
     member_zone = StringField('Member Zone', render_kw={'readonly': True}) 
     bank_id = StringField('Bank', render_kw={'readonly': True}) 
     account_number = StringField('Account Number', render_kw={'readonly': True}) 
-    
-    # Role management: A hidden field to store the additional committee role (if any)
-    additional_role = HiddenField('Additional Role', validators=[Optional()])
-    
+    committee_role = SelectField('Roles', choices=[], validators=[Optional()])
+        
     submit = SubmitField('Save Changes')
-      

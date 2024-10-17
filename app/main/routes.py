@@ -1,25 +1,30 @@
 import requests
-from flask import Blueprint, render_template, redirect, url_for, flash,request
+from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify
 from flask_security import login_required, current_user, roles_accepted
 from ..utils import db
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm
 from .models import UserModel, BlockModel, ZoneModel,RoleModel,PaymentModel
-from PIL import Image
-import os
 import logging
-import secrets
-from app import create_app as app
+import os
+from ..utils import save_picture
 from flask import current_app
 
 
 
 main = Blueprint('main', __name__)
 
+
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 @main.route('/', methods=['GET'])
 def home():
     if current_user.is_authenticated:
         return redirect(url_for('main.statistics'))
-    return render_template('index.html', title='TabPay | Home')
+    return render_template('index.html')
 
 # Helper function to render the settings page with forms
 def render_settings_page(active_tab=None, error=None):
@@ -57,10 +62,20 @@ def render_settings_page(active_tab=None, error=None):
             # API calls to dynamically fetch blocks and zones
             blocks = get_blocks_by_umbrella(umbrella['id'])
             zone_form.parent_block.choices = [(str(block['id']), block['name']) for block in blocks]
+            committee_form.block_id.choices = [(str(block['id']), block['name']) for block in blocks]
 
+            # Prepare a mapping for zones with block names
+            zone_map = {}  # Store a mapping of zone_id to (zone_name, block_name)
             for block in blocks:
-                zones.extend(get_zones_by_block(block['id']))
-            member_form.member_zone.choices = [(str(zone['id']), zone['name']) for zone in zones]
+                # Fetch zones associated with the current block
+                block_zones = get_zones_by_block(block['id'])
+                block_name = block['name']  # Get block name from the block data
+                for zone in block_zones:
+                    zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
+
+            # Set the choices for the member_zone field in the form
+            member_form.member_zone.choices = [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
+
         else:
             flash('No umbrella found. Please create one first.', 'info')
     except Exception as e:
@@ -75,13 +90,19 @@ def render_settings_page(active_tab=None, error=None):
 
     try:
         roles = get_roles()
-        committee_form.role_id.choices = [(str(role['id']), role['name']) for role in roles]
+        filtered_roles = [role for role in roles if role['id'] in [3, 4, 6]]
+        
+        if filtered_roles:
+            committee_form.role_id.choices = [(str(role['id']), role['name']) for role in filtered_roles]
+
     except Exception as e:
         flash('Error loading role information. Please try again later.', 'danger')
+        print(f'Error:{e}')
+
 
 
     # Render the settings page
-    return render_template('settings.html', title='Dashboard | Settings',
+    return render_template('settings.html', title=' Settings | Dashboard',
                            profile_form=profile_form, 
                            umbrella_form=umbrella_form,
                            committee_form=committee_form,
@@ -117,45 +138,6 @@ def settings():
     return render_settings_page(active_tab=request.args.get('active_tab', 'profile'))
 
 
-
-import logging
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Function to save the profile picture
-def save_picture(form_picture):
-    try:
-        # Generate a random hex for the filename and get the file extension
-        random_hex = secrets.token_hex(8)
-        _, f_ext = os.path.splitext(form_picture.filename)
-        picture_fn = random_hex + f_ext
-
-        # Ensure the directory exists and log the action
-        image_dir = os.path.join(current_app.root_path, 'static/images')
-        if not os.path.exists(image_dir):
-            logging.info(f"Directory {image_dir} does not exist. Creating directory...")
-            os.makedirs(image_dir)
-        else:
-            logging.info(f"Directory {image_dir} already exists.")
-
-        # Create the path to save the image
-        picture_path = os.path.join(image_dir, picture_fn)
-
-        # Resize the image and save it
-        output_size = (125, 125)
-        i = Image.open(form_picture)
-        i.thumbnail(output_size)
-        i.save(picture_path)
-
-        logging.info(f"Profile picture saved at {picture_path}")
-        return picture_fn
-
-    except Exception as e:
-        logging.error(f"Error saving picture: {e}")
-        raise e
-
 # Handle profile update
 def handle_profile_update():
     profile_form = ProfileForm()
@@ -165,83 +147,79 @@ def handle_profile_update():
     logger.info("Profile update request received. Validating form...")
 
     if profile_form.validate_on_submit():
-        logging.info("Form validated successfully.")
-    
+        logger.info("Form validated successfully.")
+
         update_data = {}
+        user_changed = False  # To track if any changes are made
 
         # Handle profile picture update
         if profile_form.picture.data:
-            logging.info("User uploaded a new profile picture.")
-
             try:
-                # Save picture and get the file name
                 picture_file = save_picture(profile_form.picture.data)
-                image_path = os.path.join(current_app.root_path, 'static/images', picture_file)  # Use absolute path
+                image_path = os.path.join(current_app.root_path, 'static/images', picture_file)
 
-                # Prepare multipart data for the API request
-                with open(image_path, 'rb') as f:
-                    files = {'picture': (picture_file, f, 'image/png')}
-                    response = requests.patch(api_url, files=files)
+                if current_user.image_file != picture_file:
+                    # Prepare multipart data for the API request
+                    with open(image_path, 'rb') as f:
+                        files = {'picture': (picture_file, f, 'image/png')}
+                        response = requests.patch(api_url, files=files)
 
-                # Check API response
-                if response.status_code == 200:
-                    logging.info("Profile picture updated successfully via API.")
-                    flash('Profile picture updated successfully!', 'success')
-                    # Update the current user's image_file
-                    current_user.image_file = picture_file
+                    if response.status_code == 200:
+                        flash('Profile picture updated successfully!', 'success')
+                        current_user.image_file = picture_file
+                        user_changed = True
+                    else:
+                        flash('Failed to update profile picture.', 'danger')
                 else:
-                    logging.error(f"Failed to update profile picture: {response.status_code} - {response.text}")
-                    flash('Failed to update profile picture.', 'danger')
+                    flash('The new profile picture is the same as the current one.', 'info')
 
             except Exception as e:
-                logging.error(f"Error while updating profile picture: {e}")
                 flash('An error occurred while updating the profile picture.', 'danger')
 
+
+        # Handle other profile field updates (name, email, phone number)
+        if (profile_form.full_name.data != current_user.full_name or
+            profile_form.email.data != current_user.email or
+            profile_form.phone_number.data != current_user.phone_number):
+            
+            logger.info("Processing other profile fields for update.")
+
+            # Collect the fields to update if they are different
+            if profile_form.full_name.data and profile_form.full_name.data != current_user.full_name:
+                update_data['full_name'] = profile_form.full_name.data
+            if profile_form.email.data and profile_form.email.data != current_user.email:
+                update_data['email'] = profile_form.email.data
+            if profile_form.phone_number.data and profile_form.phone_number.data != current_user.phone_number:
+                update_data['phone_number'] = profile_form.phone_number.data
+
+            # Make API call to update the profile fields
+            if update_data:
+                try:
+                    response = requests.patch(api_url, json=update_data)
+                    if response.status_code == 200:
+                        logger.info("Profile fields updated successfully via API.")
+                        flash("Profile updated successfully!", "success")
+                        user_changed = True
+                    else:
+                        logger.error(f"Failed to update profile fields: {response.status_code} - {response.text}")
+                        errors = response.json().get('message', "An error occurred")
+                        flash(errors, "danger")
+                except Exception as e:
+                    logger.error(f"Error while updating profile fields: {e}")
+                    flash(f"An error occurred: {e}", "danger")
         else:
-            logging.info("No profile picture uploaded.")
-
-            # Process other profile fields for updates
-            if profile_form.full_name.data or profile_form.email.data or profile_form.password.data:
-                logging.info("Processing other profile fields for update.")
-
-                # Collect the fields to update
-                if profile_form.full_name.data:
-                    update_data['full_name'] = profile_form.full_name.data
-                if profile_form.email.data:
-                    update_data['email'] = profile_form.email.data
-
-                # Only update the password if it meets the length requirement
-                if profile_form.password.data and len(profile_form.password.data) >= 6:
-                    update_data['password'] = profile_form.password.data
-                elif profile_form.password.data and len(profile_form.password.data) < 6:
-                    logging.warning("Password update failed: Password must be at least 6 characters long.")
-                    flash('Password must be at least 6 characters long.', 'danger')
-                    return render_settings_page(active_tab='profile', error=None)
-
-                if update_data:
-                    try:
-                        response = requests.patch(api_url, json=update_data)
-                        if response.status_code == 200:
-                            logging.info("Profile fields updated successfully via API.")
-                            flash("Profile updated successfully!", "success")
-                        else:
-                            logging.error(f"Failed to update profile fields: {response.status_code} - {response.text}")
-                            errors = response.json().get('message', "An error occurred")
-                            flash(errors, "danger")
-                    except Exception as e:
-                        logging.error(f"Error while updating profile fields: {e}")
-                        flash(f"An error occurred: {e}", "danger")
-                else:
-                    logging.info("No profile fields to update.")
-                    flash('No changes made to the profile.', 'info')
-
-            else:
-                logging.info("No changes made to the profile.")
-                flash('No changes made to the profile.', 'info')
+            logger.info("No changes made to profile fields.")
+            flash("No changes made to the profile details.", "info")
+        
+        if not user_changed:
+            logger.info("No updates were made to the profile.")
+            flash('No changes made to your profile.', 'info')
+        
     else:
         for field, errors in profile_form.errors.items():
             for error in errors:
                 flash(f'{error}', 'danger')
+
     return render_settings_page(active_tab='profile')
 
 
@@ -262,18 +240,60 @@ def get_user_by_id_number(id_number):
         current_app.logger.error(f"Error fetching user by id_number: {e}")
         return None
 
+@main.route('/get_user_by_id_number/<int:id_number>', methods=['GET'])
+def get_user(id_number):
+    current_app.logger.debug(f"Received GET request for user with ID: {id_number}")
+    user = get_user_by_id_number(id_number)  # Reuse your existing function
+    if user:
+        current_app.logger.debug(f"User found: {user}")
+        return jsonify({
+            'full_name': user['full_name'],
+            'phone_number': user['phone_number'],
+            'roles': user.get('roles', [])
+        }), 200
+    current_app.logger.debug("User not found")
+    return jsonify({'error': 'User not found'}), 404
+
 
 def handle_committee_addition():
     committee_form = AddCommitteForm()
 
+    # Retrieve the umbrella for the current user
+    umbrella = get_umbrella_by_user(current_user.id)
+
+    if not umbrella:
+        flash('You need to create an umbrella before adding a zone!', 'danger')
+        return redirect(url_for('main.settings', active_tab='zone'))
+
+    # Fetch blocks associated with the umbrella
+    try:
+        blocks = get_blocks_by_umbrella(umbrella['id'])
+    except Exception as e:
+        return "An error occurred while fetching data.", 500  
+    
+    committee_form.block_id.choices = [(str(block['id']), block['name']) for block in blocks]
+
+    if not blocks:
+        flash('There are no blocks yet!', 'danger')
+        return redirect(url_for('main.settings', active_tab='zone'))
+
     # Fetch available roles
     roles = get_roles()
-    if roles:
-        committee_form.role_id.choices = [(str(role['id']), role['name']) for role in roles]
+    
+    # Filter for Chairman (id=3), Secretary (id=4), and Treasurer (id=6)
+    filtered_roles = [role for role in roles if role['id'] in [3, 4, 6]]
+    
+    if filtered_roles:
+        committee_form.role_id.choices = [(str(role['id']), role['name']) for role in filtered_roles]
 
     if committee_form.validate_on_submit():
-        id_number = committee_form.id_number.data  # Get the ID number
-        role_id = committee_form.role_id.data      # Get the selected role_id
+        id_number = committee_form.id_number.data  
+        role_id = int(committee_form.role_id.data)  
+        block_id = committee_form.block_id.data 
+
+        # Get the role name from the filtered_roles list
+        role_name = next((role['name'] for role in filtered_roles if role['id'] == role_id), 'Unknown Role')
+
 
         # Fetch user by ID number via API
         user = get_user_by_id_number(id_number)
@@ -282,7 +302,7 @@ def handle_committee_addition():
             # Ensure 'roles' is a list before checking the role
             user_roles = user.get('roles', [])
             if not isinstance(user_roles, list):
-                flash(f"Unexpected error: 'roles' should be a list for {user['full_name']}.", 'danger')
+                flash(f"Oops!An unexpected error occurred.", 'danger')
                 return redirect(url_for('main.settings', active_tab='committee'))
 
             # Check if user has the "Member" role
@@ -290,31 +310,63 @@ def handle_committee_addition():
                 flash(f"{user['full_name']} must first be a member before being assigned a committee role.", 'danger')
                 return redirect(url_for('main.settings', active_tab='committee'))
 
-            # Check if user already has the committee role
+            # Check if user already has the selected committee role
             if any(role.get('id') == role_id for role in user_roles):
-                flash(f"{user['full_name']} is already a {role_id}!", 'danger')
+                flash(f"{user['full_name']} is already assigned a '{role_name}' role !", 'danger')
+                return redirect(url_for('main.settings', active_tab='committee'))
+
+            # Check for role conflicts: Chairman <-> Secretary, or Chairman/Secretary <-> Treasurer
+            if role_id == 3 and any(role.get('id') in [4, 6] for role in user_roles):
+                flash(f"{user['full_name']} cannot be assigned as Chairman while being Secretary or Treasurer.", 'danger')
+                return redirect(url_for('main.settings', active_tab='committee'))
+            if role_id == 4 and any(role.get('id') in [3, 6] for role in user_roles):
+                flash(f"{user['full_name']} cannot be assigned as Secretary while being Chairman or Treasurer.", 'danger')
+                return redirect(url_for('main.settings', active_tab='committee'))
+            if role_id == 6 and any(role.get('id') in [3, 4] for role in user_roles):
+                flash(f"{user['full_name']} cannot be assigned as Treasurer while being Chairman or Secretary.", 'danger')
                 return redirect(url_for('main.settings', active_tab='committee'))
 
             # API PATCH request to update the user's role
             try:
-                response = requests.patch(
-                    f"{current_app.config['API_BASE_URL']}/api/v1/users/{user['id']}",
-                    json={"role_id": role_id}  # Sending role_id in the request body
-                )
+                block_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/blocks/{block_id}")
+                if block_response.status_code == 200:
+                    block = block_response.json()
+                    block_name = block['name']
+                    # Ensure the block doesn't already have a chairman, secretary, or treasurer
+                    if role_id == 3 and block.get('chairman_id'):
+                        flash(f"{block_name} already has a chairman assigned.", 'danger')
+                        return redirect(url_for('main.settings', active_tab='committee'))
 
-                # Check if the response is successful
-                if response.status_code == 200:
-                    flash(f"{user['full_name']} added as {role_id} successfully!", 'success')
+                    if role_id == 4 and block.get('secretary_id'):
+                        flash(f"{block_name} already has a secretary assigned.", 'danger')
+                        return redirect(url_for('main.settings', active_tab='committee'))
+
+                    if role_id == 6 and block.get('treasurer_id'):
+                        flash(f"{block_name} already has a treasurer assigned.", 'danger')
+                        return redirect(url_for('main.settings', active_tab='committee'))
+
+                    response = requests.patch(
+                        f"{current_app.config['API_BASE_URL']}/api/v1/users/{user['id']}",
+                        json={"role_id": role_id, 'action': 'add'}
+                    )
+
+                    # Check if the response is successful
+                    if response.status_code == 200:
+                        flash(f"{user['full_name']} has been assigned '{role_name}' role in {block_name} successfully!", 'success')
+                        return redirect(url_for('main.settings', active_tab='committee'))
+                    else:
+                        flash(f"An error occurred: {response.json().get('message')}", 'danger')
+                        return redirect(url_for('main.settings', active_tab='committee'))
                 else:
-                    flash(f"An error occurred: {response.json().get('message')}", 'danger')
+                    flash(f"An error occurred while fetching the block: {block_response.json().get('message')}", 'danger')
 
             except Exception as e:
-                flash(f"An error occurred while updating the role: {str(e)}", 'danger')
-
+                print ( f'{e}')
+                flash(f"Sorry, an error occurred.", 'danger')
+                return redirect(url_for('main.settings', active_tab='committee'))
         else:
             flash('User not found.', 'danger')
-
-        return redirect(url_for('main.settings', active_tab='committee'))
+            return redirect(url_for('main.settings', active_tab='committee'))
 
     # Handle form errors
     else:
@@ -323,6 +375,7 @@ def handle_committee_addition():
                 flash(f'{error}', 'danger')
 
     return render_settings_page(active_tab='committee')
+
 
 
 
@@ -369,7 +422,7 @@ def handle_block_creation():
         existing_blocks = get_blocks_by_umbrella(umbrella['id'])
 
         if any(block['name'] == block_form.block_name.data for block in existing_blocks):
-            flash('A block with this name already exists in the umbrella!', 'danger')
+            flash('A block with that name already exists in the umbrella!', 'danger')
             return redirect(url_for('main.settings', active_tab='block'))
 
         # Proceed to create the block via the API
@@ -415,7 +468,7 @@ def handle_zone_creation():
 
         # Ensure no duplicate zones in the selected block
         if any(zone['name'] == zone_form.zone_name.data for zone in existing_zones):
-            flash('A zone with this name already exists in this block!', 'danger')
+            flash('A zone with that name already exists in this block!', 'danger')
             return redirect(url_for('main.settings', active_tab='zone'))
 
         # Proceed to create the zone via the API
@@ -453,13 +506,17 @@ def handle_member_creation():
         current_app.logger.error(f"Error fetching blocks: {e}")
         return "An error occurred while fetching data.", 500  
     
-    # Fetch zones associated with the blocks
-    zones = []
+    # Prepare a mapping for zones with block names
+    zone_map = {}  # Store a mapping of zone_id to (zone_name, block_name)
     for block in blocks:
-        zones.extend(get_zones_by_block(block['id']))  
+        # Fetch zones associated with the current block
+        block_zones = get_zones_by_block(block['id'])
+        block_name = block['name']  # Get block name from the block data
+        for zone in block_zones:
+            zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
 
     # Set the choices for the member_zone field in the form
-    member_form.member_zone.choices = [(str(zone['id']), zone['name']) for zone in zones]
+    member_form.member_zone.choices = [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
 
     banks = get_banks()
     member_form.bank_id.choices = [(str(bank['id']), bank['name']) for bank in banks]
@@ -469,11 +526,10 @@ def handle_member_creation():
         existing_members = get_members_by_zone(member_form.member_zone.data)
 
         if any(member['id_number'] == member_form.id_number.data for member in existing_members):
-            flash('A member with this ID number already exists in that zone!', 'danger')
+            flash('A member with that ID number already exists!', 'danger')
             return redirect(url_for('main.settings', active_tab='member'))
 
    
-        # Add "Member" role via the API by passing role_id (assuming 'Member' role_id is 1)
         payload = {
             'full_name': member_form.full_name.data,
             'id_number': member_form.id_number.data,
@@ -492,12 +548,18 @@ def handle_member_creation():
         response = requests.post(f"{current_app.config['API_BASE_URL']}/api/v1/users/", json=payload)
 
         if response.status_code == 201:
-            flash('Member created and assigned Member role successfully!', 'success')
+            # Get the zone name using the selected zone_id
+            zone_name = zone_map.get(int(member_form.member_zone.data))
+            flash(f'{member_form.full_name.data} added to {zone_name} successfully!', 'success')
         else:
             flash('Failed to create member.', 'danger')
         
         # Persist zone selection for convenience
         return redirect(url_for('main.settings', active_tab='member', zone_id=member_form.member_zone.data))
+    
+    zone_id = request.args.get('zone_id')
+    if zone_id:
+        member_form.member_zone.data = str(zone_id)
 
     # Collect any form errors
     else:
@@ -554,6 +616,7 @@ def get_zones_by_block(block_id):
 
         zones = response.json()
         return zones
+        zone_name
     except requests.exceptions.RequestException as e:
         flash('Error retrieving zones from the server. Please try again later.', 'danger')
         return []
@@ -605,7 +668,7 @@ def create_zone(payload):
 @roles_accepted('SuperUser', 'Admin')
 def statistics():
     # Define the roles to include
-    included_roles = ['Member', 'Chairman', 'Secretary','SuperUser']
+    included_roles = ['Member']
 
     # Query the users who have any of the roles in the included_roles list
     total_members = UserModel.query.join(UserModel.roles).filter(RoleModel.name.in_(included_roles)).count()
@@ -613,7 +676,7 @@ def statistics():
     # Get total number of blocks
     total_blocks = BlockModel.query.count()
 
-    return render_template('statistics.html', title='Dashboard | Statistics', total_members=total_members,
+    return render_template('statistics.html', title='Statistics | Dashboard ', total_members=total_members,
         total_blocks=total_blocks, user=current_user
     )
 
@@ -621,7 +684,7 @@ def statistics():
 @main.route('/manage_contribution', methods=['GET'])
 def manage_contribution():
     
-    return render_template('manage_contribution.html', title='Dashboard | Manage Contributions')
+    return render_template('manage_contribution.html', title='Manage Contributions | Dashboard')
 
 
 
@@ -680,7 +743,7 @@ def block_reports():
         contributions=contributions,
         total_contributed=total_contributed,
         detailed_contributions=detailed_contributions,
-        title='Dashboard | Block_Reports'
+        title='Block_Reports | Dashboard'
     )
 
 
@@ -697,14 +760,14 @@ def render_host_page(active_tab=None, error=None):
     meeting_details = get_upcoming_meeting_details(current_user.id)
 
     if meeting_details:
-        print(meeting_details)  # Debugging line to check the meeting details
-        block = meeting_details['block']
-        zone = meeting_details['zone']
+        print(meeting_details)  
+        meeting_block = meeting_details['meeting_block']
+        meeting_zone = meeting_details['meeting_zone']
         host = meeting_details['host']
         when = meeting_details['when']
     else:
         flash("No upcoming meeting found", "warning")
-        block = zone = host = when = None
+        meeting_block = meeting_zone = host = when = None
 
 
     
@@ -743,7 +806,7 @@ def render_host_page(active_tab=None, error=None):
         flash(f'Error loading umbrella data. Please try again later.', 'danger')
 
     # Render the host page
-    return render_template('host.html', title='Dashboard | Settings',
+    return render_template('host.html', title='Host | Dashboard',
                            schedule_form=schedule_form,
                            update_form=update_form,
                            user=current_user,
@@ -751,7 +814,7 @@ def render_host_page(active_tab=None, error=None):
                            zones=zones,
                            members=members,
                            active_tab=active_tab,  
-                           error=error,block=block,host=host,zone=zone,when=when)
+                           error=error,meeting_block=meeting_block,host=host,meeting_zone=meeting_zone,when=when)
 
 # Single route to handle all host form submissions
 @main.route('/host', methods=['GET', 'POST'])
@@ -859,15 +922,15 @@ def get_upcoming_meeting_details(user_id):
 
             # Check if the response is a dictionary rather than a list
             if isinstance(meeting_data, dict):
-                block_name = meeting_data.get('block', 'Unknown Block')
-                zone_name = meeting_data.get('zone', 'Unknown Zone')
+                block_name = meeting_data.get('meeting_block', 'Unknown Block')
+                zone_name = meeting_data.get('meeting_zone', 'Unknown Zone')
                 host_name = meeting_data.get('host', 'Unknown Host')
                 meeting_date = meeting_data.get('when', 'Unknown Date')
 
-                logging.info(f"Extracted meeting details: Block - {block_name}, Zone - {zone_name}, Host - {host_name}, When - {meeting_date}")
+                logging.info(f"Extracted meeting details: Meeting_block - {block_name}, Meeting_zone - {zone_name}, Host - {host_name}, When - {meeting_date}")
                 return {
-                    'block': block_name,
-                    'zone': zone_name,
+                    'meeting_block': block_name,
+                    'meeting_zone': zone_name,
                     'host': host_name,
                     'when': meeting_date
                 }
@@ -884,29 +947,32 @@ def get_upcoming_meeting_details(user_id):
         return None
 
 
+
 def update_member(user_id):
     update_form = EditMemberForm()
 
     if update_form.validate_on_submit():
-        additional_role = update_form.additional_role.data  # Get additional role (if any)
+        committee_role = update_form.committee_role.data  
 
         # Handle role logic (removing the additional role, if needed)
-        if additional_role:
+        if committee_role:
             try:
-                # Assuming an API call to remove a role from the user
-                response = requests.delete(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}",
-                                           json={'role_id': additional_role})
+                # Assuming the action is to remove the role
+                response = requests.patch(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}/roles/",
+                                           json={'role_id': committee_role, 'action': 'remove'})  
+
                 if response.status_code == 200:
-                    flash(f"Successfully removed {additional_role} role from the member.", "info")
-                    return redirect(url_for('main.host', active_tab='block_members', open_modal=user_id))
+                    flash(f"Successfully removed {committee_role} role from the member.", "info")
+                    return redirect(url_for('main.host', active_tab='block_members'))
                 else:
-                    flash(f"Failed to remove the {additional_role} role. Please try again.", "danger")
-                    return redirect(url_for('main.host', active_tab='block_members', open_modal=user_id))
+                    flash(f"Failed to remove the {committee_role} role. Please try again.", "danger")
+                    return redirect(url_for('main.host', active_tab='block_members'))
 
             except Exception as e:
                 flash("Error removing the role. Please try again later.", "danger")
-                return redirect(url_for('main.host', active_tab='block_members', open_modal=user_id))
+                return redirect(url_for('main.host', active_tab='block_members'))
 
+    
 
         # Prepare payload to update other member details
         payload = {}
@@ -923,19 +989,20 @@ def update_member(user_id):
                 response = requests.patch(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}", json=payload)
                 if response.status_code == 200:
                     flash("Member details updated successfully.", "success")
+                    return redirect(url_for('main.host', active_tab='block_members'))
                 else:
                     flash("Failed to update member details. Please try again.", "danger")
-                    return redirect(url_for('main.host', active_tab='block_members', open_modal=user_id))
+                    return redirect(url_for('main.host', active_tab='block_members'))
 
 
             except Exception as e:
                 flash("Error updating member details. Please try again later.", "danger")
-                return redirect(url_for('main.host', active_tab='block_members', open_modal=user_id))
+                return redirect(url_for('main.host', active_tab='block_members'))
 
 
         else:
             flash("No changes were made to the member details.", "info")
-            return redirect(url_for('main.host', active_tab='block_members', open_modal=user_id))
+            return redirect(url_for('main.host', active_tab='block_members'))
 
 
 
@@ -944,7 +1011,6 @@ def update_member(user_id):
         for error in errors:
             flash(f'{field}: {error}', 'danger')
 
-    return render_host_page(active_tab='block_members')
 
 
 
@@ -954,14 +1020,13 @@ def remove_member(user_id):
     
     if response == 200:
         flash('Member removed successfully', 'success')
-        return redirect(url_for('main.host', active_tab='block_members', open_modal=user_id))
+        return redirect(url_for('main.host', active_tab='block_members'))
 
     else:
         flash('Failed to remove member', 'danger')
-        return redirect(url_for('main.host', active_tab='block_members', open_modal=user_id))
+        return redirect(url_for('main.host', active_tab='block_members'))
 
     
-    return render_host_page(active_tab='block_members')
 
 
 # Helper function to fetch members by role "Member"
@@ -996,10 +1061,9 @@ def get_existing_block_meeting(block_id):
             logger.info(f"Meetings found: {len(meetings)}")
             return meetings
         else:
-            flash("Error fetching meetings. Please try again later.", "danger")
+            print("Error fetching meetings. Please try again later.", "danger")
             logger.error(f"Error fetching meetings: Status Code {response.status_code}")
             return []
     except Exception as e:
-        flash(f"An error occurred while fetching meetings: {str(e)}", "danger")
         logger.error(f"Exception during fetching meetings: {str(e)}")
         return []
