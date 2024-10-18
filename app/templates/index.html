@@ -23,12 +23,15 @@
       href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="../static/tabpay_css/index.css" />
+    <link
+      rel="stylesheet"
+      href="{{url_for('static', filename='tabpay_css/index.css')}}"
+    />
   </head>
   <body>
     <div class="container-xxl">
       <nav class="navbar navbar-expand-lg navbar-light navbar-custom">
-        <div class="container-fluid" style="background-color: whitesmoke">
+        <div class="container-fluid">
           <!-- Logo: Always stays on the left -->
           <a class="navbar-brand order-1" href="#">
             <img
@@ -142,7 +145,7 @@
           </div>
           <div class="col-lg-4 mt-3 d-flex justify-content-center">
             <img
-              src="../static/images/index_image(1).png"
+              src="{{url_for('static',filename='images/index_image(1).png')}}"
               alt=""
               style="height: 250px"
             />
@@ -154,7 +157,7 @@
             <div class="col-lg-4 d-flex justify-content-center">
               <div class="feature-card">
                 <img
-                  src="../static/images/index_image(2).png"
+                  src="{{url_for('static',filename='images/index_image(2).png')}}"
                   alt="Contribution Icon"
                   class="feature-icon"
                   style="background-color: white"
@@ -165,14 +168,16 @@
                   leaders, and committee members.
                 </div>
                 <div class="arrow">
-                  <a href="#"> <i class="bi bi-chevron-right p-1"></i></a>
+                  <a href="{{url_for('main.manage_contribution')}}">
+                    <i class="bi bi-chevron-right p-1"></i
+                  ></a>
                 </div>
               </div>
             </div>
             <div class="col-lg-4 d-flex justify-content-center">
               <div class="feature-card">
                 <img
-                  src="../static/images/index_image(3).png"
+                  src="{{url_for('static',filename='images/index_image(3).png')}}"
                   alt="Hosting Icon"
                   class="feature-icon"
                   style="background-color: white"
@@ -183,14 +188,16 @@
                   ensuring fair distribution of responsibilities.
                 </div>
                 <div class="arrow">
-                  <a href="#"> <i class="bi bi-chevron-right p-1"></i></a>
+                  <a href="{{url_for('main.host')}}">
+                    <i class="bi bi-chevron-right p-1"></i
+                  ></a>
                 </div>
               </div>
             </div>
             <div class="col-lg-4 d-flex justify-content-center">
               <div class="feature-card">
                 <img
-                  src="../static/images/index_image(4).png"
+                  src="{{url_for('static',filename='images/index_image(4).png')}}"
                   alt="Reporting Icon"
                   class="feature-icon"
                   style="background-color: white"
@@ -201,7 +208,9 @@
                   performance metrics, and more.
                 </div>
                 <div class="arrow">
-                  <a href="#"> <i class="bi bi-chevron-right p-1"></i></a>
+                  <a href="{{url_for('main.block_reports')}}">
+                    <i class="bi bi-chevron-right p-1"></i
+                  ></a>
                 </div>
               </div>
             </div>

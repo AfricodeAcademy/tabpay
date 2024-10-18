@@ -1,5 +1,5 @@
 import requests
-from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify, session
+from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify
 from flask_security import login_required, current_user, roles_accepted
 from ..utils import db
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm
@@ -23,6 +23,11 @@ def home():
     if current_user.is_authenticated:
         return redirect(url_for('main.statistics'))
     return render_template('index.html')
+
+@main.errorhandler(403)
+def forbidden_error(error):
+    flash('You must log in to access this page.', 'warning')
+    return redirect(url_for('security.login'))
 
 # Helper function to render the settings page with forms
 def render_settings_page(active_tab=None, error=None):
