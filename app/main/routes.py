@@ -1,5 +1,5 @@
 import requests
-from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify, session
 from flask_security import login_required, current_user, roles_accepted
 from ..utils import db
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm
@@ -365,7 +365,9 @@ def handle_committee_addition():
                 # Check if the response is successful
                 if response.status_code == 200:
                     flash(f"{user['full_name']} has been assigned '{role_name}' role in {block_name} successfully!", 'success')
-                    return redirect(url_for('main.settings', active_tab='committee'))
+                    active_tab = 'chairmen' if role_id == 3 else 'secretaries' if role_id == 4 else 'treasurers'
+
+                    return redirect(url_for('main.committee', active_tab=active_tab))
                 else:
                     flash(f"An error occurred: {response.json().get('message')}", 'danger')
                     return redirect(url_for('main.settings', active_tab='committee'))
@@ -1101,6 +1103,7 @@ def get_existing_block_meeting(block_id):
 
 
 
+
 # Fetch and display committee members
 def render_committee_page(active_tab=None, error=None):
     # Fetch Chairman, Secretary, and Treasurer from the API
@@ -1121,7 +1124,10 @@ def render_committee_page(active_tab=None, error=None):
             'treasurers': treasurer_response.json()
         }
 
-        return render_template('committee.html', title='Committee | Dashboard', committee_members=committee_members, active_tab=active_tab, error=error)
+        return render_template('committee.html', title='Committee | Dashboard', 
+                               committee_members=committee_members, 
+                               active_tab=active_tab,
+                                 error=error)
 
     except requests.exceptions.RequestException as e:
         flash(f"Error fetching committee members: {str(e)}", 'danger')
@@ -1129,22 +1135,23 @@ def render_committee_page(active_tab=None, error=None):
 
 # Single route to handle committee-related actions
 @main.route('/committee', methods=['GET', 'POST'])
-@roles_accepted('Admin', 'SuperUser', 'Chairman', 'Secretary','Treasurer')
+@roles_accepted('Admin', 'SuperUser')
 @login_required
-def committee():
+def committee():    
     if 'remove_role_submit' in request.form:
         user_id = request.args.get('user_id')  
-        return remove_committee_role(user_id)
+        active_tab = request.form.get('active_tab')  
+        return remove_committee_role(user_id, active_tab)  
 
-    # Default GET request rendering the committee page
     return render_committee_page(active_tab=request.args.get('active_tab', 'chairmen'))
 
+
 # Remove committee role (Chairman, Secretary, Treasurer)
-def remove_committee_role(user_id):
+def remove_committee_role(user_id, active_tab):
     logger.info(f"Removing role for user_id: {user_id}")
     if not user_id:
         flash('User ID is missing.', 'danger')
-        return redirect(url_for('main.committee'))
+        return redirect(url_for('main.committee', active_tab=active_tab))
 
     try:
         role_id = request.form.get('role_id')
@@ -1152,10 +1159,9 @@ def remove_committee_role(user_id):
         response = requests.patch(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}", json={'role_id': role_id, 'action': action})
         response.raise_for_status()
         flash('Committee role removed successfully', 'success')
-        return redirect(url_for('main.committee'))
+        return redirect(url_for('main.committee', active_tab=active_tab))
 
     except requests.exceptions.RequestException as e:
         flash(f"Error removing committee role: {str(e)}", 'danger')
         logger.error(f"Request failed: {str(e)}")
-        return redirect(url_for('main.committee'))
-
+        return redirect(url_for('main.committee', active_tab=active_tab))
