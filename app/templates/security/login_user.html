@@ -1,115 +1,137 @@
-{% extends "security/base.html" %}
-{% from "security/_macros.html" import render_field_with_errors, render_field, render_form_errors, render_field_errors, prop_next %}
-{% block title %}Tabpay | Login {% endblock %}
-
-{% block content %}
-</div>
-  <div class="container-fluid">
-    <div class="main-container">
-      <div class="row">
-        <div class="col-lg-6">
-          <div class="image-section"></div>
+{% extends "security/base.html" %} {% from "security/_macros.html" import
+render_field_with_errors, render_field, render_form_errors, render_field_errors,
+prop_next %} {% block title %}Tabpay | Login {% endblock %} {% block content %}
+<div class="main-container">
+  <div class="row">
+    <div class="col-lg-6">
+      <div class="image-section"></div>
+    </div>
+    <div class="col-lg-6">
+      <div class="head-form">
+        <div class="p-4">
+          <h1>{{ _fsdomain('Login') }}</h1>
+          <p>Sign in to continue</p>
         </div>
-        <div class="col-lg-6">
-          <div class="head-form">
-            <div class="p-4">
-              <h1>{{ _fsdomain('Login') }}</h1>
-              <p>Sign in to continue</p>
-            </div>
-            <hr />
-            {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            <div class="container mt-3" id="flash-container">
-              {% for category, message in messages %}
-              <div
-                class="alert alert-{{ category }} alert-dismissible fade show bg-info"
-                role="alert"
-              >
-                {{ message }}
-              </div>
-              {% endfor %}
-            </div>
-            {% endif %}
-            {% endwith %}
-            <form action="{{ url_for_security('login') }}{{ prop_next() }}" method="post" name="login_user_form">
-              {{ login_user_form.hidden_tag() }}
-              {{ render_form_errors(login_user_form) }}
-
-              <div class="form-section">
-                {% if "email" in identity_attributes %}
-                  <div>
-                    {{ render_field_with_errors(login_user_form.email, class="input") }}
-                  </div>
-                {% endif %}
-                {% if login_user_form.username and "username" in identity_attributes %}
-                  {% if "email" in identity_attributes %}
-                    <h3>{{ _fsdomain("or") }}</h3>
-                  {% endif %}
-                  <div>
-                    {{ render_field_with_errors(login_user_form.username, class="input") }}
-                  </div>
-                {% endif %}
-                
-                <div class="fs-gap">
-                  <div>
-                    {{ render_field_with_errors(login_user_form.password, class="input") }}
-                  </div>
-                <div class="d-flex justify-content-between">
-                  {{ render_field_with_errors(login_user_form.remember) }}
-                  <a href="{{ url_for_security('forgot_password') }}" style="color: green;">{{ _fsdomain('Forgot password') }}</a>
-                </div>
-                
-               </div>
-               <div class="d-flex justify-content-center">  
-                 {{ render_field_errors(login_user_form.csrf_token) }}
-                {{ render_field(login_user_form.submit, class="button") }}
-              </div>
-              </div>
-             
-              <div class="d-flex justify-content-center">              
-                <a href="{{ url_for_security('send_confirmation') }}" style="color: green ;">{{ _fsdomain('Confirm account') }}</a>
-            </div>
-            
-             
-            </form>
-
-            {% if security.webauthn %}
-              <hr class="fs-gap">
-              <h2>{{ _fsdomain("Use WebAuthn to Sign In") }}</h2>
-              <div>
-                <form method="get" id="wan_signin_form" name="wan_signin_form">
-                  <input id="wan_signin" name="wan_signin" type="submit" value="{{ _fsdomain('Sign in with WebAuthn') }}" formaction="{{ url_for_security('wan_signin') }}{{ prop_next() }}">
-                </form>
-              </div>
-            {% endif %}
-            
-            {% if security.oauthglue %}
-              <hr class="fs-gap">
-              <h2>{{ _fsdomain("Use Social Oauth to Sign In") }}</h2>
-              {% for provider in security.oauthglue.provider_names %}
-                <div class="fs-gap">
-                  <form method="post" id="{{ provider }}_form" name="{{ provider }}_form">
-                    <input id="{{ provider }}" name="{{ provider }}" type="submit" value="{{ _fsdomain('Sign in with ')~provider }}" formaction="{{ url_for_security('oauthstart', name=provider) }}{{ prop_next() }}">
-                    {% if csrf_token is defined %}
-                      <input id="{{ provider }}_csrf_token" name="{{ provider }}_csrf_token" type="hidden" value="{{ csrf_token() }}">
-                    {% endif %}
-                  </form>
-                </div>
-              {% endfor %}
-            {% endif %}
-            
+        <hr />
+        {% with messages = get_flashed_messages(with_categories=true) %} {% if
+        messages %}
+        <div class="container mt-3" id="flash-container">
+          {% for category, message in messages %}
+          <div
+            class="alert alert-{{ category }} alert-dismissible fade show bg-info"
+            role="alert"
+          >
+            {{ message }}
           </div>
+          {% endfor %}
         </div>
+        {% endif %} {% endwith %}
+        <form
+          action="{{ url_for_security('login') }}{{ prop_next() }}"
+          method="post"
+          name="login_user_form"
+        >
+          {{ login_user_form.hidden_tag() }} {{
+          render_form_errors(login_user_form) }}
+
+          <div class="form-section">
+            {% if "email" in identity_attributes %}
+            <div>
+              {{ render_field_with_errors(login_user_form.email, class="input")
+              }}
+            </div>
+            {% endif %} {% if login_user_form.username and "username" in
+            identity_attributes %} {% if "email" in identity_attributes %}
+            <h3>{{ _fsdomain("or") }}</h3>
+            {% endif %}
+            <div>
+              {{ render_field_with_errors(login_user_form.username,
+              class="input") }}
+            </div>
+            {% endif %}
+
+            <div class="fs-gap">
+              <div>
+                {{ render_field_with_errors(login_user_form.password,
+                class="input") }}
+              </div>
+              <div class="d-flex justify-content-between">
+                {{ render_field_with_errors(login_user_form.remember) }}
+                <a
+                  href="{{ url_for_security('forgot_password') }}"
+                  style="color: green"
+                  >{{ _fsdomain('Forgot password') }}</a
+                >
+              </div>
+            </div>
+            <div class="d-flex justify-content-center">
+              {{ render_field_errors(login_user_form.csrf_token) }} {{
+              render_field(login_user_form.submit, class="button") }}
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-center">
+            <a
+              href="{{ url_for_security('send_confirmation') }}"
+              style="color: green"
+              >{{ _fsdomain('Confirm account') }}</a
+            >
+          </div>
+        </form>
+
+        {% if security.webauthn %}
+        <hr class="fs-gap" />
+        <h2>{{ _fsdomain("Use WebAuthn to Sign In") }}</h2>
+        <div>
+          <form method="get" id="wan_signin_form" name="wan_signin_form">
+            <input
+              id="wan_signin"
+              name="wan_signin"
+              type="submit"
+              value="{{ _fsdomain('Sign in with WebAuthn') }}"
+              formaction="{{ url_for_security('wan_signin') }}{{ prop_next() }}"
+            />
+          </form>
+        </div>
+        {% endif %} {% if security.oauthglue %}
+        <hr class="fs-gap" />
+        <h2>{{ _fsdomain("Use Social Oauth to Sign In") }}</h2>
+        {% for provider in security.oauthglue.provider_names %}
+        <div class="fs-gap">
+          <form
+            method="post"
+            id="{{ provider }}_form"
+            name="{{ provider }}_form"
+          >
+            <input
+              id="{{ provider }}"
+              name="{{ provider }}"
+              type="submit"
+              value="{{ _fsdomain('Sign in with ')~provider }}"
+              formaction="{{ url_for_security('oauthstart', name=provider) }}{{ prop_next() }}"
+            />
+            {% if csrf_token is defined %}
+            <input
+              id="{{ provider }}_csrf_token"
+              name="{{ provider }}_csrf_token"
+              type="hidden"
+              value="{{ csrf_token() }}"
+            />
+            {% endif %}
+          </form>
+        </div>
+        {% endfor %} {% endif %}
       </div>
     </div>
   </div>
+</div>
 <!-- JavaScript to automatically hide flash messages after 5 seconds -->
 <script>
-  setTimeout(function() {
-    const flashContainer = document.getElementById('flash-container');
+  setTimeout(function () {
+    const flashContainer = document.getElementById("flash-container");
     if (flashContainer) {
-      flashContainer.style.display = 'none';  // Hide the container after 5 seconds
+      flashContainer.style.display = "none"; // Hide the container after 5 seconds
     }
-  }, 5000);  // 5000 milliseconds = 5 seconds
+  }, 5000); // 5000 milliseconds = 5 seconds
 </script>
 {% endblock content %}
