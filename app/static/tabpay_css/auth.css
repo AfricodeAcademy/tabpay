@@ -6,7 +6,7 @@ html {
   font-family: "Roboto", sans-serif;
   overflow-x: hidden;
   margin: 0;
-  padding: 0;
+  padding: 10px;
 }
 .image-section {
   background-image: url("/static/images/image.jpg");
