@@ -5,12 +5,10 @@
   {%- block html %}
   <head>
     {%- block head %}
-    {% if title %}
-    <title>{{ title }}</title>
-    {% else %}
-    <title>TabPay</title>
-    {% endif %}
-
+    <title>
+      {% block title %}TabPay{% endblock %}
+    </title>
+    
       {%- block metas %}
       <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -30,7 +28,7 @@
       rel="stylesheet"
     />
 
-    <link rel="stylesheet" href="../static/tabpay_css/auth.css" />
+    <link rel="stylesheet" href="{{url_for('static', filename='tabpay_css/auth.css')}}" />
       {%- endblock head_scripts %}
 
       {%- block styles %}
