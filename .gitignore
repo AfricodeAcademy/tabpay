@@ -27,7 +27,7 @@ venv.bak/
 instance/
 *.ini
 *.cfg
-
+config.py
 # Pytest cache
 .pytest_cache/
 
