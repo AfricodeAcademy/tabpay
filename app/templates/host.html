@@ -17,6 +17,7 @@
       contributing a pre-agreed amount, fostering a culture of mutual support
       and collective progress.
     </p>
+
     <div class="dashboard-content">
       <!-- Tab Navigation -->
       <ul class="nav nav-tabs p-3">
@@ -43,22 +44,6 @@
             >Block Members</a
           >
         </li>
-
-        <li class="nav-item">
-          <a
-            class="nav-link {% if active_tab == 'contribution_status' %}active{% endif %}"
-            href="{{ url_for('main.host', active_tab='contribution_status') }}"
-            >Contribution Status</a
-          >
-        </li>
-
-        <li class="nav-item">
-          <a
-            class="nav-link {% if active_tab == 'analytics' %}active{% endif %}"
-            href="{{ url_for('main.host', active_tab='analytics') }}"
-            >Analytics</a
-          >
-        </li>
       </ul>
 
       <!-- Tab Panes -->
@@ -75,7 +60,8 @@
             method="POST"
             action="{{ url_for('main.host', active_tab='schedule_meeting') }}"
           >
-            {{schedule_form.hidden_tag() }}
+            {{ schedule_form.hidden_tag() }}
+
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
@@ -122,6 +108,7 @@
                 </div>
               </div>
             </div>
+
             <button type="submit" name="schedule_submit" class="submit-btn">
               {{ schedule_form.submit.label.text }}
             </button>
@@ -166,6 +153,16 @@
                   <p><strong>Zone Name:</strong> {{meeting_zone}}</p>
                   <p><strong>The Host:</strong> {{host}}</p>
                   <p><strong>When:</strong>{{when}}</p>
+                  <p>
+                    Wrong meeting details?
+                    <a
+                      href="{{ url_for('main.host', active_tab='schedule_meeting') }}"
+                      class="btn btn-small btn-warning"
+                    >
+                      Edit
+                    </a>
+                  </p>
+
                   <button
                     type="button"
                     class="payment-link-btn"
@@ -492,181 +489,11 @@
         </div>
 
         <!--/ Block Members -->
-
-        <!-- Contribution Status -->
-
-        <div
-          id="contribution_status"
-          class="tab-pane fade {% if active_tab == 'contribution_status' %}show active{% endif %}"
-        >
-          <h4
-            style="
-              font-weight: 500;
-              color: rgb(0, 0, 0);
-              letter-spacing: 2px;
-              text-decoration: underline;
-              font-size: large;
-            "
-          >
-            Filter By:
-          </h4>
-
-          <div class="flex-container mt-4">
-            <div class="row">
-              <div class="col-md-3" style="max-width: fit-content">
-                {{ schedule_form.block.label }} {{
-                schedule_form.block(class="select") }}
-              </div>
-              <div class="col-md-3" style="max-width: fit-content">
-                {{ schedule_form.zone.label }} {{
-                schedule_form.zone(class="select") }}
-              </div>
-
-              <div
-                class="col-md-3 tt-contributed"
-                style="max-width: fit-content"
-              >
-                Total Contributed:
-                <span style="color: rgb(14, 169, 14); text-wrap: nowrap">
-                  Kes 200,000</span
-                >
-              </div>
-            </div>
-          </div>
-          <table class="table table-responsive text-center">
-            <thead>
-              <tr>
-                <th>Full Names</th>
-                <th>Status</th>
-                <th>Amount</th>
-                <th>Send reminder</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for member in members %}
-              <tr>
-                <td>{{member.full_name}}</td>
-                <td style="color: #4c9323">Pending</td>
-                <td>Kes 0.00</td>
-                <td>
-                  <button
-                    class="btn"
-                    style="
-                      background-color: #4c9323;
-                      color: white;
-                      font-size: small;
-                    "
-                  >
-                    SEND
-                  </button>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
-
-        <!--/  Contribution Status -->
-
-        <!--  Analytics -->
-        <div
-          id="analytics"
-          class="tab-pane fade {% if active_tab == 'analytics' %}show active{% endif %}"
-        >
-          <div class="d-flex justify-content-center">
-            <div>
-              <h4
-                style="
-                  font-weight: 500;
-                  color: rgb(0, 0, 0);
-                  letter-spacing: 2px;
-                  text-decoration: underline;
-                  font-size: large;
-                "
-              >
-                Filter By:
-              </h4>
-
-              <div class="flex-container mt-4">
-                <div class="row mb-3">
-                  <div class="col-md-6" style="max-width: fit-content">
-                    {{ schedule_form.block.label }} {{
-                    schedule_form.block(class="select") }}
-                  </div>
-                  <div class="col-md-6" style="max-width: fit-content">
-                    {{ schedule_form.zone.label }} {{
-                    schedule_form.zone(class="select") }}
-                  </div>
-                </div>
-              </div>
-
-              <!-- Contribution Overview Section -->
-              <div class="mt-3 ms-auto">
-                <div class="d-flex mb-4">
-                  <h3 style="font-weight: bold">Contribution Overview</h3>
-                  <button
-                    style="
-                      color: white;
-                      background-color: #94989c;
-                      border: none;
-                      margin-left: 20px;
-                      border-radius: 5px;
-                    "
-                  >
-                    This Week
-                  </button>
-                </div>
-                <div
-                  class="host-chart ms-5"
-                  style="height: 250px; width: 250px"
-                >
-                  <canvas id="contributionChart"></canvas>
-                </div>
-              </div>
-            </div>
-
-            <script>
-              const ctx = document
-                .getElementById("contributionChart")
-                .getContext("2d");
-              const contributionChart = new Chart(ctx, {
-                type: "doughnut",
-                data: {
-                  labels: ["Contributed", "Pending"],
-                  datasets: [
-                    {
-                      label: "Contribution Overview",
-                      data: [512, 245],
-                      backgroundColor: ["orange", "red"],
-                      borderWidth: 1,
-                    },
-                  ],
-                },
-                options: {
-                  responsive: true,
-                  plugins: {
-                    legend: {
-                      position: "bottom",
-                    },
-                  },
-                },
-              });
-            </script>
-          </div>
-        </div>
       </div>
-      <!--/  Analytics -->
     </div>
   </div>
 </div>
-<script>
-  setTimeout(function () {
-    const flashContainer = document.getElementById("flash-container");
-    if (flashContainer) {
-      flashContainer.style.display = "none"; // Hide the container after 5 seconds
-    }
-  }, 5000); // 5000 milliseconds = 5 seconds
-</script>
+
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
