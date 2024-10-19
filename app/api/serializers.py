@@ -170,17 +170,3 @@ block_report_args.add_argument('end_date', type=str, help='End date for filterin
 block_report_args.add_argument('page', type=int, default=1, help='Page number for pagination')
 block_report_args.add_argument('per_page', type=int, default=20, help='Items per page for pagination')
 
-block_report_fields = {
-    "total_contributed": fields.Float,
-    "detailed_contributions": fields.List(fields.Nested({
-        "zone": fields.String,
-        "host": fields.String,
-        "contributed_amount": fields.Float,
-    })),
-    "pagination": fields.Nested({
-        "page": fields.Integer,
-        "per_page": fields.Integer,
-        "total_pages": fields.Integer,
-        "total_items": fields.Integer
-    })
-}

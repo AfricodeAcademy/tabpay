@@ -7,7 +7,7 @@ html {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
-  padding: 20px;
+  padding: 10px 15px;
 }
 .feature-card {
   position: relative; /* Needed for absolute positioning of the icon */
