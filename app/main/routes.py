@@ -720,10 +720,8 @@ def statistics():
     print(f'fetched umbrella: {umbrella_id}')
 
     total_members = len(get_members())
-    print(f'Total members: {total_members}')
 
     total_blocks = len(get_blocks_by_umbrella())
-    print(f'Total blocks: {total_blocks}')
 
     return render_template('statistics.html', title='Statistics | Dashboard ', total_members=total_members,
         total_blocks=total_blocks, user=current_user
@@ -754,7 +752,6 @@ def render_host_page(active_tab=None, error=None):
     meeting_details = get_upcoming_meeting_details()
 
     if meeting_details:
-        print(meeting_details)  
         meeting_block = meeting_details['meeting_block']
         meeting_zone = meeting_details['meeting_zone']
         host = meeting_details['host']
@@ -1146,7 +1143,6 @@ def get_members():
         
         if response.status_code == 200:
             members = response.json()
-            print(f'Members: {members}')
             logger.info(f"Users fetched successfully: {len(members)} members.")
             return members
         else:
