@@ -4,10 +4,12 @@ from flask_restful import fields, reqparse
 def get_user_fields():
     block_fields = {
         "id": fields.Integer,
-        "name": fields.String,
-        
+        "name": fields.String       
     }
-
+    role_fields = {
+    "id": fields.Integer,
+    "name": fields.String
+    }
     user_fields = {
         "id": fields.Integer,
         "email": fields.String,
@@ -20,21 +22,13 @@ def get_user_fields():
         "image_file": fields.String,
         "registered_at": fields.DateTime,
         "updated_at": fields.DateTime,
-        "zone_id": fields.Integer,
+        "zone_id":  fields.Integer,
         "confirmed_at": fields.DateTime,
-        "roles": fields.List(fields.Nested({
-            "id": fields.Integer,
-            "name": fields.String
-        })),
-        "block_memberships": fields.List(fields.Nested({
-            "id": fields.Integer,
-            "name": fields.String
-        })),
+        "roles": fields.List(fields.Nested(role_fields)),
+        "block_memberships": fields.List(fields.Nested(block_fields)),
+        "zone_name": fields.String(attribute='zone.name'),  
+        "bank_name": fields.String(attribute='bank.name'),
 
-        # Add chaired blocks, secretary blocks, and treasurer blocks fields here
-        "chaired_blocks": fields.List(fields.Nested(block_fields)),
-        "secretary_blocks": fields.List(fields.Nested(block_fields)),
-        "treasurer_blocks": fields.List(fields.Nested(block_fields))
     }
     return user_fields
 
@@ -59,9 +53,18 @@ payment_fields = {
     "amount": fields.Integer,
     "payment_date": fields.DateTime,
     "transaction_status": fields.Boolean,
-    "bank_id": fields.Integer,
-    "block_id": fields.Integer,
-    "payer_id": fields.Integer
+    "bank_id": fields.Nested({
+            "id": fields.Integer,
+            "name": fields.String
+        }),
+    "block_id": fields.List(fields.Nested({
+            "id": fields.Integer,
+            "name": fields.String
+        })),
+    "payer_id": fields.Nested({
+            "id": fields.Integer,
+            "name": fields.String
+        })
 }
 
 bank_fields = {
@@ -133,6 +136,7 @@ payment_args.add_argument('amount', type=int, required=True, help='Amount is req
 payment_args.add_argument('bank_id', type=int, required=True, help='Bank ID is required')
 payment_args.add_argument('block_id', type=int, required=True, help='Block ID is required')
 payment_args.add_argument('payer_id', type=int, required=True, help='Payer ID is required')
+payment_args.add_argument('amount', type=int, required=True, help='Meeting ID is required')
 
 block_args = reqparse.RequestParser()
 block_args.add_argument('name', type=str, required=True, help='Block Name is required')
@@ -160,13 +164,4 @@ meeting_args.add_argument('block_id', type=int, required=True, help='Block ID is
 meeting_args.add_argument('zone_id', type=int, required=True, help='Zone ID is required')
 meeting_args.add_argument('organizer_id', type=int, required=True, help='Organizer ID is required')
 meeting_args.add_argument('date', type=str, required=True, help='Meeting date is required (format: YYYY-MM-DD HH:MM:SS)')
-
-# Keep the block_report_args and block_report_fields as they were
-block_report_args = reqparse.RequestParser()
-block_report_args.add_argument('blocks', type=str, help='Block name for filtering')
-block_report_args.add_argument('member', type=str, help='Member name for filtering')
-block_report_args.add_argument('start_date', type=str, help='Start date for filtering (format: YYYY-MM-DD)')
-block_report_args.add_argument('end_date', type=str, help='End date for filtering (format: YYYY-MM-DD)')
-block_report_args.add_argument('page', type=int, default=1, help='Page number for pagination')
-block_report_args.add_argument('per_page', type=int, default=20, help='Items per page for pagination')
 

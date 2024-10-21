@@ -115,11 +115,6 @@
           ><i class="bi bi-bar-chart-fill"></i> Reports</a
         >
         <div class="sidebar-bottom">
-          <a
-            href="{{ url_for('main.settings') }}"
-            class="{% if request.endpoint == 'main.settings' %}active{% endif %}"
-            ><i class="bi bi-gear-fill"></i> Settings</a
-          >
           {% if current_user.has_role('SuperUser') or
           current_user.has_role('Admin') %}
           <a
@@ -129,6 +124,11 @@
             <i class="fas fa-users"></i> Committee
           </a>
           {% endif %}
+          <a
+            href="{{ url_for('main.settings') }}"
+            class="{% if request.endpoint == 'main.settings' %}active{% endif %}"
+            ><i class="bi bi-gear-fill"></i> Settings</a
+          >
         </div>
       </div>
     </div>
@@ -193,7 +193,7 @@
         <div class="col-lg-10">
           <div class="header-profile-body mt-3">
             <div class="row d-flex justify-content-between">
-              <div class="col-md-6">
+              <div class="col-md-6 d-flex align-items-center">
                 <h1 class="dashboard-h1 ms-2">
                   {% block heading %}{% endblock %}
                 </h1>

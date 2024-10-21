@@ -192,8 +192,8 @@
                     rows="6"
                     style="height: 150px"
                   >
-                      Dear Member, 
-                      Upcoming block is hosted by {{meeting_zone}}  and the host is {{host}}. Make payment through this link: {{paymentlink}} or through the paybill : xxxxxx Account Number: Your Phone Number."
+Dear Member, 
+Upcoming block is hosted by {{meeting_zone}}  and the host is {{host}}. Make payment through this link: {{paymentlink}} or through the paybill : xxxxxx Account Number: Your Phone Number."
   
                       </textarea
                   >
@@ -245,6 +245,10 @@
                 <th>Full Names</th>
                 <th>Phone Number</th>
                 <th>ID Number</th>
+                <th>Block</th>
+                <th>Zone</th>
+                <th>Bank</th>
+                <th>A/C Number</th>
                 <th>Edit</th>
                 <th>Remove</th>
               </tr>
@@ -255,6 +259,10 @@
                 <td>{{ member.full_name }}</td>
                 <td>{{ member.phone_number }}</td>
                 <td>{{ member.id_number }}</td>
+                <td>{{ member.block_memberships[0]['name'] }}</td>
+                <td>{{ member.zone_name }}</td>
+                <td>{{ member.bank_name }}</td>
+                <td>{{ member.acc_number }}</td>
 
                 <td>
                   <button
@@ -369,27 +377,32 @@
                           update_form.id_number.label(class="update_form-label")
                           }} {{
                           update_form.id_number(class="update_form-control",
-                          value=member.id_number, readonly=True) }}
+                          value=member.id_number) }}
+                        </div>
+                        <div class="mb-3">
+                          {{
+                          update_form.block_id.label(class="update_form-label")
+                          }} {{ update_form.block_id(class="form-select",
+                          value=member.block_memberships[0]['name']) }}
                         </div>
                         <div class="mb-3">
                           {{
                           update_form.member_zone.label(class="update_form-label")
-                          }} {{
-                          update_form.member_zone(class="update_form-control",
-                          value=member.zone_id, readonly=True) }}
+                          }} {{ update_form.member_zone(class="form-select",
+                          value=member.zone_name) }}
                         </div>
                         <div class="mb-3">
                           {{
                           update_form.bank_id.label(class="update_form-label")
-                          }} {{ update_form.bank_id(class="update_form-control",
-                          value=member.bank_id, readonly=True) }}
+                          }} {{ update_form.bank_id(class="form-select",
+                          value=member.bank_name) }}
                         </div>
                         <div class="mb-3">
                           {{
                           update_form.account_number.label(class="update_form-label")
                           }} {{
                           update_form.account_number(class="update_form-control",
-                          value=member.acc_number, readonly=True) }}
+                          value=member.acc_number) }}
                         </div>
 
                         <button

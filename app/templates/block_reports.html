@@ -66,15 +66,7 @@ block content %}
                   {% endfor %}
                 </select>
               </div>
-              <div class="col-md-3">
-                <select id="member" name="member">
-                  {% for member in members %}
-                  <option value="{{ member.full_name }}">
-                    {{ member.full_name }}
-                  </option>
-                  {% endfor %}
-                </select>
-              </div>
+
               <div class="col-md-3">
                 <select id="date" name="date">
                   <option>Week 1</option>
@@ -92,6 +84,23 @@ block content %}
           <table class="table table-responsive text-center mt-5">
             <thead>
               <tr>
+                <th colspan="5">
+                  <div
+                    style="
+                      display: flex;
+                      justify-content: space-between;
+                      width: 100%;
+                    "
+                  >
+                    <span>Host:</span>
+                    <span class="text-success">Patrick Cheruiyot</span>
+                    <span>Date:</span>
+                    <span class="text-success"> 20/11/2024</span>
+                  </div>
+                </th>
+              </tr>
+
+              <tr>
                 <th>Block</th>
                 <th>Flat Rate Totals</th>
                 <th>Guesting Totals</th>
@@ -103,14 +112,13 @@ block content %}
                 <td>Block 1</td>
                 <td>Kes 1,000</td>
                 <td>Kes 1,000</td>
-                <td>Kes 1,000</td>
               </tr>
             </tbody>
           </table>
         </div>
         <!-- Block contribution  -->
 
-        <!-- Contribution Status -->
+        <!-- member Contribution  -->
 
         <div
           id="member_contribution"
@@ -134,19 +142,27 @@ block content %}
 
           <div class="flex-container mt-4">
             <div class="row">
-              <div class="col-md-4">
-                {{ schedule_form.block.label }} {{
-                schedule_form.block(class="select") }}
+              <div class="col-md-3">
+                <select id="block" name="block">
+                  {% for block in blocks %}
+                  <option value="{{ block.name }}">{{ block.name }}</option>
+                  {% endfor %}
+                </select>
               </div>
-              <div class="col-md-4">
-                {{ schedule_form.zone.label }} {{
-                schedule_form.zone(class="select") }}
+              <div class="col-md-3">
+                <select id="member" name="member">
+                  {% for member in members %}
+                  <option value="{{ member.full_name }}">
+                    {{ member.full_name }}
+                  </option>
+                  {% endfor %}
+                </select>
               </div>
-
-              <div class="col-md-4">
-                <label for="tt-contributed">Total Contributed:</label>
-                <select>
-                  <option style="color: rgb(14, 169, 14)">Kes 2,000</option>
+              <div class="col-md-3">
+                <select id="date" name="date">
+                  <option>Week 1</option>
+                  <option>Week 2</option>
+                  <option>Week 3</option>
                 </select>
               </div>
             </div>
@@ -154,6 +170,23 @@ block content %}
 
           <table class="table table-responsive text-center">
             <thead>
+              <tr></tr>
+              <tr>
+                <th colspan="5">
+                  <div
+                    style="
+                      display: flex;
+                      justify-content: space-between;
+                      width: 100%;
+                    "
+                  >
+                    <span>Host:</span>
+                    <span class="text-success">Patrick Cheruiyot</span>
+                    <span>Date:</span>
+                    <span class="text-success"> 20/11/2024</span>
+                  </div>
+                </th>
+              </tr>
               <tr>
                 <th>Full Names</th>
                 <th>Status</th>
@@ -185,7 +218,7 @@ block content %}
           </table>
         </div>
 
-        <!--/  Contribution Status -->
+        <!--/  Member Contribution -->
 
         <!--  Analytics -->
         <div

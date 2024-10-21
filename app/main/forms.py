@@ -61,7 +61,7 @@ class BlockForm(FlaskForm):
 
     
 class ZoneForm(FlaskForm):
-    zone_name = StringField('Zone Name',validators=[DataRequired(), Length(max=100,min=1)],render_kw={'placeholder':'Meja Estate zone'})
+    zone_name = StringField('Zone Name',validators=[DataRequired(), Length(max=100,min=4)],render_kw={'placeholder':'Meja Estate zone'})
     parent_block =  SelectField('Parent Block',validators=[DataRequired()])
     submit = SubmitField('CREATE ZONE')
 
@@ -82,11 +82,12 @@ class ScheduleForm(FlaskForm):
             raise ValidationError('The meeting date and time cannot be in the past.')
 
 class EditMemberForm(FlaskForm):
-    full_name = StringField('Full Name', validators=[DataRequired(), Length(min=3, max=100)])
-    phone_number = StringField('Phone Number', validators=[DataRequired(), Length(min=10, max=15)])
-    id_number = StringField('ID Number', validators=[DataRequired(), Length(min=5, max=20)])
-    member_zone = StringField('Member Zone', render_kw={'readonly': True}) 
-    bank_id = StringField('Bank', render_kw={'readonly': True}) 
-    account_number = StringField('Account Number', render_kw={'readonly': True}) 
+    full_name = StringField('Full Name', validators=[Length(min=3, max=100)])
+    phone_number = StringField('Phone Number', validators=[Length(min=10, max=15)])
+    id_number = IntegerField('ID Number', validators=[NumberRange(min=10000000, max=99999999, message="ID number must be exactly 8 digits.")])
+    member_zone = StringField('Member Zone',render_kw={'readonly': True}) 
+    bank_id = StringField('Bank',render_kw={'readonly': True}) 
+    block_id = StringField('Block',render_kw={'readonly': True}) 
+    account_number = StringField('Account Number',render_kw={'readonly': True}) 
         
     submit = SubmitField('Save Changes')
