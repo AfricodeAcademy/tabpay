@@ -14,8 +14,6 @@ from flask import current_app
 main = Blueprint('main', __name__)
 
 
-import logging
-
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -25,6 +23,11 @@ def home():
     if current_user.is_authenticated:
         return redirect(url_for('main.statistics'))
     return render_template('index.html')
+
+@main.errorhandler(403)
+def forbidden_error(error):
+    flash('You must log in to access this page.', 'warning')
+    return redirect(url_for('security.login'))
 
 # Helper function to render the settings page with forms
 def render_settings_page(active_tab=None, error=None):
@@ -117,7 +120,7 @@ def render_settings_page(active_tab=None, error=None):
 
 # Single route to handle all settings form submissions
 @main.route('/settings', methods=['GET', 'POST'])
-@roles_accepted('Admin', 'SuperUser', 'Chairman', 'Secretary')
+@roles_accepted('Admin', 'SuperUser', 'Chairman', 'Secretary','Treasurer')
 @login_required
 def settings():
     # Check which form was submitted
@@ -309,6 +312,13 @@ def handle_committee_addition():
             if not any(role.get('name') == 'Member' for role in user_roles):
                 flash(f"{user['full_name']} must first be a member before being assigned a committee role.", 'danger')
                 return redirect(url_for('main.settings', active_tab='committee'))
+            
+            # Check if the user belongs to the selected block
+            user_belongs_to_block = any(block['id'] == int(block_id) for block in user.get('block_memberships', []))
+            if not user_belongs_to_block:
+                flash(f"{user['full_name']} is not a member of the selected block.", 'danger')
+                return redirect(url_for('main.settings', active_tab='committee'))
+
 
             # Check if user already has the selected committee role
             if any(role.get('id') == role_id for role in user_roles):
@@ -317,49 +327,56 @@ def handle_committee_addition():
 
             # Check for role conflicts: Chairman <-> Secretary, or Chairman/Secretary <-> Treasurer
             if role_id == 3 and any(role.get('id') in [4, 6] for role in user_roles):
-                flash(f"{user['full_name']} cannot be assigned as Chairman while being Secretary or Treasurer.", 'danger')
+                flash(f"{user['full_name']} has a committee role already.", 'danger')
                 return redirect(url_for('main.settings', active_tab='committee'))
             if role_id == 4 and any(role.get('id') in [3, 6] for role in user_roles):
-                flash(f"{user['full_name']} cannot be assigned as Secretary while being Chairman or Treasurer.", 'danger')
+                flash(f"{user['full_name']} has a committee role already.", 'danger')
                 return redirect(url_for('main.settings', active_tab='committee'))
             if role_id == 6 and any(role.get('id') in [3, 4] for role in user_roles):
-                flash(f"{user['full_name']} cannot be assigned as Treasurer while being Chairman or Secretary.", 'danger')
+                flash(f"{user['full_name']} has a committee role already.", 'danger')
                 return redirect(url_for('main.settings', active_tab='committee'))
 
-            # API PATCH request to update the user's role
-            try:
-                block_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/blocks/{block_id}")
-                if block_response.status_code == 200:
-                    block = block_response.json()
-                    block_name = block['name']
-                    # Ensure the block doesn't already have a chairman, secretary, or treasurer
-                    if role_id == 3 and block.get('chairman_id'):
-                        flash(f"{block_name} already has a chairman assigned.", 'danger')
-                        return redirect(url_for('main.settings', active_tab='committee'))
+         
 
-                    if role_id == 4 and block.get('secretary_id'):
-                        flash(f"{block_name} already has a secretary assigned.", 'danger')
-                        return redirect(url_for('main.settings', active_tab='committee'))
+            # Fetch block details and check for existing committee members
+            block_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/blocks/{block_id}")
+            if block_response.status_code == 200:
+                block = block_response.json()
+                block_name = block['name']
 
-                    if role_id == 6 and block.get('treasurer_id'):
-                        flash(f"{block_name} already has a treasurer assigned.", 'danger')
-                        return redirect(url_for('main.settings', active_tab='committee'))
+                # Ensure the block doesn't already have a chairman, secretary, or treasurer
+                if role_id == 3 and block.get('chairman_id'):
+                    flash(f"{block_name} already has a chairman assigned.", 'danger')
+                    return redirect(url_for('main.settings', active_tab='committee'))
 
-                    response = requests.patch(
-                        f"{current_app.config['API_BASE_URL']}/api/v1/users/{user['id']}",
-                        json={"role_id": role_id, 'action': 'add'}
-                    )
+                if role_id == 4 and block.get('secretary_id'):
+                    flash(f"{block_name} already has a secretary assigned.", 'danger')
+                    return redirect(url_for('main.settings', active_tab='committee'))
 
-                    # Check if the response is successful
-                    if response.status_code == 200:
-                        flash(f"{user['full_name']} has been assigned '{role_name}' role in {block_name} successfully!", 'success')
-                        return redirect(url_for('main.settings', active_tab='committee'))
-                    else:
-                        flash(f"An error occurred: {response.json().get('message')}", 'danger')
-                        return redirect(url_for('main.settings', active_tab='committee'))
-                else:
+                if role_id == 6 and block.get('treasurer_id'):
+                    flash(f"{block_name} already has a treasurer assigned.", 'danger')
+                    return redirect(url_for('main.settings', active_tab='committee'))
+            else:
                     flash(f"An error occurred while fetching the block: {block_response.json().get('message')}", 'danger')
 
+
+            try:
+                # API PATCH request to update the user's role
+                response = requests.patch(
+                    f"{current_app.config['API_BASE_URL']}/api/v1/users/{user['id']}",
+                    json={"role_id": role_id, 'action': 'add', 'block_id': block_id}  
+                )
+
+                # Check if the response is successful
+                if response.status_code == 200:
+                    flash(f"{user['full_name']} has been assigned '{role_name}' role in {block_name} successfully!", 'success')
+                    active_tab = 'chairmen' if role_id == 3 else 'secretaries' if role_id == 4 else 'treasurers'
+
+                    return redirect(url_for('main.committee', active_tab=active_tab))
+                else:
+                    flash(f"An error occurred: {response.json().get('message')}", 'danger')
+                    return redirect(url_for('main.settings', active_tab='committee'))
+            
             except Exception as e:
                 print ( f'{e}')
                 flash(f"Sorry, an error occurred.", 'danger')
@@ -375,7 +392,6 @@ def handle_committee_addition():
                 flash(f'{error}', 'danger')
 
     return render_settings_page(active_tab='committee')
-
 
 
 
@@ -535,11 +551,11 @@ def handle_member_creation():
             'id_number': member_form.id_number.data,
             'phone_number': member_form.phone_number.data,
             'zone_id': member_form.member_zone.data,
-<<<<<<< Updated upstream
+
             'bank_id': member_form.bank_id.data,
-=======
+
             'bank': member_form.bank.data,
->>>>>>> Stashed changes
+
             'acc_number': member_form.acc_number.data,
             'role_id': 5  # Automatically assign "Member" role
         }
@@ -664,8 +680,8 @@ def create_zone(payload):
 
 
 @main.route('/statistics', methods=['GET'])
+@roles_accepted('Admin', 'SuperUser', 'Chairman', 'Secretary','Treasurer')
 @login_required
-@roles_accepted('SuperUser', 'Admin')
 def statistics():
     # Define the roles to include
     included_roles = ['Member']
@@ -682,6 +698,8 @@ def statistics():
 
 
 @main.route('/manage_contribution', methods=['GET'])
+@roles_accepted('Admin', 'SuperUser', 'Chairman', 'Secretary','Treasurer')
+@login_required
 def manage_contribution():
     
     return render_template('manage_contribution.html', title='Manage Contributions | Dashboard')
@@ -689,6 +707,8 @@ def manage_contribution():
 
 
 @main.route('/block_reports', methods=['GET', 'POST'])
+@roles_accepted('Admin', 'SuperUser', 'Chairman', 'Secretary','Treasurer')
+@login_required
 def block_reports():
     block_filter = request.args.get('blocks')
     member_filter = request.args.get('member')
@@ -789,9 +809,17 @@ def render_host_page(active_tab=None, error=None):
             blocks = get_blocks_by_umbrella(umbrella['id'])
             schedule_form.block.choices = [(str(block['id']), block['name']) for block in blocks]
 
+             # Prepare a mapping for zones with block names
+            zone_map = {}  # Store a mapping of zone_id to (zone_name, block_name)
             for block in blocks:
-                zones.extend(get_zones_by_block(block['id']))
-            schedule_form.zone.choices = [(str(zone['id']), zone['name']) for zone in zones]
+                # Fetch zones associated with the current block
+                block_zones = get_zones_by_block(block['id'])
+                block_name = block['name']  # Get block name from the block data
+                for zone in block_zones:
+                    zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
+
+            # Set the choices for the member_zone field in the form
+            schedule_form.zone.choices = [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
 
             # Fetch members
             members = get_members()
@@ -818,7 +846,7 @@ def render_host_page(active_tab=None, error=None):
 
 # Single route to handle all host form submissions
 @main.route('/host', methods=['GET', 'POST'])
-@roles_accepted('Admin', 'SuperUser', 'Chairman', 'Secretary')
+@roles_accepted('Admin', 'SuperUser', 'Chairman', 'Secretary','Treasurer')
 @login_required
 def host():
     # Check which form was submitted
@@ -850,11 +878,17 @@ def handle_schedule_creation():
     blocks = get_blocks_by_umbrella(umbrella['id'])
     schedule_form.block.choices = [(str(block['id']), block['name']) for block in blocks]
 
-    # Fetch zones for the blocks
-    zones = []
+     # Prepare a mapping for zones with block names
+    zone_map = {}  # Store a mapping of zone_id to (zone_name, block_name)
     for block in blocks:
-        zones.extend(get_zones_by_block(block['id']))
-    schedule_form.zone.choices = [(str(zone['id']), zone['name']) for zone in zones]
+        # Fetch zones associated with the current block
+        block_zones = get_zones_by_block(block['id'])
+        block_name = block['name']  # Get block name from the block data
+        for zone in block_zones:
+            zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
+
+    # Set the choices for the member_zone field in the form
+    schedule_form.zone.choices = [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
 
     # Fetch members filtered by zone
     members = get_members()
@@ -889,10 +923,10 @@ def handle_schedule_creation():
         try:
             response = requests.post(f"{current_app.config['API_BASE_URL']}/api/v1/meetings/", json=payload)
             if response.status_code == 201:
-                flash(f"Meeting for {schedule_form.block.data} has created successfully!", "success")
+                flash(f"Meeting for {schedule_form.block.data} has been scheduled successfully!", "success")
                 return redirect(url_for('main.host', active_tab='schedule_meeting'))
             else:
-                flash('Meeting creation failed. Please try again later.', 'danger')
+                flash('Meeting scheduling failed. Please try again later.', 'danger')
         except Exception as e:
             flash('Error creating meeting. Please try again later.', 'danger')
 
@@ -1016,17 +1050,24 @@ def update_member(user_id):
 
 # Function to handle member removal
 def remove_member(user_id):
-    response = requests.delete(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}")
+    # Fetch user details first
+    user_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}")
     
-    if response == 200:
-        flash('Member removed successfully', 'success')
-        return redirect(url_for('main.host', active_tab='block_members'))
-
+    if user_response.status_code == 200:
+        user_data = user_response.json()
+        full_name = user_data.get('full_name')
+        
+        # Proceed with the delete request
+        delete_response = requests.delete(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}")
+        
+        if delete_response.status_code == 200:
+            flash(f"{full_name} removed successfully.", 'success')
+        else:
+            flash(f'Failed to remove {full_name}! Please drop the assigned role or meeting first.', 'danger')
     else:
-        flash('Failed to remove member', 'danger')
-        return redirect(url_for('main.host', active_tab='block_members'))
-
+        flash('Failed to retrieve user details', 'danger')
     
+    return redirect(url_for('main.host', active_tab='block_members'))
 
 
 # Helper function to fetch members by role "Member"
@@ -1051,6 +1092,7 @@ def get_members():
 
 # Helper function to check if a meeting already exists for the block
 def get_existing_block_meeting(block_id):
+    
     try:
         logger.info(f"Checking for existing meetings for block ID: {block_id}.")
         # API call to check existing meetings for the block
@@ -1067,3 +1109,68 @@ def get_existing_block_meeting(block_id):
     except Exception as e:
         logger.error(f"Exception during fetching meetings: {str(e)}")
         return []
+
+
+
+
+# Fetch and display committee members
+def render_committee_page(active_tab=None, error=None):
+    # Fetch Chairman, Secretary, and Treasurer from the API
+    try:
+        chairman_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Chairman'})
+        secretary_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Secretary'})
+        treasurer_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Treasurer'})
+
+        # Raise exception if request failed
+        chairman_response.raise_for_status()
+        secretary_response.raise_for_status()
+        treasurer_response.raise_for_status()
+
+        # Parse the response
+        committee_members = {
+            'chairmen': chairman_response.json(),
+            'secretaries': secretary_response.json(),
+            'treasurers': treasurer_response.json()
+        }
+
+        return render_template('committee.html', title='Committee | Dashboard', 
+                               committee_members=committee_members, 
+                               active_tab=active_tab,
+                                 error=error)
+
+    except requests.exceptions.RequestException as e:
+        flash(f"Error fetching committee members: {str(e)}", 'danger')
+        return redirect(url_for('main.committee'))
+
+# Single route to handle committee-related actions
+@main.route('/committee', methods=['GET', 'POST'])
+@roles_accepted('Admin', 'SuperUser')
+@login_required
+def committee():    
+    if 'remove_role_submit' in request.form:
+        user_id = request.args.get('user_id')  
+        active_tab = request.form.get('active_tab')  
+        return remove_committee_role(user_id, active_tab)  
+
+    return render_committee_page(active_tab=request.args.get('active_tab', 'chairmen'))
+
+
+# Remove committee role (Chairman, Secretary, Treasurer)
+def remove_committee_role(user_id, active_tab):
+    logger.info(f"Removing role for user_id: {user_id}")
+    if not user_id:
+        flash('User ID is missing.', 'danger')
+        return redirect(url_for('main.committee', active_tab=active_tab))
+
+    try:
+        role_id = request.form.get('role_id')
+        action = 'remove'
+        response = requests.patch(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}", json={'role_id': role_id, 'action': action})
+        response.raise_for_status()
+        flash('Committee role removed successfully', 'success')
+        return redirect(url_for('main.committee', active_tab=active_tab))
+
+    except requests.exceptions.RequestException as e:
+        flash(f"Error removing committee role: {str(e)}", 'danger')
+        logger.error(f"Request failed: {str(e)}")
+        return redirect(url_for('main.committee', active_tab=active_tab))

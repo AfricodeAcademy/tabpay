@@ -395,42 +395,6 @@
                           value=member.acc_number, readonly=True) }}
                         </div>
 
-                        {% if member.roles|length > 1 %}
-                        <div class="mb-2">
-                          {{
-                          update_form.committee_role.label(class="update_form-label")
-                          }} {{
-                          update_form.committee_role(class="update_form-select")
-                          }}
-
-                          <form
-                            id="removeForm{{ member.id }}"
-                            method="post"
-                            action="{{ url_for('main.host', user_id=member.id, active_tab='block_members') }}"
-                          >
-                            <input
-                              type="hidden"
-                              name="csrf_token"
-                              value="{{ csrf_token() }}"
-                            />
-                            <input
-                              type="hidden"
-                              name="user_id"
-                              value="{{ user.id }}"
-                            />
-
-                            <!-- Remove role button linked to the selected additional role -->
-                            <button
-                              type="submit"
-                              class="btn btn-danger btn-sm"
-                              name="remove_role_submit"
-                            >
-                              X
-                            </button>
-                          </form>
-                        </div>
-                        {% endif %}
-
                         <button
                           type="submit"
                           class="submit-btn"
@@ -526,16 +490,7 @@
             </tbody>
           </table>
         </div>
-        {% if open_modal %}
-        <script>
-          document.addEventListener("DOMContentLoaded", function () {
-            // Reopen the modal for the specific member using their ID
-            var modalId = "#editModal{{ open_modal }}";
-            var modal = new bootstrap.Modal(document.querySelector(modalId));
-            modal.show();
-          });
-        </script>
-        {% endif %}
+
         <!--/ Block Members -->
 
         <!-- Contribution Status -->
@@ -591,12 +546,16 @@
               {% for member in members %}
               <tr>
                 <td>{{member.full_name}}</td>
-                <td>Pending</td>
+                <td style="color: #4c9323">Pending</td>
                 <td>Kes 0.00</td>
                 <td>
                   <button
                     class="btn"
-                    style="background-color: #4c9323; color: white"
+                    style="
+                      background-color: #4c9323;
+                      color: white;
+                      font-size: small;
+                    "
                   >
                     SEND
                   </button>
@@ -657,7 +616,10 @@
                     This Week
                   </button>
                 </div>
-                <div class="host-chart" style="height: 350px; width: 350px">
+                <div
+                  class="host-chart ms-5"
+                  style="height: 250px; width: 250px"
+                >
                   <canvas id="contributionChart"></canvas>
                 </div>
               </div>
