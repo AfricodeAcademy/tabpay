@@ -5,8 +5,8 @@ from flask import Blueprint, jsonify, request
 from werkzeug.exceptions import HTTPException
 from flask_restful import Api, Resource, marshal_with, marshal, abort,reqparse
 from ..main.models import UserModel, CommunicationModel, \
-    PaymentModel, BankModel, BlockModel, UmbrellaModel, ZoneModel, MeetingModel, RoleModel
-from .serializers import user_fields, user_args, communication_fields, \
+    PaymentModel, BankModel, BlockModel, UmbrellaModel, ZoneModel, MeetingModel, RoleModel, roles_users
+from .serializers import get_user_fields, user_args, communication_fields, \
     communication_args, payment_fields, payment_args, bank_fields, bank_args, \
     block_fields, block_args, umbrella_fields, umbrella_args, zone_fields, zone_args, \
     meeting_fields, meeting_args, block_report_args, block_report_fields,role_args,role_fields
@@ -120,13 +120,9 @@ class BaseResource(Resource):
 
 class UsersResource(BaseResource):
     model = UserModel
-    fields = user_fields
+    fields = get_user_fields()
     args = user_args
 
-class UsersResource(BaseResource):
-    model = UserModel
-    fields = user_fields
-    args = user_args
 
 
     def post(self):
@@ -213,10 +209,18 @@ class UsersResource(BaseResource):
                 role = RoleModel.query.get(args['role_id'])
                 if role:
                     new_user.roles.append(role)
+
+            # Fetch the block associated with the selected zone
+            zone = ZoneModel.query.get(args['zone_id'])
+            if zone and zone.parent_block_id:
+                block = BlockModel.query.get(zone.parent_block_id)  
+                if block:
+                    new_user.block_memberships.append(block)  
+
                     
             db.session.add(new_user)
             db.session.commit()
-            logger.info(f"Successfully created user {new_user.id} with roles {[r.name for r in new_user.roles]}")
+            logger.info(f"Successfully created user {new_user.id} with roles {[r.name for r in new_user.roles]} and block memberships {[b.name for b in new_user.block_memberships]}")
 
             return marshal(new_user, self.fields), 201
 
@@ -225,23 +229,17 @@ class UsersResource(BaseResource):
             logger.error(f"Error creating new user: {str(e)}. Rolling back changes.")
             return self.handle_error(e)
  
-    
+        
     def patch(self, id):
         try:
-             # Find the user by ID
             user = UserModel.query.get_or_404(id)
-
             updated = False
 
             if 'multipart/form-data' in request.content_type:
-            # Handle file uploads
                 logger.info("Handling multipart form data for profile update")
-
-                # Extract image from request files
                 if 'picture' in request.files:
                     image_file = request.files['picture']
                     if image_file:
-                        # Save the picture (ensure save_picture is available here)
                         saved_filename = save_picture(image_file)
                         user.image_file = saved_filename
                         updated = True
@@ -251,93 +249,65 @@ class UsersResource(BaseResource):
             else:
                 args = self.args.parse_args()
                 logger.info(f"PATCH request received to update user {id}. Payload: {args}")
-
-
-                # Keep track of changes
                 unchanged_fields = []
 
-                # Compare and update fields
-                if args['full_name'] is not None:
-                    if user.full_name != args['full_name']:
-                        user.full_name = args['full_name']
+                for field in ['full_name', 'id_number', 'phone_number', 'zone_id', 'bank_id', 'acc_number', 'email', 'image_file']:
+                    if args[field] is not None and getattr(user, field) != args[field]:
+                        setattr(user, field, args[field])
                         updated = True
                     else:
-                        unchanged_fields.append('full_name')
+                        unchanged_fields.append(field)
 
-                if args['id_number'] is not None:
-                    if user.id_number != args['id_number']:
-                        user.id_number = args['id_number']
-                        updated = True
-                    else:
-                        unchanged_fields.append('id_number')
-
-                if args['phone_number'] is not None:
-                    if user.phone_number != args['phone_number']:
-                        user.phone_number = args['phone_number']
-                        updated = True
-                    else:
-                        unchanged_fields.append('phone_number')
-
-                if args['zone_id'] is not None:
-                    if user.zone_id != args['zone_id']:
-                        user.zone_id = args['zone_id']
-                        updated = True
-                    else:
-                        unchanged_fields.append('zone_id')
-
-                if args['bank_id'] is not None:
-                    if user.bank_id != args['bank_id']:
-                        user.bank_id = args['bank_id']
-                        updated = True
-                    else:
-                        unchanged_fields.append('bank_id')
-
-                if args['acc_number'] is not None:
-                    if user.acc_number != args['acc_number']:
-                        user.acc_number = args['acc_number']
-                        updated = True
-                    else:
-                        unchanged_fields.append('acc_number')
-
-                if args['email'] is not None:
-                    if user.email != args['email']:
-                        user.email = args['email']
-                        updated = True
-                    else:
-                        unchanged_fields.append('email')
-                
-                if args['image_file'] is not None:
-                    if user.image_file != args['image_file']:
-                        user.image_file = args['image_file']
-                        updated = True
-                    else:
-                        unchanged_fields.append('image_file')
-
-                # Handle role assignment or removal based on action
                 role_id = args.get('role_id')
                 action = args.get('action')
 
                 if role_id is not None:
                     role = RoleModel.query.get(role_id)
+
                     if role:
-                        # Ensure Chairman (role_id=3) and Secretary (role_id=4) are mutually exclusive
-                        if role_id == 3 and any(r.id == 4 for r in user.roles):
-                            logger.warning("Cannot assign Chairman role when the user already has the Secretary role.")
-                            return {"message": "Cannot assign Chairman when the user is already a Secretary."}, 400
-                        elif role_id == 4 and any(r.id == 3 for r in user.roles):
-                            logger.warning("Cannot assign Secretary role when the user already has the Chairman role.")
-                            return {"message": "Cannot assign Secretary when the user is already a Chairman."}, 400
-                        
-                        # Handle role removal
+                        # Ensure Chairman, Secretary, and Treasurer are mutually exclusive
+                        if role_id == 3 and any(r.id in [4, 6] for r in user.roles):
+                            logger.warning("Cannot assign Chairman role when the user already has the Secretary or Umbrella Treasurer role.")
+                            return {"message": "Cannot assign Chairman when the user is already a Secretary or Treasurer."}, 400
+
+                        elif role_id == 4 and any(r.id in [3, 6] for r in user.roles):
+                            logger.warning("Cannot assign Secretary role when the user already has the Chairman or Treasurer role.")
+                            return {"message": "Cannot assign Secretary when the user is already a Chairman or Treasurer."}, 400
+
+                        elif role_id == 6 and any(r.id in [3, 4] for r in user.roles):
+                            logger.warning("Cannot assign Treasurer role when the user already has the Chairman or Secretary role.")
+                            return {"message": "Cannot assign Treasurer when the user is already a Chairman or Secretary."}, 400
+
+                        # Handle Role Removal
                         if action == 'remove':
                             if role in user.roles:
-                                user.roles.remove(role)
-                                logger.info(f"Removed role {role.name} from user {user.id}")
-                                updated = True
+                                # Retrieve the block_id associated with the user's role
+                                role_assignment = db.session.query(roles_users).filter_by(user_id=user.id, role_id=role_id).first()
+                                if role_assignment:
+                                    block_id = role_assignment.block_id  # Get the block_id
+
+                                    # Remove the role from the user
+                                    user.roles.remove(role)
+                                    logger.info(f"Removed role {role.name} from user {user.id}")
+                                    updated = True
+
+                                    # Remove the block from the corresponding block list
+                                    if block_id:
+                                        if role_id == 3:  # Chairman
+                                            user.chaired_blocks = [b for b in user.chaired_blocks if b.id != block_id]
+                                            logger.info(f"Removed block {block_id} from user's chaired_blocks.")
+                                        elif role_id == 4:  # Secretary
+                                            user.secretary_blocks = [b for b in user.secretary_blocks if b.id != block_id]
+                                            logger.info(f"Removed block {block_id} from user's secretary_blocks.")
+                                        elif role_id == 6:  # Treasurer
+                                            user.treasurer_blocks = [b for b in user.treasurer_blocks if b.id != block_id]
+                                            logger.info(f"Removed block {block_id} from user's treasurer_blocks.")
+
                             else:
                                 return {"message": "User does not have this role"}, 400
-                        
-                        # Handle role addition
+
+
+                        # Handle Role Addition
                         elif action == 'add':
                             if role in user.roles:
                                 logger.info(f"User {user.id} already has the role {role.name}.")
@@ -347,25 +317,38 @@ class UsersResource(BaseResource):
                                 logger.info(f"Assigned additional role {role.name} to user {user.id}")
                                 updated = True
 
-            # Commit only if there are updates
-            if updated:
-                db.session.commit()
-                logger.info(f"Successfully updated user {user.id} with roles {[r.name for r in user.roles]}")
-                return marshal(user, self.fields), 200
-            else:
-                # No updates were made
-                if unchanged_fields:
-                    unchanged_message = f"No changes were made to the following fields: {', '.join(unchanged_fields)}"
-                    logger.info(unchanged_message)
-                    return {"message": unchanged_message}, 400
-                else:
-                    logger.info(f"No updates made for user {user.id}.")
-                    return {"message": "No updates made."}, 400
+                        # Update Blocks Based on Role
+                        block_id = args.get('block_id')
+                        if block_id is not None:
+                            block = BlockModel.query.get(block_id)
+                            if block:
+                                if role_id == 3:  # Chairman
+                                    if block not in user.chaired_blocks:
+                                        user.chaired_blocks.append(block)
+                                        logger.info(f"Added block {block.id} to user's chaired_blocks.")
+
+                                elif role_id == 4:  # Secretary
+                                    if block not in user.secretary_blocks:
+                                        user.secretary_blocks.append(block)
+                                        logger.info(f"Added block {block.id} to user's secretary_blocks.")
+
+                                elif role_id == 5:  # Treasurer
+                                    if block not in user.treasurer_blocks:
+                                        user.treasurer_blocks.append(block)
+                                        logger.info(f"Added block {block.id} to user's treasurer_blocks.")
+                            else:
+                                logger.warning(f"Block {block_id} not found.")
+
+                if updated:
+                    db.session.commit()
+                    logger.info(f"Successfully updated user {user.id} with roles {[r.name for r in user.roles]}")
+                    return marshal(user, self.fields), 200
+
+                return {"message": "No updates made to user."}, 400
 
         except Exception as e:
-            db.session.rollback()
-            logger.error(f"Error updating user {id}: {str(e)}. Rolling back changes.")
-            return self.handle_error(e)
+            logger.error(f"Error updating user {id}: {str(e)}")
+            return {"message": "An error occurred while updating the user."}, 500
 
 
 
