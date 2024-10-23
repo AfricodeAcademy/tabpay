@@ -28,6 +28,9 @@ def get_user_fields():
         "block_memberships": fields.List(fields.Nested(block_fields)),
         "zone_name": fields.String(attribute='zone.name'),  
         "bank_name": fields.String(attribute='bank.name'),
+        "chaired_blocks": fields.List(fields.Nested(block_fields)),
+        "secretary_blocks": fields.List(fields.Nested(block_fields)),
+        "treasurer_blocks": fields.List(fields.Nested(block_fields))
 
     }
     return user_fields
@@ -53,18 +56,11 @@ payment_fields = {
     "amount": fields.Integer,
     "payment_date": fields.DateTime,
     "transaction_status": fields.Boolean,
-    "bank_id": fields.Nested({
-            "id": fields.Integer,
-            "name": fields.String
-        }),
-    "block_id": fields.List(fields.Nested({
-            "id": fields.Integer,
-            "name": fields.String
-        })),
-    "payer_id": fields.Nested({
-            "id": fields.Integer,
-            "name": fields.String
-        })
+    "bank_id":fields.Integer,
+    "block_id": fields.Integer,
+    "payer_id": fields.Integer,
+    "payer_full_name": fields.String(attribute=lambda x: getattr(x.payer, 'full_name', 'Unknown')),  
+    "block_name": fields.String(attribute=lambda x: getattr(x.block, 'name', 'Unknown'))  
 }
 
 bank_fields = {

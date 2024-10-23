@@ -1,5 +1,5 @@
-{% extends 'base.html' %} {% block heading %}Manage Contribution {% endblock %}
-{% block content %}
+{% extends 'base.html' %} {% import 'flash.html' as flash %} {% block heading
+%}Manage Contribution {% endblock %} {% block content %}
 <!-- Dashboard Content -->
 <div class="dashboard">
   <div class="container">
@@ -14,142 +14,136 @@
       <ul class="nav nav-tabs p-3">
         <li class="nav-item">
           <a
-            class="nav-link active"
+            class="nav-link {% if active_tab == 'request_payment' %}active{% endif %}"
             data-bs-toggle="tab"
-            href="#Request-Payment"
+            href="#request_payment"
+            role="tab"
+            aria-controls="request_payment"
+            aria-selected="{% if active_tab == 'request_payment' %}true{% else %}false{% endif %}"
             >Request Payment</a
           >
         </li>
         <li class="nav-item">
-          <a class="nav-link" data-bs-toggle="tab" href="#Send-to-Bank"
+          <a
+            class="nav-link {% if active_tab == 'send_to_bank' %}active{% endif %}"
+            data-bs-toggle="tab"
+            href="#send_to_bank"
+            role="tab"
+            aria-controls="send_to_bank"
+            aria-selected="{% if active_tab == 'send_to_bank' %}true{% else %}false{% endif %}"
             >Send to Bank</a
           >
         </li>
       </ul>
+
       <!-- Tab Panes -->
       <div class="tab-content p-5">
         <!-- REQUEST PAYMENT -->
-        <div id="Request-Payment" class="tab-pane fade show active">
-          <form>
+        <div
+          class="tab-pane fade {% if active_tab == 'request_payment' %}show active{% endif %}"
+          id="request_payment"
+          role="tabpanel"
+          aria-labelledby="request_payment"
+        >
+          <form
+            method="POST"
+            action="{{url_for('main.manage_contribution', active_tab='request_payment')}}"
+          >
+            {{ payment_form.hidden_tag() }}
+
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="blockNumber">Select Block</label>
-                  <select
-                    id="blockNumber"
-                    class="select"
-                    aria-label="Select Block"
-                  >
-                    <option selected>Block 1</option>
-                    <option>Block 2</option>
-                    <option>Block 3</option>
-                  </select>
+                  {{ payment_form.block.label }} {{
+                  payment_form.block(class="form-control") }}
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="blockMember">Select Block Member</label>
-                  <select
-                    id="blockMember"
-                    class="select"
-                    aria-label="Select Block Member"
-                  >
-                    <option selected>Member 1</option>
-                    <option>Member 2</option>
-                    <option>Member 3</option>
-                  </select>
+                  {{ payment_form.member.label }} {{
+                  payment_form.member(class="form-control") }}
                 </div>
               </div>
             </div>
+
             <div class="mb-3">
-              <label for="contributionAmount" class="d-block"
-                >Contribution Amount</label
-              >
-              <input
-                type="number"
-                id="contributionAmount"
-                placeholder="Kes 5,000"
-              />
+              {{ payment_form.amount.label }} {{
+              payment_form.amount(class="form-control") }}
             </div>
             <button type="submit" class="submit-btn">SUBMIT</button>
-            <p class="success-message mt-3">Success Message</p>
+            {{ flash.render_flash_messages() }}
           </form>
         </div>
+
         <!--/ REQUEST PAYMENT -->
+
         <!-- SEND TO BANK -->
-        <div id="Send-to-Bank" class="tab-pane fade">
-          <form>
+        <div
+          class="tab-pane fade {% if active_tab == 'send_to_bank' %}show active{% endif %}"
+          id="send_to_bank"
+          role="tabpanel"
+          aria-labelledby="send_to_bank"
+        >
+          <form
+            method="POST"
+            action="{{url_for('main.manage_contribution',active_tab='send_to_bank')}}"
+          >
+            {{ payment_form.hidden_tag() }}
+
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="blockNumber">Select Block</label>
-                  <select
-                    id="blockNumber"
-                    class="select"
-                    aria-label="Select Block"
-                  >
-                    <option selected>Block 1</option>
-                    <option>Block 2</option>
-                    <option>Block 3</option>
-                  </select>
+                  {{ payment_form.block.label() }} {{
+                  payment_form.block(class="form-control") }}
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="blockMember">Select Block Member</label>
-                  <select
-                    id="blockMember"
-                    class="select"
-                    aria-label="Select Block Member"
-                  >
-                    <option selected>Member 1</option>
-                    <option>Member 2</option>
-                    <option>Member 3</option>
-                  </select>
+                  {{ payment_form.member.label() }} {{
+                  payment_form.member(class="form-control") }}
                 </div>
               </div>
             </div>
             <div class="row mt-5">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <label for="contributionAmount">Amount to Send</label>
-                  <input
-                    type="number"
-                    id="contributionAmount"
-                    placeholder="Kes 200,000"
-                  />
+                  {{ payment_form.amount.label() }} {{
+                  payment_form.amount(class="form-control") }}
                 </div>
               </div>
               <div class="col-md-6">
-                <div class="mb-3 bank">
-                  <p>Members A/C No:</p>
-                  <div class="d-flex">
-                    <label for="bankName">Bank:</label>
-                    <input
-                      type="text"
-                      id="bankName"
-                      value="Equity Bank"
-                      readonly
-                    />
+                <div class="mb-3 text-center border rounded">
+                  <span class="text-dark">Members A/C No:</span>
 
-                    <label for="accountDetails">A/C:</label>
-                    <input
-                      type="text"
-                      id="accountDetails"
-                      value="xxxxxxxxxx"
-                      readonly
-                    />
+                  <div class="d-flex flex-column">
+                    <div class="d-flex align-items-center ms-5">
+                      <div class="me-2">
+                        {{ payment_form.bank.label(class="form-label") }}
+                      </div>
+                      <div>{{ payment_form.bank(class="form-select") }}</div>
+                    </div>
+
+                    <div class="d-flex align-items-center ms-5">
+                      <div class="me-2">
+                        {{ payment_form.acc_number.label(class="form-label") }}
+                      </div>
+                      <div>
+                        {{ payment_form.acc_number(class="form-control") }}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            <button type="submit" class="submit-btn">SUBMIT</button>
-            <p class="success-message mt-3">Success Message</p>
+            <button type="submit" name="payment_submit" class="submit-btn">
+              {{ payment_form.submit.label.text }}
+            </button>
+            {{ flash.render_flash_messages() }}
           </form>
         </div>
+        <!--/ SEND TO BANK -->
       </div>
-      <!--/ SEND TO BANK -->
     </div>
   </div>
 </div>

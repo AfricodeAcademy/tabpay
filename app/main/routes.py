@@ -1,8 +1,7 @@
 import requests
 from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify
 from flask_security import login_required, current_user, roles_accepted
-from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm
-from .models import UserModel, BlockModel,RoleModel
+from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm,PaymentForm
 import logging
 import os
 from ..utils import save_picture
@@ -728,13 +727,6 @@ def statistics():
     )
 
 
-@main.route('/manage_contribution', methods=['GET'])
-@roles_accepted('Admin', 'SuperUser')
-@login_required
-def manage_contribution():
-    
-    return render_template('manage_contribution.html', title='Manage Contributions | Dashboard')
-
 
 
 # Helper function to render the host page with forms
@@ -1138,7 +1130,7 @@ def get_members():
         # Fetch members associated with the umbrella
         response = requests.get(
             f"{current_app.config['API_BASE_URL']}/api/v1/users/",
-            params={'role': 'Member', 'umbrella_id': umbrella_id}  # Correctly pass the umbrella_id
+            params={'role': 'Member', 'umbrella_id': umbrella_id} 
         )
         
         if response.status_code == 200:
@@ -1156,10 +1148,13 @@ def get_members():
 # Fetch and display committee members
 def render_committee_page(active_tab=None, error=None):
     # Fetch Chairman, Secretary, and Treasurer from the API
+    umbrella = get_umbrella_by_user(current_user.id)
+    umbrella_id = umbrella['id']  # Extract the umbrella ID
+
     try:
-        chairman_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Chairman'})
-        secretary_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Secretary'})
-        treasurer_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Treasurer'})
+        chairman_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Chairman','umbrella_id' : umbrella_id })
+        secretary_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Secretary','umbrella_id' : umbrella_id})
+        treasurer_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Treasurer','umbrella_id' : umbrella_id})
 
         # Raise exception if request failed
         chairman_response.raise_for_status()
@@ -1172,6 +1167,7 @@ def render_committee_page(active_tab=None, error=None):
             'secretaries': secretary_response.json(),
             'treasurers': treasurer_response.json()
         }
+        print(f'Chairmen for Umbrella {umbrella_id}: {committee_members}')
 
         return render_template('committee.html', title='Committee | Dashboard', 
                                committee_members=committee_members, 
@@ -1277,3 +1273,225 @@ def render_reports_page(active_tab=None, error=None):
 def block_reports():
     return render_reports_page(active_tab=request.args.get('active_tab', 'block_contribution'))
 
+def get_member_contributions():
+    umbrella_id = get_umbrella_by_user(current_user.id)
+    try:
+        logger.info("Fetching members and their contributions for the most recent meeting.")
+
+        # First, get all members
+        members_response = requests.get(
+            f"{current_app.config['API_BASE_URL']}/api/v1/users/",
+            params={'role': 'Member', 'umbrella_id': umbrella_id}
+        )
+        
+        if members_response.status_code != 200:
+            flash("Error fetching members. Please try again later.", "danger")
+            logger.error(f"Error fetching members: Status Code {members_response.status_code}")
+            return []
+
+        members = members_response.json()
+
+        # Then, get contributions for the most recent meeting
+        meeting = get_upcoming_meeting_details()
+        meeting_id = meeting['id']
+        contributions_response = requests.get(
+            f"{current_app.config['API_BASE_URL']}/api/v1/payments/",
+            params={'meeting_id': meeting_id}
+        )
+
+        if contributions_response.status_code != 200:
+            flash("Error fetching contributions. Please try again later.", "danger")
+            logger.error(f"Error fetching contributions: Status Code {contributions_response.status_code}")
+            return []
+
+        contributions = contributions_response.json()
+
+        # Combine members and their contributions
+        member_contributions = []
+        for member in members:
+            contribution_record = next((c for c in contributions if c['member_id'] == member['id']), None)
+            if contribution_record:
+                member_contributions.append({
+                    'full_name': member['full_name'],
+                    'amount': contribution_record['amount'],
+                    'status': contribution_record['status'],
+                })
+            else:
+                member_contributions.append({
+                    'full_name': member['full_name'],
+                    'amount': 0.0,
+                    'status': 'pending',
+                })
+
+        logger.info(f"Member contributions fetched successfully: {len(member_contributions)} records.")
+        return member_contributions
+
+    except Exception as e:
+        logger.error(f"Exception during fetching member contributions: {str(e)}")
+        return []
+
+def render_contribution_page(active_tab=None, error=None):
+    payment_form = PaymentForm()
+
+    # API call to get user details
+    try:
+        user = get_user_from_api(current_user.id)
+        if not user:
+            flash('Unable to load user data.', 'danger')
+    except Exception as e:
+        print(f'User Details Error:{e}')
+        flash('Error loading user details. Please try again later.', 'danger')
+    
+    umbrella = get_umbrella_by_user(current_user.id)
+
+    if not umbrella:
+        flash('You need to create an umbrella!', 'danger')
+        return redirect(url_for('main.settings', active_tab='umbrella'))
+
+
+    # Fetch blocks associated with the umbrella
+    blocks = get_blocks_by_umbrella()
+    payment_form.block.choices = [(str(block['id']), block['name']) for block in blocks]
+
+    members,banks = [], []
+    try:
+        members = get_members()
+        payment_form.member.choices = [(str(member['id']), member['full_name']) for member in members]
+        banks = get_banks()
+        payment_form.bank.choices = [(str(bank['id']), bank['name']) for bank in banks]
+    except Exception as e:
+        print(f'payments error: {e}')
+        flash(f'An error occurred. Please try again later.', 'danger')
+
+    # Render the host page
+    return render_template('manage_contribution.html', title='Manage Contribution | Dashboard',
+                           user=current_user,
+                           members=members,
+                           payment_form=payment_form, 
+                           blocks=blocks,                          
+                           active_tab=active_tab, 
+                           banks=banks, 
+                           error=error)
+
+
+@main.route('/manage_contribution', methods=['GET', 'POST'])
+@roles_accepted('Admin', 'SuperUser')
+@login_required
+def manage_contribution():
+    # Get active tab
+    active_tab = request.args.get('active_tab', 'request_payment')
+    payment_form = PaymentForm()
+
+    # Handle form submission
+    if request.method == 'POST':
+        if active_tab == 'request_payment' and payment_form.validate_on_submit():
+            return handle_request_payment(payment_form)
+        elif active_tab == 'send_to_bank' and payment_form.validate_on_submit():
+            return handle_send_to_bank(payment_form)
+
+    # Render the contribution page
+    return render_contribution_page(active_tab=active_tab)
+
+
+def handle_send_to_bank(payment_form):
+    """
+    Handles the fund transfer to the host's designated bank account
+    by aggregating the member contributions and sending them to the bank.
+    """
+    block_id = payment_form.block.data
+    bank_id = payment_form.bank.data
+    acc_number = payment_form.acc_number.data
+    member = payment_form.member.data
+
+    # Populate choices for the fields before validating the form
+    blocks = get_blocks_by_umbrella()
+    payment_form.block.choices = [(str(block['id']), block['name']) for block in blocks]
+    
+    banks = get_banks()
+    payment_form.bank.choices = [(str(bank['id']), bank['name']) for bank in banks]
+
+    members = get_members()
+    payment_form.member.choices = [(str(member['id']), member['full_name']) for member in members]
+
+    # Now validate the form
+    if not block_id or not bank_id or not acc_number:
+        flash('All fields are required to send payment to the bank.', 'danger')
+        return redirect(url_for('main.manage_contribution', active_tab='send_to_bank'))
+
+    if payment_form.validate_on_submit():
+        # Fetch total contributions for the selected block (assume an API fetch)
+        try:
+            response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/payments/")
+            if response.status_code == 200:
+                total_amount = response.json().get('total_amount')
+            else:
+                flash(f'Error: {response.json().get("message")}', 'danger')
+                return redirect(url_for('main.manage_contribution', active_tab='send_to_bank'))
+        except Exception as e:
+            print(f'Total Contribution Fetch Error: {e}')
+            flash('Error occurred while fetching total contributions. Please try again.', 'danger')
+            return redirect(url_for('main.manage_contribution', active_tab='send_to_bank'))
+
+        # Prepare payload for the bank transfer
+        payload = {
+            'block_id': block_id,
+            'bank_id': bank_id,
+            'acc_number': acc_number,
+        }
+
+        # Make API call to transfer funds to the bank
+        try:
+            response = requests.post(f"{current_app.config['API_BASE_URL']}/api/v1/payments/", json=payload)
+
+            # Check API response
+            if response.status_code == 200:
+                flash('Funds transferred successfully to the bank account.', 'success')
+            else:
+                flash(f'Error: {response.json().get("message")}', 'danger')
+
+        except Exception as e:
+            print(f'Bank Transfer Error: {e}')
+            flash('Error occurred while transferring funds. Please try again.', 'danger')
+
+    # Redirect back to the 'Send to Bank' tab
+    return redirect(url_for('main.manage_contribution', active_tab='send_to_bank'))
+
+
+
+def handle_request_payment(payment_form):
+    """
+    Handles the M-Pesa payment request by sending a push notification
+    to the selected member for making a contribution.
+    """
+    block_id = payment_form.block.data
+    member_id = payment_form.member.data
+    amount = payment_form.amount.data
+
+    # Input validation
+    if not block_id or not member_id or not amount:
+        flash('Please fill in all the fields to request payment.', 'danger')
+        return redirect(url_for('main.manage_contribution', active_tab='request_payment'))
+
+    # Prepare payload for the API request
+    payload = {
+        'block_id': block_id,
+        'member_id': member_id,
+        'amount': amount,
+    }
+
+    # Make API call to trigger M-Pesa push notification
+    try:
+        response = requests.post('', json=payload)
+
+        # Check API response
+        if response.status_code == 200:
+            flash('M-Pesa payment request sent successfully.', 'success')
+        else:
+            flash(f'Error: {response.json().get("message")}', 'danger')
+
+    except Exception as e:
+        print(f'M-Pesa Push Error: {e}')
+        flash('Error occurred while processing payment request. Please try again.', 'danger')
+
+    # Redirect back to the 'Request Payment' tab
+    return redirect(url_for('main.manage_contribution', active_tab='request_payment'))

@@ -1,5 +1,5 @@
-{% extends 'base.html' %} {% block heading %}Regular Block Hosting {% endblock
-%} {% block content %}
+{% extends 'base.html' %} {% import 'flash.html' as flash %} {% block heading
+%}Regular Block Hosting {% endblock %} {% block content %}
 <link
   rel="stylesheet"
   href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
@@ -112,23 +112,7 @@
             <button type="submit" name="schedule_submit" class="submit-btn">
               {{ schedule_form.submit.label.text }}
             </button>
-            {% with messages = get_flashed_messages(with_categories=true) %} {%
-            if messages %}
-            <div
-              class="container mt-3"
-              id="flash-container"
-              style="max-width: 500px"
-            >
-              {% for category, message in messages %}
-              <div
-                class="alert alert-{{ category }} alert-dismissible fade show"
-                role="alert"
-              >
-                {{ message }}
-              </div>
-              {% endfor %}
-            </div>
-            {% endif %} {% endwith %}
+            {{ flash.render_flash_messages() }}
           </form>
         </div>
 
@@ -321,24 +305,8 @@ Upcoming block is hosted by {{meeting_zone}}  and the host is {{host}}. Make pay
                         aria-label="Close"
                       ></button>
                     </div>
-                    <!-- Flash messages here -->
-                    {% with messages =
-                    get_flashed_messages(with_categories=true) %} {% if messages
-                    %}
-                    <div class="alert alert-dismissible fade show" role="alert">
-                      {% for category, message in messages %}
-                      <div class="alert alert-{{ category }}">
-                        {{ message }}
-                      </div>
-                      {% endfor %}
-                      <button
-                        type="button"
-                        class="btn-close"
-                        data-bs-dismiss="alert"
-                        aria-label="Close"
-                      ></button>
-                    </div>
-                    {% endif %} {% endwith %}
+                    {{ flash.render_flash_messages() }}
+
                     <div class="modal-body">
                       <form
                         id="editForm{{ member.id }}"
@@ -443,23 +411,8 @@ Upcoming block is hosted by {{meeting_zone}}  and the host is {{host}}. Make pay
                         aria-label="Close"
                       ></button>
                     </div>
-                    {% with messages =
-                    get_flashed_messages(with_categories=true) %} {% if messages
-                    %}
-                    <div class="alert alert-dismissible fade show" role="alert">
-                      {% for category, message in messages %}
-                      <div class="alert alert-{{ category }}">
-                        {{ message }}
-                      </div>
-                      {% endfor %}
-                      <button
-                        type="button"
-                        class="btn-close"
-                        data-bs-dismiss="alert"
-                        aria-label="Close"
-                      ></button>
-                    </div>
-                    {% endif %} {% endwith %}
+                    {{ flash.render_flash_messages() }}
+
                     <div class="modal-body">
                       Are you sure you want to remove {{ member.full_name }}?
                     </div>

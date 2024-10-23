@@ -91,3 +91,12 @@ class EditMemberForm(FlaskForm):
     account_number = StringField('Account Number',render_kw={'readonly': True}) 
         
     submit = SubmitField('Save Changes')
+
+
+class PaymentForm(FlaskForm):
+        block = SelectField('Select Block', validators=[DataRequired()])
+        member = SelectField('Select Block member', validators=[DataRequired()])
+        amount = IntegerField('Amount to Send',validators=[DataRequired()])
+        bank = SelectField('Bank:',validators=[DataRequired(message="Bank is required")])
+        acc_number = IntegerField('A/C:',validators=[DataRequired()],render_kw={'placeholder':'xxxxxx'})
+        submit = SubmitField('SEND PAYMENT')
