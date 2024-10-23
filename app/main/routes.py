@@ -1,13 +1,12 @@
 import requests
 from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify
 from flask_security import login_required, current_user, roles_accepted
-from ..utils import db
-from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm
-from .models import UserModel, BlockModel, ZoneModel,RoleModel,PaymentModel
+from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm,PaymentForm
 import logging
 import os
 from ..utils import save_picture
 from flask import current_app
+from datetime import datetime,timedelta
 
 
 
@@ -28,6 +27,7 @@ def home():
 def forbidden_error(error):
     flash('You must log in to access this page.', 'warning')
     return redirect(url_for('security.login'))
+
 
 # Helper function to render the settings page with forms
 def render_settings_page(active_tab=None, error=None):
@@ -63,16 +63,17 @@ def render_settings_page(active_tab=None, error=None):
             block_form.parent_umbrella.data = umbrella.get('name', '')
 
             # API calls to dynamically fetch blocks and zones
-            blocks = get_blocks_by_umbrella(umbrella['id'])
+            blocks = get_blocks_by_umbrella()
             zone_form.parent_block.choices = [(str(block['id']), block['name']) for block in blocks]
             committee_form.block_id.choices = [(str(block['id']), block['name']) for block in blocks]
 
             # Prepare a mapping for zones with block names
             zone_map = {}  # Store a mapping of zone_id to (zone_name, block_name)
             for block in blocks:
-                # Fetch zones associated with the current block
-                block_zones = get_zones_by_block(block['id'])
-                block_name = block['name']  # Get block name from the block data
+                # Fetch zones associated with the current block       
+                block_id = block['id']         
+                block_zones = get_zones_by_block(block_id)
+                block_name = block['name']  #_idlock name from the block data
                 for zone in block_zones:
                     zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
 
@@ -82,7 +83,7 @@ def render_settings_page(active_tab=None, error=None):
         else:
             flash('No umbrella found. Please create one first.', 'info')
     except Exception as e:
-        flash('Error loading umbrella data. Please try again later.', 'danger')
+        print(f'Settings page Error: {e}')
 
     # API call to get banks
     try:
@@ -120,7 +121,7 @@ def render_settings_page(active_tab=None, error=None):
 
 # Single route to handle all settings form submissions
 @main.route('/settings', methods=['GET', 'POST'])
-@roles_accepted('Admin', 'SuperUser', 'Chairman', 'Secretary','Treasurer')
+@roles_accepted('Admin', 'SuperUser')
 @login_required
 def settings():
     # Check which form was submitted
@@ -146,14 +147,11 @@ def handle_profile_update():
     profile_form = ProfileForm()
     api_url = f"{current_app.config['API_BASE_URL']}/api/v1/users/{current_user.id}"
 
-    # Log form validation status
-    logger.info("Profile update request received. Validating form...")
+    update_data = {}
+    user_changed = False
 
     if profile_form.validate_on_submit():
         logger.info("Form validated successfully.")
-
-        update_data = {}
-        user_changed = False  # To track if any changes are made
 
         # Handle profile picture update
         if profile_form.picture.data:
@@ -195,21 +193,21 @@ def handle_profile_update():
             if profile_form.phone_number.data and profile_form.phone_number.data != current_user.phone_number:
                 update_data['phone_number'] = profile_form.phone_number.data
 
-            # Make API call to update the profile fields
-            if update_data:
-                try:
-                    response = requests.patch(api_url, json=update_data)
-                    if response.status_code == 200:
-                        logger.info("Profile fields updated successfully via API.")
-                        flash("Profile updated successfully!", "success")
-                        user_changed = True
-                    else:
-                        logger.error(f"Failed to update profile fields: {response.status_code} - {response.text}")
-                        errors = response.json().get('message', "An error occurred")
-                        flash(errors, "danger")
-                except Exception as e:
-                    logger.error(f"Error while updating profile fields: {e}")
-                    flash(f"An error occurred: {e}", "danger")
+        # Make API call to update the profile fields
+        if update_data:
+            try:
+                response = requests.patch(api_url, json=update_data)
+                if response.status_code == 200:
+                    logger.info("Profile fields updated successfully via API.")
+                    flash("Profile updated successfully!", "success")
+                    user_changed = True
+                else:
+                    logger.error(f"Failed to update profile fields: {response.status_code} - {response.text}")
+                    errors = response.json().get('message', "An error occurred")
+                    flash(errors, "danger")
+            except Exception as e:
+                logger.error(f"Error while updating profile fields: {e}")
+                flash(f"An error occurred: {e}", "danger")
         else:
             logger.info("No changes made to profile fields.")
             flash("No changes made to the profile details.", "info")
@@ -270,7 +268,7 @@ def handle_committee_addition():
 
     # Fetch blocks associated with the umbrella
     try:
-        blocks = get_blocks_by_umbrella(umbrella['id'])
+        blocks = get_blocks_by_umbrella()
     except Exception as e:
         return "An error occurred while fetching data.", 500  
     
@@ -357,7 +355,7 @@ def handle_committee_addition():
                     flash(f"{block_name} already has a treasurer assigned.", 'danger')
                     return redirect(url_for('main.settings', active_tab='committee'))
             else:
-                    flash(f"An error occurred while fetching the block: {block_response.json().get('message')}", 'danger')
+                    flash(f"An error occurred while fetching the block.", 'danger')
 
 
             try:
@@ -393,6 +391,10 @@ def handle_committee_addition():
 
     return render_settings_page(active_tab='committee')
 
+def get_umbrellas():
+    umbrellas_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/umbrellas")
+    return umbrellas_response.json()
+
 
 
 # Handle umbrella creation
@@ -407,6 +409,25 @@ def handle_umbrella_creation():
             flash('You can only create one umbrella!', 'danger')
             return redirect(url_for('main.settings', active_tab='umbrella'))
 
+        # Fetch all umbrellas to check for duplicates
+        umbrellas = get_umbrellas()
+
+        # Check if the umbrella name or location already exists
+        duplicate_name = any(u['name'].lower() == umbrella_form.umbrella_name.data.lower() for u in umbrellas)
+        duplicate_location = any(u['location'].lower() == umbrella_form.location.data.lower() for u in umbrellas)
+
+        # Handle duplicates
+        if duplicate_name and duplicate_location:
+            flash('An umbrella with this name and location already exists!', 'danger')
+            return redirect(url_for('main.settings', active_tab='umbrella'))
+        elif duplicate_name:
+            flash('An umbrella with this name already exists!', 'danger')
+            return redirect(url_for('main.settings', active_tab='umbrella'))
+        elif duplicate_location:
+            flash('An umbrella with this location already exists!', 'danger')
+            return redirect(url_for('main.settings', active_tab='umbrella'))
+
+        # Proceed with umbrella creation if no duplicates are found
         create_umbrella({
             'name': umbrella_form.umbrella_name.data,
             'location': umbrella_form.location.data,
@@ -415,12 +436,13 @@ def handle_umbrella_creation():
         flash('Umbrella created successfully!', 'success')
         return redirect(url_for('main.settings', active_tab='umbrella'))
 
+    # Handle form validation errors
     else:
         for field, errors in umbrella_form.errors.items():
             for error in errors:
                 flash(f'{error}', 'danger')
-    return render_settings_page(active_tab='umbrella')
 
+    return render_settings_page(active_tab='umbrella')
 
 # Handle block creation using API
 def handle_block_creation():
@@ -435,7 +457,7 @@ def handle_block_creation():
 
     if block_form.validate_on_submit():
         # Check for duplicate blocks via the API
-        existing_blocks = get_blocks_by_umbrella(umbrella['id'])
+        existing_blocks = get_blocks_by_umbrella()
 
         if any(block['name'] == block_form.block_name.data for block in existing_blocks):
             flash('A block with that name already exists in the umbrella!', 'danger')
@@ -469,7 +491,7 @@ def handle_zone_creation():
 
     # Fetch blocks associated with the umbrella
     try:
-        blocks = get_blocks_by_umbrella(umbrella['id'])
+        blocks = get_blocks_by_umbrella()
     except Exception as e:
         return "An error occurred while fetching data.", 500  
     
@@ -517,7 +539,7 @@ def handle_member_creation():
 
     # Fetch blocks associated with the umbrella to populate zones
     try:
-        blocks = get_blocks_by_umbrella(umbrella['id'])
+        blocks = get_blocks_by_umbrella()
     except Exception as e:
         current_app.logger.error(f"Error fetching blocks: {e}")
         return "An error occurred while fetching data.", 500  
@@ -526,7 +548,8 @@ def handle_member_creation():
     zone_map = {}  # Store a mapping of zone_id to (zone_name, block_name)
     for block in blocks:
         # Fetch zones associated with the current block
-        block_zones = get_zones_by_block(block['id'])
+        block_id = block['id']
+        block_zones = get_zones_by_block(block_id)
         block_name = block['name']  # Get block name from the block data
         for zone in block_zones:
             zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
@@ -597,39 +620,51 @@ def get_umbrella_by_user(user_id):
     
 
 # Helper function to get blocks of a specific umbrella
-def get_blocks_by_umbrella(umbrella_id):
+def get_blocks_by_umbrella():
     """Fetches blocks associated with the specified umbrella via API."""
-    response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/blocks/", params={'parent_umbrella_id': umbrella_id})
+    # Retrieve the umbrella ID for the current user
+    umbrella = get_umbrella_by_user(current_user.id) 
     
+    if umbrella is None or not umbrella.get('id'):
+        # If no umbrella is associated, return an empty list
+        print('No umbrella found.')
+        return []
+
+    umbrella_id = umbrella['id']  # Extract the umbrella ID
+    
+    # Make the API request to fetch blocks filtered by the parent_umbrella_id
+    response = requests.get(
+        f"{current_app.config['API_BASE_URL']}/api/v1/blocks/", 
+        params={'parent_umbrella_id': umbrella_id}
+    )
+
     if response.status_code == 200:
-        return response.json()  
+        blocks = response.json()
+        print(f'Blocks for current User: {blocks}')
+        return blocks
     else:
         flash('Error retrieving blocks from the server.', 'danger')
-        return [] 
+        return []
+
+
     
 # Helper function to get zones of a specific block
 def get_zones_by_block(block_id):
     """Fetches zones associated with the specified block via API."""
     try:
-        headers = {'Content-Type': 'application/json'}
+        
         response = requests.get(
             f"{current_app.config['API_BASE_URL']}/api/v1/zones/",
             params={'parent_block_id': block_id},
-            headers=headers,
             timeout=10
         )
         
         response.raise_for_status()
-        
-        # Check if the response is JSON
-        content_type = response.headers.get('Content-Type', '')
-        if 'application/json' not in content_type:
-            raise ValueError(f"Unexpected content type: {content_type}")
 
         zones = response.json()
         return zones
-        zone_name
     except requests.exceptions.RequestException as e:
+        print(f'Error: {e}')
         flash('Error retrieving zones from the server. Please try again later.', 'danger')
         return []
     except ValueError as e:
@@ -644,10 +679,10 @@ def get_members_by_zone(zone_id):
     response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/members/", params={'zone_id': zone_id})
 
     if response.status_code == 200:
-        return response.json()  
+        return response.json()
     else:
         print('Error retrieving members from the server.', 'danger')
-        return [] 
+        return []
 
 # Helper function to get banks
 def get_banks():
@@ -679,92 +714,25 @@ def create_zone(payload):
 @roles_accepted('Admin', 'SuperUser', 'Chairman', 'Secretary','Treasurer')
 @login_required
 def statistics():
-    # Define the roles to include
-    included_roles = ['Member']
+    
+    umbrella_id = get_umbrella_by_user(current_user.id)
+    print(f'fetched umbrella: {umbrella_id}')
 
-    # Query the users who have any of the roles in the included_roles list
-    total_members = UserModel.query.join(UserModel.roles).filter(RoleModel.name.in_(included_roles)).count()
+    total_members = len(get_members())
 
-    # Get total number of blocks
-    total_blocks = BlockModel.query.count()
+    total_blocks = len(get_blocks_by_umbrella())
 
     return render_template('statistics.html', title='Statistics | Dashboard ', total_members=total_members,
         total_blocks=total_blocks, user=current_user
     )
 
 
-@main.route('/manage_contribution', methods=['GET'])
-@roles_accepted('Admin', 'SuperUser', 'Chairman', 'Secretary','Treasurer')
-@login_required
-def manage_contribution():
-    
-    return render_template('manage_contribution.html', title='Manage Contributions | Dashboard')
-
-
-
-@main.route('/block_reports', methods=['GET', 'POST'])
-@roles_accepted('Admin', 'SuperUser', 'Chairman', 'Secretary','Treasurer')
-@login_required
-def block_reports():
-    block_filter = request.args.get('blocks')
-    member_filter = request.args.get('member')
-    date_filter = request.args.get('date')
-
-    blocks = BlockModel.query.all()
-    members = UserModel.query.all()
-
-    total_contributed_value = db.session.query(db.func.sum(PaymentModel.amount)).scalar() or 0
-
-    contributions_query = PaymentModel.query
-
-    if block_filter:
-        block = BlockModel.query.filter_by(name=block_filter).first()
-        if block:
-            members_in_block = [member.id for member in block.members]
-            contributions_query = contributions_query.filter(PaymentModel.payer_id.in_(members_in_block))  
-
-    if member_filter:
-        member = UserModel.query.filter_by(full_name=member_filter).first()
-        if member:
-            contributions_query = contributions_query.filter_by(payer_id=member.id)  
-
-    if date_filter:
-        try:
-            from datetime import datetime
-            date_obj = datetime.strptime(date_filter, '%Y-%m-%d')
-            contributions_query = contributions_query.filter(PaymentModel.payment_date >= date_obj)  
-        except ValueError:
-            pass  
-
-    contributions = contributions_query.all()
-
-    total_contributed = sum(contribution.amount for contribution in contributions)
-
-    detailed_contributions = (
-    db.session.query(
-        ZoneModel.name.label('zone'),
-        UserModel.full_name.label('host'),
-        PaymentModel.amount.label('contributed_amount')
-    )
-    .join(UserModel, PaymentModel.payer_id == UserModel.id)  
-    .join(ZoneModel, UserModel.zone_id == ZoneModel.name)  
-    .filter(PaymentModel.id.in_([contribution.id for contribution in contributions]))  
-    .all()
-)
-
-    return render_template(
-        'block_reports.html',
-        blocks=blocks,
-        members=members,
-        contributions=contributions,
-        total_contributed=total_contributed,
-        detailed_contributions=detailed_contributions,
-        title='Block_Reports | Dashboard'
-    )
 
 
 # Helper function to render the host page with forms
 def render_host_page(active_tab=None, error=None):
+    logging.info("Rendering host page...")
+
     # Instantiate all forms
     schedule_form = ScheduleForm()
     update_form = EditMemberForm()
@@ -773,10 +741,9 @@ def render_host_page(active_tab=None, error=None):
         active_tab = request.args.get('active_tab', 'schedule_meeting')
 
      # Call API or database to get upcoming meeting details
-    meeting_details = get_upcoming_meeting_details(current_user.id)
+    meeting_details = get_upcoming_meeting_details()
 
     if meeting_details:
-        print(meeting_details)  
         meeting_block = meeting_details['meeting_block']
         meeting_zone = meeting_details['meeting_zone']
         host = meeting_details['host']
@@ -784,15 +751,14 @@ def render_host_page(active_tab=None, error=None):
     else:
         flash("No upcoming meeting found", "warning")
         meeting_block = meeting_zone = host = when = None
-
-
     
-    # API call to get user details
+
     try:
         user = get_user_from_api(current_user.id)
         if not user:
             flash('Unable to load user data.', 'danger')
     except Exception as e:
+        print(f'User Details Error:{e}')
         flash('Error loading user details. Please try again later.', 'danger')
 
     blocks, zones, members = [], [], []
@@ -802,32 +768,42 @@ def render_host_page(active_tab=None, error=None):
         if umbrella:
 
             # API calls to dynamically fetch blocks and zones
-            blocks = get_blocks_by_umbrella(umbrella['id'])
+            blocks = get_blocks_by_umbrella()
             schedule_form.block.choices = [(str(block['id']), block['name']) for block in blocks]
+            update_form.block_id.choices = [(str(block['id']), block['name']) for block in blocks]
 
              # Prepare a mapping for zones with block names
             zone_map = {}  # Store a mapping of zone_id to (zone_name, block_name)
             for block in blocks:
-                # Fetch zones associated with the current block
-                block_zones = get_zones_by_block(block['id'])
-                block_name = block['name']  # Get block name from the block data
+                # Fetch zones associated with the current block       
+                block_id = block['id']         
+                block_zones = get_zones_by_block(block_id)
+                block_name = block['name']  #_idlock name from the block data
                 for zone in block_zones:
                     zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
 
             # Set the choices for the member_zone field in the form
             schedule_form.zone.choices = [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
+            update_form.member_zone.choices = [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
 
             # Fetch members
             members = get_members()
             if members:
-                schedule_form.member.choices = [(str(member['id']), member['full_name']) for member in members]
+                for member in members:
+                    member['zone_name'] = member.get('zone_name', 'Unknown Zone')
+                    member['bank_name'] = member.get('bank_name', 'Unknown Bank')
+                    schedule_form.member.choices = [(str(member['id']), member['full_name']) for member in members]
             else:
                 schedule_form.member.choice = []
+
+            banks = get_banks()
+            update_form.bank_id.choices = [(str(bank['id']), bank['name']) for bank in banks]
 
         else:
             flash('No umbrella found. Please create one first.', 'info')
     except Exception as e:
-        flash(f'Error loading umbrella data. Please try again later.', 'danger')
+        logging.error(f"Error loading umbrella data: {e}", exc_info=True)
+
 
     # Render the host page
     return render_template('host.html', title='Host | Dashboard',
@@ -842,7 +818,7 @@ def render_host_page(active_tab=None, error=None):
 
 # Single route to handle all host form submissions
 @main.route('/host', methods=['GET', 'POST'])
-@roles_accepted('Admin', 'SuperUser', 'Chairman', 'Secretary','Treasurer')
+@roles_accepted('Admin', 'SuperUser')
 @login_required
 def host():
     # Check which form was submitted
@@ -871,15 +847,16 @@ def handle_schedule_creation():
         return redirect(url_for('main.settings', active_tab='umbrella'))
 
     # Fetch blocks associated with the umbrella
-    blocks = get_blocks_by_umbrella(umbrella['id'])
+    blocks = get_blocks_by_umbrella()
     schedule_form.block.choices = [(str(block['id']), block['name']) for block in blocks]
 
      # Prepare a mapping for zones with block names
     zone_map = {}  # Store a mapping of zone_id to (zone_name, block_name)
     for block in blocks:
         # Fetch zones associated with the current block
-        block_zones = get_zones_by_block(block['id'])
-        block_name = block['name']  # Get block name from the block data
+        block_id = block['id']
+        block_zones = get_zones_by_block(block_id)
+        block_name = block['name'] 
         for zone in block_zones:
             zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
 
@@ -891,20 +868,36 @@ def handle_schedule_creation():
     if members:
         schedule_form.member.choices = [(str(member['id']), member['full_name']) for member in members]
 
+
+
     if schedule_form.validate_on_submit():
-              # Check for existing meetings in the block
-        existing_meetings = get_existing_block_meeting(schedule_form.block.data)
-        
-        # If any meetings exist for the block, prevent scheduling
-        if existing_meetings:  
-            flash('A meeting has already been scheduled for this block!', 'danger')
-            logger.warning(f"Meeting already scheduled for block ID: {schedule_form.block.data}.")
+        block_id = schedule_form.block.data
+        zone_id = schedule_form.zone.data
+        member_id = schedule_form.member.data
+
+        # Fetch block and member information
+        block_name = next((block['name'] for block in blocks if str(block['id']) == block_id), 'Unknown Block')
+        member = get_user_from_api(member_id)
+
+        # Check if the selected member belongs to the selected block
+        member_belongs_to_block = any(block['id'] == int(block_id) for block in member.get('block_memberships', []))
+        if not member_belongs_to_block:
+            flash(f"{member['full_name']} is not a member of the selected block.", 'danger')
             return redirect(url_for('main.host', active_tab='schedule_meeting'))
 
+        # Check if the selected zone belongs to the selected block
+        if zone_id not in [str(zone['id']) for zone in get_zones_by_block(block_id)]:
+            flash(f"Selected zone does not belong to {block_name}.", 'danger')
+            return redirect(url_for('main.host', active_tab='schedule_meeting'))
+
+        # Check for existing meetings in any block for this week
+        existing_meeting = get_upcoming_meeting_details()
+        if existing_meeting:
+            flash(f'A meeting has already been scheduled for this week in another block!', 'danger')
+            return redirect(url_for('main.host', active_tab='schedule_meeting'))
 
         # Format the date to a string that can be sent in JSON (ISO 8601 format)
         meeting_date_str = schedule_form.date.data.strftime('%Y-%m-%d %H:%M:%S')
-
 
         # Payload for creating the meeting
         payload = {
@@ -919,11 +912,12 @@ def handle_schedule_creation():
         try:
             response = requests.post(f"{current_app.config['API_BASE_URL']}/api/v1/meetings/", json=payload)
             if response.status_code == 201:
-                flash(f"Meeting for {schedule_form.block.data} has been scheduled successfully!", "success")
+                flash("Meeting has been scheduled successfully!", "success")
                 return redirect(url_for('main.host', active_tab='schedule_meeting'))
             else:
                 flash('Meeting scheduling failed. Please try again later.', 'danger')
         except Exception as e:
+            print(f"Meeting scheduling error: {e}")
             flash('Error creating meeting. Please try again later.', 'danger')
 
     # Handle form errors
@@ -934,35 +928,54 @@ def handle_schedule_creation():
     return render_host_page(active_tab='schedule_meeting')
 
 
+def get_upcoming_meeting_details():
+    today = datetime.now()
+    week_start = today.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_end = (week_start + timedelta(days=6)).replace(hour=23, minute=59, second=59)
 
-# Helper function to get upcoming meeting details from the API
-def get_upcoming_meeting_details(user_id):
-    # API URL for fetching upcoming meetings (update with your actual API URL)
-    api_url = f"{current_app.config['API_BASE_URL']}/api/v1/meetings/"
-        
+    organizer_id = current_user.id  
+
     try:
-        # Send a GET request to the API
-        logging.info(f"Sending GET request to {api_url} with organizer_id={user_id}")
-        response = requests.get(api_url, params={'organizer_id': user_id})
+        logging.info(f"Fetching upcoming meetings for organizer_id={organizer_id}, start={week_start}, end={week_end}")
 
-        # Check if the request was successful
+        response = requests.get(
+            f"{current_app.config['API_BASE_URL']}/api/v1/meetings/",
+            params={
+                'start': week_start.strftime('%Y-%m-%d'),
+                'end': week_end.strftime('%Y-%m-%d'),
+                'organizer_id': organizer_id
+            }
+        )
+        logging.info(f"API request sent. Status Code: {response.status_code}")
+
         if response.status_code == 200:
             meeting_data = response.json()
             logging.info(f"API response received: {meeting_data}")
 
-            # Check if the response is a dictionary rather than a list
-            if isinstance(meeting_data, dict):
-                block_name = meeting_data.get('meeting_block', 'Unknown Block')
-                zone_name = meeting_data.get('meeting_zone', 'Unknown Zone')
-                host_name = meeting_data.get('host', 'Unknown Host')
-                meeting_date = meeting_data.get('when', 'Unknown Date')
+            if isinstance(meeting_data, list) and len(meeting_data) > 0:
+                first_meeting = meeting_data[0]
+                block_name = first_meeting.get('meeting_block', 'Unknown Block')
+                zone_name = first_meeting.get('meeting_zone', 'Unknown Zone')
+                host_name = first_meeting.get('host', 'Unknown Host')
+                meeting_date = first_meeting.get('when', 'Unknown Date')
 
-                logging.info(f"Extracted meeting details: Meeting_block - {block_name}, Meeting_zone - {zone_name}, Host - {host_name}, When - {meeting_date}")
+                logging.info(f"Extracted meeting details: Block - {block_name}, Zone - {zone_name}, Host - {host_name}, When - {meeting_date}")
                 return {
                     'meeting_block': block_name,
                     'meeting_zone': zone_name,
                     'host': host_name,
-                    'when': meeting_date
+                    'when': meeting_date,
+                }
+            elif isinstance(meeting_data, dict):
+                block_name = meeting_data.get('meeting_block', 'Unknown Block')
+                zone_name = meeting_data.get('meeting_zone', 'Unknown Zone')
+                host_name = meeting_data.get('host', 'Unknown Host')
+                meeting_date = meeting_data.get('when', 'Unknown Date')
+                return {
+                    'meeting_block': block_name,
+                    'meeting_zone': zone_name,
+                    'host': host_name,
+                    'when': meeting_date,
                 }
             else:
                 logging.warning("No upcoming meetings found or unexpected response format.")
@@ -972,46 +985,87 @@ def get_upcoming_meeting_details(user_id):
             return None
 
     except requests.exceptions.RequestException as e:
-        # Handle any exceptions that occur during the API call
         logging.error(f"An error occurred while fetching data from the API: {e}")
         return None
-
 
 
 def update_member(user_id):
     update_form = EditMemberForm()
 
+    blocks = get_blocks_by_umbrella()
+    update_form.block_id.choices = [(str(block['id']), block['name']) for block in blocks]
+
+    # Prepare a mapping for zones with block names
+    zone_map = {}
+    for block in blocks:
+        block_id = block['id']
+        block_zones = get_zones_by_block(block_id)
+        block_name = block['name']
+        for zone in block_zones:
+            zone_map[zone['id']] = (zone['name'], block_name)
+
+    update_form.member_zone.choices = [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
+
+    banks = get_banks()
+    update_form.bank_id.choices = [(str(bank['id']), bank['name']) for bank in banks]
+
+    # Fetch current user data
+    try:
+        current_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}")
+        current_data = current_response.json() if current_response.status_code == 200 else {}
+    except Exception as e:
+        flash(f"Error fetching current member data: {str(e)}", "danger")
+        return redirect(url_for('main.host', active_tab='block_members'))
+
+    # Check for form submission
     if update_form.validate_on_submit():
-        committee_role = update_form.committee_role.data  
-
-        # Handle role logic (removing the additional role, if needed)
-        if committee_role:
-            try:
-                # Assuming the action is to remove the role
-                response = requests.patch(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}/roles/",
-                                           json={'role_id': committee_role, 'action': 'remove'})  
-
-                if response.status_code == 200:
-                    flash(f"Successfully removed {committee_role} role from the member.", "info")
-                    return redirect(url_for('main.host', active_tab='block_members'))
-                else:
-                    flash(f"Failed to remove the {committee_role} role. Please try again.", "danger")
-                    return redirect(url_for('main.host', active_tab='block_members'))
-
-            except Exception as e:
-                flash("Error removing the role. Please try again later.", "danger")
-                return redirect(url_for('main.host', active_tab='block_members'))
-
-    
-
-        # Prepare payload to update other member details
+        # Prepare payload to update member details
         payload = {}
+        
+        # List of fields to update (form field name and corresponding payload key)
+        form_fields = {
+            'full_name': 'full_name',
+            'phone_number': 'phone_number',
+            'id_number': 'id_number',
+            # 'member_zone': 'zone_id',
+            'bank_id': 'bank_id',
+            'account_number': 'acc_number',
+            # 'block_id': 'block_memberships',
+        }
 
-        if update_form.full_name.data:
-            payload['full_name'] = update_form.full_name.data
+        # Flag to check if any field has data
+        any_input = False
 
-        if update_form.phone_number.data:
-            payload['phone_number'] = update_form.phone_number.data
+        # Get the selected block ID and zone ID from the form
+        selected_block_id = update_form.block_id.data
+        selected_zone_id = update_form.member_zone.data
+
+        # Check if the selected zone belongs to the selected block
+        # if selected_block_id and selected_zone_id:
+        #     valid_zone = False
+        #     # Check if the selected zone is associated with the selected block
+        #     for zone_id, (zone_name, block_name) in zone_map.items():
+        #         if zone_id == selected_zone_id and block_name == blocks[int(selected_block_id)-1]['name']:
+        #             valid_zone = True
+        #             break
+
+        #     if not valid_zone:
+        #         flash("The selected zone does not belong to the selected block.", "danger")
+        #         return redirect(url_for('main.host', active_tab='block_members'))
+
+        # Iterate over form fields and build the payload if the data is different from current data
+        for form_field, payload_key in form_fields.items():
+            form_data = getattr(update_form, form_field).data
+            current_value = current_data.get(payload_key)  # Get the current value for comparison
+            if form_data:  # Check if there's any input
+                any_input = True
+            if form_data and form_data != current_value:  # Only add to payload if it's different
+                payload[payload_key] = form_data
+
+        # Check if no input was made
+        if not any_input:
+            flash("No input was provided. Please fill in at least one field.", "warning")
+            return redirect(url_for('main.host', active_tab='block_members'))
 
         # Only make the request if there is something to update
         if payload:
@@ -1019,29 +1073,21 @@ def update_member(user_id):
                 response = requests.patch(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}", json=payload)
                 if response.status_code == 200:
                     flash("Member details updated successfully.", "success")
-                    return redirect(url_for('main.host', active_tab='block_members'))
                 else:
                     flash("Failed to update member details. Please try again.", "danger")
-                    return redirect(url_for('main.host', active_tab='block_members'))
-
-
             except Exception as e:
-                flash("Error updating member details. Please try again later.", "danger")
-                return redirect(url_for('main.host', active_tab='block_members'))
-
-
+                flash(f"Error updating member details: {str(e)}", "danger")
         else:
             flash("No changes were made to the member details.", "info")
-            return redirect(url_for('main.host', active_tab='block_members'))
 
-
+        return redirect(url_for('main.host', active_tab='block_members'))
 
     # Handle form validation errors
     for field, errors in update_form.errors.items():
         for error in errors:
             flash(f'{field}: {error}', 'danger')
 
-
+    return redirect(url_for('main.host', active_tab='block_members'))
 
 
 # Function to handle member removal
@@ -1068,54 +1114,47 @@ def remove_member(user_id):
 
 # Helper function to fetch members by role "Member"
 def get_members():
+    """Fetches members associated with the specified umbrella."""
+    # Retrieve the umbrella details for the current user
+    umbrella = get_umbrella_by_user(current_user.id)  
+
+    if umbrella is None or not umbrella.get('id'):
+        # If no umbrella is associated, return an empty list
+        print('No umbrella found.')
+        return []
+
+    umbrella_id = umbrella['id']  # Extract the umbrella ID
+
     try:
-        logger.info("Fetching users with role 'Member'.")
-        # API call to retrieve members based on the role "Member"
-        response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Member'})
+        logger.info("Fetching users with role 'Member' for the specified umbrella.")
+        # Fetch members associated with the umbrella
+        response = requests.get(
+            f"{current_app.config['API_BASE_URL']}/api/v1/users/",
+            params={'role': 'Member', 'umbrella_id': umbrella_id} 
+        )
         
         if response.status_code == 200:
             members = response.json()
             logger.info(f"Users fetched successfully: {len(members)} members.")
             return members
         else:
-            flash("Error fetching members. Please try again later.", "danger")
             logger.error(f"Error fetching members: Status Code {response.status_code}")
             return []
     except Exception as e:
-        flash(f"An error occurred while fetching members: {str(e)}", "danger")
         logger.error(f"Exception during fetching members: {str(e)}")
         return []
-
-# Helper function to check if a meeting already exists for the block
-def get_existing_block_meeting(block_id):
-    
-    try:
-        logger.info(f"Checking for existing meetings for block ID: {block_id}.")
-        # API call to check existing meetings for the block
-        response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/meetings", params={'block_id': block_id})
-        
-        if response.status_code == 200:
-            meetings = response.json()
-            logger.info(f"Meetings found: {len(meetings)}")
-            return meetings
-        else:
-            print("Error fetching meetings. Please try again later.", "danger")
-            logger.error(f"Error fetching meetings: Status Code {response.status_code}")
-            return []
-    except Exception as e:
-        logger.error(f"Exception during fetching meetings: {str(e)}")
-        return []
-
-
 
 
 # Fetch and display committee members
 def render_committee_page(active_tab=None, error=None):
     # Fetch Chairman, Secretary, and Treasurer from the API
+    umbrella = get_umbrella_by_user(current_user.id)
+    umbrella_id = umbrella['id']  # Extract the umbrella ID
+
     try:
-        chairman_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Chairman'})
-        secretary_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Secretary'})
-        treasurer_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Treasurer'})
+        chairman_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Chairman','umbrella_id' : umbrella_id })
+        secretary_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Secretary','umbrella_id' : umbrella_id})
+        treasurer_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Treasurer','umbrella_id' : umbrella_id})
 
         # Raise exception if request failed
         chairman_response.raise_for_status()
@@ -1128,6 +1167,7 @@ def render_committee_page(active_tab=None, error=None):
             'secretaries': secretary_response.json(),
             'treasurers': treasurer_response.json()
         }
+        print(f'Chairmen for Umbrella {umbrella_id}: {committee_members}')
 
         return render_template('committee.html', title='Committee | Dashboard', 
                                committee_members=committee_members, 
@@ -1135,7 +1175,8 @@ def render_committee_page(active_tab=None, error=None):
                                  error=error)
 
     except requests.exceptions.RequestException as e:
-        flash(f"Error fetching committee members: {str(e)}", 'danger')
+        print(f'Committee error: {e}')
+        flash(f"Error fetching committee members.", 'danger')
         return redirect(url_for('main.committee'))
 
 # Single route to handle committee-related actions
@@ -1170,3 +1211,287 @@ def remove_committee_role(user_id, active_tab):
         flash(f"Error removing committee role: {str(e)}", 'danger')
         logger.error(f"Request failed: {str(e)}")
         return redirect(url_for('main.committee', active_tab=active_tab))
+
+
+# Helper function to render the host page with forms
+def render_reports_page(active_tab=None, error=None):
+    schedule_form = ScheduleForm()
+
+    # API call to get user details
+    try:
+        user = get_user_from_api(current_user.id)
+        if not user:
+            flash('Unable to load user data.', 'danger')
+    except Exception as e:
+        print(f'User Details Error:{e}')
+        flash('Error loading user details. Please try again later.', 'danger')
+    
+    umbrella = get_umbrella_by_user(current_user.id)
+
+    if not umbrella:
+        flash('You need to create an umbrella before getting reports!', 'danger')
+        return redirect(url_for('main.settings', active_tab='umbrella'))
+
+
+    # Fetch blocks associated with the umbrella
+    blocks = get_blocks_by_umbrella()
+    schedule_form.block.choices = [(str(block['id']), block['name']) for block in blocks]
+     # Prepare a mapping for zones with block names
+    zone_map = {}  # Store a mapping of zone_id to (zone_name, block_name)
+    for block in blocks:
+        # Fetch zones associated with the current block
+        block_id = block['id']
+        block_zones = get_zones_by_block(block_id)
+        block_name = block['name'] 
+        for zone in block_zones:
+            zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
+
+    # Set the choices for the member_zone field in the form
+    schedule_form.zone.choices = [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
+
+
+    members = []
+    try:
+        # Fetch members
+        members = get_members()
+    except Exception as e:
+        flash(f'Error fetching members. Please try again later.', 'danger')
+
+    # Render the host page
+    return render_template('block_reports.html', title='Block_Reports | Dashboard',
+                           user=current_user,
+                           members=members,
+                           schedule_form=schedule_form, 
+                           blocks=blocks,                          
+                           active_tab=active_tab,  
+                           error=error)
+
+
+@main.route('/block_reports', methods=['GET', 'POST'])
+@roles_accepted('Admin', 'SuperUser')
+@login_required
+def block_reports():
+    return render_reports_page(active_tab=request.args.get('active_tab', 'block_contribution'))
+
+def get_member_contributions():
+    umbrella_id = get_umbrella_by_user(current_user.id)
+    try:
+        logger.info("Fetching members and their contributions for the most recent meeting.")
+
+        # First, get all members
+        members_response = requests.get(
+            f"{current_app.config['API_BASE_URL']}/api/v1/users/",
+            params={'role': 'Member', 'umbrella_id': umbrella_id}
+        )
+        
+        if members_response.status_code != 200:
+            flash("Error fetching members. Please try again later.", "danger")
+            logger.error(f"Error fetching members: Status Code {members_response.status_code}")
+            return []
+
+        members = members_response.json()
+
+        # Then, get contributions for the most recent meeting
+        meeting = get_upcoming_meeting_details()
+        meeting_id = meeting['id']
+        contributions_response = requests.get(
+            f"{current_app.config['API_BASE_URL']}/api/v1/payments/",
+            params={'meeting_id': meeting_id}
+        )
+
+        if contributions_response.status_code != 200:
+            flash("Error fetching contributions. Please try again later.", "danger")
+            logger.error(f"Error fetching contributions: Status Code {contributions_response.status_code}")
+            return []
+
+        contributions = contributions_response.json()
+
+        # Combine members and their contributions
+        member_contributions = []
+        for member in members:
+            contribution_record = next((c for c in contributions if c['member_id'] == member['id']), None)
+            if contribution_record:
+                member_contributions.append({
+                    'full_name': member['full_name'],
+                    'amount': contribution_record['amount'],
+                    'status': contribution_record['status'],
+                })
+            else:
+                member_contributions.append({
+                    'full_name': member['full_name'],
+                    'amount': 0.0,
+                    'status': 'pending',
+                })
+
+        logger.info(f"Member contributions fetched successfully: {len(member_contributions)} records.")
+        return member_contributions
+
+    except Exception as e:
+        logger.error(f"Exception during fetching member contributions: {str(e)}")
+        return []
+
+def render_contribution_page(active_tab=None, error=None):
+    payment_form = PaymentForm()
+
+    # API call to get user details
+    try:
+        user = get_user_from_api(current_user.id)
+        if not user:
+            flash('Unable to load user data.', 'danger')
+    except Exception as e:
+        print(f'User Details Error:{e}')
+        flash('Error loading user details. Please try again later.', 'danger')
+    
+    umbrella = get_umbrella_by_user(current_user.id)
+
+    if not umbrella:
+        flash('You need to create an umbrella!', 'danger')
+        return redirect(url_for('main.settings', active_tab='umbrella'))
+
+
+    # Fetch blocks associated with the umbrella
+    blocks = get_blocks_by_umbrella()
+    payment_form.block.choices = [(str(block['id']), block['name']) for block in blocks]
+
+    members,banks = [], []
+    try:
+        members = get_members()
+        payment_form.member.choices = [(str(member['id']), member['full_name']) for member in members]
+        banks = get_banks()
+        payment_form.bank.choices = [(str(bank['id']), bank['name']) for bank in banks]
+    except Exception as e:
+        print(f'payments error: {e}')
+        flash(f'An error occurred. Please try again later.', 'danger')
+
+    # Render the host page
+    return render_template('manage_contribution.html', title='Manage Contribution | Dashboard',
+                           user=current_user,
+                           members=members,
+                           payment_form=payment_form, 
+                           blocks=blocks,                          
+                           active_tab=active_tab, 
+                           banks=banks, 
+                           error=error)
+
+
+@main.route('/manage_contribution', methods=['GET', 'POST'])
+@roles_accepted('Admin', 'SuperUser')
+@login_required
+def manage_contribution():
+    # Get active tab
+    active_tab = request.args.get('active_tab', 'request_payment')
+    payment_form = PaymentForm()
+
+    # Handle form submission
+    if request.method == 'POST':
+        if active_tab == 'request_payment' and payment_form.validate_on_submit():
+            return handle_request_payment(payment_form)
+        elif active_tab == 'send_to_bank' and payment_form.validate_on_submit():
+            return handle_send_to_bank(payment_form)
+
+    # Render the contribution page
+    return render_contribution_page(active_tab=active_tab)
+
+
+def handle_send_to_bank(payment_form):
+    """
+    Handles the fund transfer to the host's designated bank account
+    by aggregating the member contributions and sending them to the bank.
+    """
+    block_id = payment_form.block.data
+    bank_id = payment_form.bank.data
+    acc_number = payment_form.acc_number.data
+    member = payment_form.member.data
+
+    # Populate choices for the fields before validating the form
+    blocks = get_blocks_by_umbrella()
+    payment_form.block.choices = [(str(block['id']), block['name']) for block in blocks]
+    
+    banks = get_banks()
+    payment_form.bank.choices = [(str(bank['id']), bank['name']) for bank in banks]
+
+    members = get_members()
+    payment_form.member.choices = [(str(member['id']), member['full_name']) for member in members]
+
+    # Now validate the form
+    if not block_id or not bank_id or not acc_number:
+        flash('All fields are required to send payment to the bank.', 'danger')
+        return redirect(url_for('main.manage_contribution', active_tab='send_to_bank'))
+
+    if payment_form.validate_on_submit():
+        # Fetch total contributions for the selected block (assume an API fetch)
+        try:
+            response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/payments/")
+            if response.status_code == 200:
+                total_amount = response.json().get('total_amount')
+            else:
+                flash(f'Error: {response.json().get("message")}', 'danger')
+                return redirect(url_for('main.manage_contribution', active_tab='send_to_bank'))
+        except Exception as e:
+            print(f'Total Contribution Fetch Error: {e}')
+            flash('Error occurred while fetching total contributions. Please try again.', 'danger')
+            return redirect(url_for('main.manage_contribution', active_tab='send_to_bank'))
+
+        # Prepare payload for the bank transfer
+        payload = {
+            'block_id': block_id,
+            'bank_id': bank_id,
+            'acc_number': acc_number,
+        }
+
+        # Make API call to transfer funds to the bank
+        try:
+            response = requests.post(f"{current_app.config['API_BASE_URL']}/api/v1/payments/", json=payload)
+
+            # Check API response
+            if response.status_code == 200:
+                flash('Funds transferred successfully to the bank account.', 'success')
+            else:
+                flash(f'Error: {response.json().get("message")}', 'danger')
+
+        except Exception as e:
+            print(f'Bank Transfer Error: {e}')
+            flash('Error occurred while transferring funds. Please try again.', 'danger')
+
+    # Redirect back to the 'Send to Bank' tab
+    return redirect(url_for('main.manage_contribution', active_tab='send_to_bank'))
+
+
+
+def handle_request_payment(payment_form):
+    """
+    Handles the M-Pesa payment request by sending a push notification
+    to the selected member for making a contribution.
+    """
+    block_id = payment_form.block.data
+    member_id = payment_form.member.data
+    amount = payment_form.amount.data
+
+    # Input validation
+    if not block_id or not member_id or not amount:
+        flash('Please fill in all the fields to request payment.', 'danger')
+        return redirect(url_for('main.manage_contribution', active_tab='request_payment'))
+
+    # Prepare payload for the API request
+    payload = {
+        'block_id': block_id,
+        'member_id': member_id,
+        'amount': amount,
+    }
+
+    # Make API call to trigger M-Pesa push notification
+    try:
+        response = requests.post('', json=payload)
+
+        # Check API response
+        if response.status_code == 200:
+            flash('M-Pesa payment request sent successfully.', 'success')
+        else:
+            flash(f'Error: {response.json().get("message")}', 'danger')
+
+    except Exception as e:
+        print(f'M-Pesa Push Error: {e}')
+        flash('Error occurred while processing payment request. Please try again.', 'danger')
+
+    # Redirect back to the 'Request Payment' tab
+    return redirect(url_for('main.manage_contribution', active_tab='request_payment'))

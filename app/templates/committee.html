@@ -1,24 +1,5 @@
-{% extends "base.html" %} {% block heading %}Committee Members{% endblock %} {%
-block content %} {% macro render_flash_messages() %} {% with messages =
-get_flashed_messages(with_categories=true) %} {% if messages %}
-<div class="container mt-3" id="flash-container" style="max-width: 600px">
-  <!-- Adjust the max-width here -->
-  {% for category, message in messages %}
-  <div
-    class="alert alert-{{ category }} alert-dismissible fade show"
-    role="alert"
-  >
-    {{ message }}
-    <button
-      type="button"
-      class="btn-close"
-      data-bs-dismiss="alert"
-      aria-label="Close"
-    ></button>
-  </div>
-  {% endfor %}
-</div>
-{% endif %} {% endwith %} {% endmacro %}
+{% extends "base.html" %} {% import 'flash.html' as flash %} {% block heading
+%}Committee Members{% endblock %} {% block content %}
 
 <div class="dashboard">
   <div class="container">
@@ -39,7 +20,7 @@ get_flashed_messages(with_categories=true) %} {% if messages %}
             role="tab"
             aria-controls="chairmen"
             aria-selected="{% if active_tab == 'chairmen' %}true{% else %}false{% endif %}"
-            >Chairmen</a
+            >Chairpersons</a
           >
         </li>
         <li class="nav-item">
@@ -79,7 +60,8 @@ get_flashed_messages(with_categories=true) %} {% if messages %}
           aria-labelledby="chairmen-tab"
         >
           <div>
-            {{ render_flash_messages() }} {% if committee_members.chairmen %}
+            {{ flash.render_flash_messages() }} {% if committee_members.chairmen
+            %}
             <table class="table table-responsive text-center">
               <thead>
                 <tr>
@@ -204,7 +186,8 @@ get_flashed_messages(with_categories=true) %} {% if messages %}
           aria-labelledby="secretaries-tab"
         >
           <div>
-            {{ render_flash_messages() }} {% if committee_members.secretaries %}
+            {{ flash.render_flash_messages() }} {% if
+            committee_members.secretaries %}
             <table class="table table-responsive text-center">
               <thead>
                 <tr>
@@ -333,7 +316,8 @@ get_flashed_messages(with_categories=true) %} {% if messages %}
           aria-labelledby="treasurers-tab"
         >
           <div>
-            {{ render_flash_messages() }} {% if committee_members.treasurers %}
+            {{ flash.render_flash_messages() }} {% if
+            committee_members.treasurers %}
             <table class="table table-responsive text-center">
               <thead>
                 <tr>

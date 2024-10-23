@@ -1,6 +1,5 @@
 from ..utils import db
 from flask_security import UserMixin, RoleMixin, SQLAlchemyUserDatastore
-from flask_security.utils import hash_password
 import uuid
 from ..utils import db
 from flask_security import UserMixin, RoleMixin
@@ -66,7 +65,7 @@ class UmbrellaModel(db.Model):
     __tablename__ = 'umbrellas'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False, unique=True)
-    location = db.Column(db.String(255), nullable=False)
+    location = db.Column(db.String(255), nullable=False, unique = True)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     blocks = db.relationship('BlockModel', backref='parent_umbrella', lazy=True)
 
@@ -123,6 +122,8 @@ class MeetingModel(db.Model):
     zone_id = db.Column(db.Integer, db.ForeignKey('zones.id'), nullable=False)
     organizer_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     date = db.Column(db.DateTime, nullable=False)
+    payments = db.relationship('PaymentModel', backref='meeting', lazy=True)  
+
 
     def __repr__(self):
         return f"<Meeting {self.id} on {self.date}>"
@@ -150,6 +151,8 @@ class PaymentModel(db.Model):
     bank_id = db.Column(db.Integer, db.ForeignKey('banks.id'), nullable=False)
     block_id = db.Column(db.Integer, db.ForeignKey('blocks.id'), nullable=False)
     payer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    meeting_id = db.Column(db.Integer, db.ForeignKey('meetings.id'), nullable=True) 
+
 
     def __repr__(self):
         return f"<Payment {self.amount} by {self.payer_id}>"
