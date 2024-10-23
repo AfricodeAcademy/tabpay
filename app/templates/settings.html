@@ -1,24 +1,8 @@
-{% extends "base.html" %} {% block heading %}Community Umbrella settings{%
+{% extends "base.html" %} 
+{% import 'flash.html' as flash %}
+{% block heading %}Community Umbrella settings{%
   endblock %} {% block content %}
  
-{% macro render_flash_messages() %}
-{% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}
-<div class="container mt-3" id="flash-container" style="max-width: 600px;"> <!-- Adjust the max-width here -->
-  {% for category, message in messages %}
-  <div
-    class="alert alert-{{ category }} alert-dismissible fade show"
-    role="alert"
-  >
-    {{ message }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-
-  </div>
-  {% endfor %}
-</div>
-{% endif %}
-{% endwith %}
-{% endmacro %}
 
   {% macro render_field(field) %}
 <div class="mb-3">
@@ -131,7 +115,7 @@
                       {{ profile_form.submit.label.text }}
                     </button>       
 
-                    {{ render_flash_messages() }}
+                    {{ flash.render_flash_messages() }}
 
                   </form>
                 </div>
@@ -185,7 +169,7 @@
                     <button type="submit" name="committee_submit" class="submit-btn" style="min-width:45%;">
                         {{ committee_form.submit.label.text }}
                     </button>
-                    {{ render_flash_messages() }}
+                    {{ flash.render_flash_messages() }}
                 </form>
             </div>
             
@@ -219,7 +203,7 @@
                 {{ umbrella_form.submit.label.text }}
             </button>
                 
-            {{ render_flash_messages() }}
+            {{ flash.render_flash_messages() }}
   
             </form>
           </div>
@@ -250,7 +234,7 @@
                 {{ block_form.submit.label.text }}
             </button>
   
-            {{ render_flash_messages() }}
+            {{ flash.render_flash_messages() }}
   
             </form>
           </div>
@@ -281,7 +265,7 @@
                 {{ zone_form.submit.label.text }}
             </button>
   
-            {{ render_flash_messages() }}
+            {{ flash.render_flash_messages() }}
   
             </form>
           </div>
@@ -336,7 +320,7 @@
             {{ member_form.submit.label.text }}
         </button>
   
-        {{ render_flash_messages() }}
+        {{ flash.render_flash_messages() }}
         </form>
       </div>
   

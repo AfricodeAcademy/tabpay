@@ -58,5 +58,15 @@ def create_app(config_name):
                                        roles=[user_datastore.find_role('Admin')])
             db.session.commit()
             print('Admin created successfully')
+
+        # Create SuperUser
+        if not user_datastore.find_user(email='captainbett77@gmail.com'):
+            hashed_password = hash_password('123456')
+            SuperUser_role = user_datastore.find_role('SuperUser')
+            user_datastore.create_user(email='captainbett77@gmail.com', password=hashed_password,
+                                       id_number=987654321, full_name='Captain',
+                                        phone_number='0796533555', roles=[SuperUser_role])
+            db.session.commit()
+            print('SuperUser created successfully')
     
     return app

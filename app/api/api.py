@@ -1,18 +1,19 @@
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy import func
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Blueprint, jsonify, request
 from werkzeug.exceptions import HTTPException
-from flask_restful import Api, Resource, marshal_with, marshal, abort,reqparse
+from flask_restful import Api, Resource, marshal_with, marshal, abort
 from ..main.models import UserModel, CommunicationModel, \
     PaymentModel, BankModel, BlockModel, UmbrellaModel, ZoneModel, MeetingModel, RoleModel, roles_users
 from .serializers import get_user_fields, user_args, communication_fields, \
     communication_args, payment_fields, payment_args, bank_fields, bank_args, \
     block_fields, block_args, umbrella_fields, umbrella_args, zone_fields, zone_args, \
-    meeting_fields, meeting_args, block_report_args, block_report_fields,role_args,role_fields
+    meeting_fields, meeting_args,role_args,role_fields
 from ..utils import db
 import logging
 from ..main.routes import save_picture
+from sqlalchemy.orm import joinedload
+
 
 
 api_bp = Blueprint('api', __name__)
@@ -23,6 +24,7 @@ api = Api(api_bp)
 # Basic logging setup
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
 
 def handle_error(self, e):
     db.session.rollback()
@@ -123,46 +125,31 @@ class UsersResource(BaseResource):
     fields = get_user_fields()
     args = user_args
 
-
-
-    def post(self):
-        try:
-            args = self.args.parse_args()
-
-            # Create the new user
-            new_user = self.model(
-                full_name=args['full_name'],
-                id_number=args['id_number'],
-                phone_number=args['phone_number'],
-                zone_id=args['zone_id'],
-                bank_id=args['bank_id'],
-                acc_number=args['acc_number']
-            )
-
-            # Assign the role if role_id is provided
-            if 'role_id' in args and args['role_id'] is not None:
-                role = RoleModel.query.get(args['role_id'])
-                if role:
-                    new_user.roles.append(role)
-
-            db.session.add(new_user)
-            db.session.commit()
-
-            return marshal(new_user, self.fields), 201
-
-        except Exception as e:
-            return self.handle_error(e)
-        
     def get(self, id=None):
         try:
             if id:
                 logger.info(f"GET request received for user {id}")
                 user = self.model.query.get_or_404(id)
+                logger.info(f"User zone_id: {user.zone_id}, bank_id: {user.bank_id}")
+
+                if user.zone_id:
+                    user.zone_name = ZoneModel.query.filter_by(id=user.zone_id).first().name if user.zone_id else None
+                    
+                if user.bank_id:
+                    user.bank_name = BankModel.query.filter_by(id=user.bank_id).first().name if user.bank_id else None
+
+                if not user:
+                    logger.info(f"User with ID {id} not found")
+                    return {"message": "User not found"}, 404
                 return marshal(user, self.fields), 200
 
-            # Check for query parameters: role and id_number
+              
+
+            # Check for query parameters: role, id_number, umbrella_id, and zone_id
             role_name = request.args.get('role')
             id_number = request.args.get('id_number')
+            umbrella_id = request.args.get('umbrella_id')
+            zone_id = request.args.get('zone_id') 
 
             # Fetch user by id_number if provided
             if id_number:
@@ -172,16 +159,55 @@ class UsersResource(BaseResource):
                     return {"message": "User not found"}, 404
                 return marshal(user, self.fields), 200
 
-            # Fetch users by role if role_name is provided
+            # Fetch users by role, umbrella, and zone if all are provided
+            if role_name and umbrella_id:
+                logger.info(f"GET request received for users with role {role_name}, umbrella {umbrella_id}, and zone {zone_id}")
+                users = (
+                    self.model.query
+                    .join(UserModel.roles)
+                    .join(UserModel.block_memberships)
+                    .filter(RoleModel.name == role_name)
+                    .filter(BlockModel.parent_umbrella_id == umbrella_id)
+                    .all()
+                )
+                if zone_id:
+                    query = query.filter(UserModel.zone_id == zone_id)
+            
+                return marshal(users, self.fields), 200
+
+            # Fetch users by role and umbrella if both are provided
+            if role_name and umbrella_id:
+                logger.info(f"GET request received for users with role {role_name} and umbrella {umbrella_id}")
+                users = (
+                    self.model.query
+                    .join(UserModel.roles)
+                    .join(UserModel.block_memberships)
+                    .filter(RoleModel.name == role_name)
+                    .filter(BlockModel.parent_umbrella_id == umbrella_id)
+                    .all()
+                )
+                return marshal(users, self.fields), 200
+            
+
+
+            # Fetch users by role if role_name is provided (without umbrella)
             if role_name:
                 logger.info(f"GET request received for users with role {role_name}")
                 users = self.model.query.join(UserModel.roles).filter(RoleModel.name == role_name).all()
                 return marshal(users, self.fields), 200
 
-            # Otherwise, return all users
+            # Fetch all users if no filters are provided
             logger.info("GET request received for all users")
             users = self.model.query.all()
+            for user in users:
+                if user.zone_id:
+                    user.zone_name = ZoneModel.query.filter_by(id=user.zone_id).first().name if user.zone_id else None
 
+                if user.bank_id:
+                    bank = BankModel.query.get(user.bank_id)
+                    logger.info(f"Bank fetched: {bank}")
+                    if bank:
+                        user.bank_name = bank.name
             return marshal(users, self.fields), 200
 
         except Exception as e:
@@ -203,8 +229,9 @@ class UsersResource(BaseResource):
                 bank_id=args['bank_id'],
                 acc_number=args['acc_number']
             )
-
-           # Assign the role if role_id is provided
+                    
+            db.session.add(new_user)
+                   # Assign the role if role_id is provided
             if 'role_id' in args and args['role_id'] is not None:
                 role = RoleModel.query.get(args['role_id'])
                 if role:
@@ -217,8 +244,6 @@ class UsersResource(BaseResource):
                 if block:
                     new_user.block_memberships.append(block)  
 
-                    
-            db.session.add(new_user)
             db.session.commit()
             logger.info(f"Successfully created user {new_user.id} with roles {[r.name for r in new_user.roles]} and block memberships {[b.name for b in new_user.block_memberships]}")
 
@@ -367,15 +392,139 @@ class PaymentsResource(BaseResource):
     fields = payment_fields
     args = payment_args
 
+
+    @marshal_with_fields(payment_fields)
+    def get(self, id=None):
+        if id:
+            # Fetch a specific payment by ID
+            return super().get(id)
+        
+        # Check if a meeting_id query parameter is provided
+        meeting_id = request.args.get('meeting_id', None)
+        
+        if meeting_id:
+            try:
+                # Query payments by meeting_id and join payer (user) and block tables
+                payments = PaymentModel.query \
+                    .filter_by(meeting_id=meeting_id) \
+                    .join(UserModel, PaymentModel.payer_id == UserModel.id) \
+                    .join(BlockModel, PaymentModel.block_id == BlockModel.id) \
+                    .all()
+                
+                
+                payment_data = []
+                for payment in payments:
+                    print(f"Payment ID: {payment.id}, Payer: {payment.payer}, Block: {payment.block}")
+
+                    payment_data.append({
+                        "mpesa_id": payment.mpesa_id,
+                        "amount": payment.amount,
+                        "transaction_status": payment.transaction_status,
+                        "payer_id": payment.payer.full_name,  
+                        "block_id": payment.block.name,            
+                        "payment_date": payment.payment_date,
+                        "status": "Contributed" if payment.transaction_status else "Pending"
+                    })
+                
+                return jsonify({"success": True, "payments": payment_data}), 200
+            
+            except Exception as e:
+                print(f'Payments error: {e}')
+                return self.handle_error(e)
+        else:
+            # Handle other queries for fetching all payments or specific payment by ID
+            return super().get()
+        
+    def post(self):
+        args = self.args.parse_args()
+        
+        # Check if the meeting exists
+        meeting = MeetingModel.query.get(args['meeting_id'])
+        if not meeting:
+            return {'message': 'Meeting not found.'}, 404
+        
+        # Check if the block exists
+        block = BlockModel.query.get(args['block_id'])
+        if not block:
+            return {'message': 'Block not found.'}, 404
+        
+        # Create a new payment
+        new_payment = PaymentModel(
+            mpesa_id=args['mpesa_id'],
+            account_number=args['account_number'],
+            source_phone_number=args['source_phone_number'],
+            amount=args['amount'],
+            bank_id=args['bank_id'],
+            block_id=args['block_id'],
+            payer_id=args['payer_id'],
+            meeting_id=args['meeting_id']
+        )
+        
+        db.session.add(new_payment)
+        db.session.commit()
+        
+        return marshal(new_payment,self.fields), 201
+
+
 class BlocksResource(BaseResource):
     model = BlockModel
     fields = block_fields
     args = block_args
 
+    def get(self, id=None):
+        if self.fields is None:
+            return {"success": False, "message": "Internal server error. Please contact support."}, 500
+
+        try:
+            if id:
+                # Fetch block by ID
+                block = self.model.query.get_or_404(id)
+                return marshal(block, self.fields), 200
+
+            # Check for 'parent_umbrella_id' parameter to filter blocks
+            parent_umbrella_id = request.args.get('parent_umbrella_id')
+            query = self.model.query
+
+            if parent_umbrella_id:
+                # Filter blocks by parent umbrella ID
+                query = query.filter_by(parent_umbrella_id=parent_umbrella_id)
+
+            # Get all matching blocks
+            blocks = query.all()
+            return marshal(blocks, self.fields), 200
+
+        except Exception as e:
+            return self.handle_error(e)
+        
 class UmbrellasResource(BaseResource):
     model = UmbrellaModel
     fields = umbrella_fields
     args = umbrella_args
+
+    def get(self, id=None):
+        if self.fields is None:
+            return {"success": False, "message": "Internal server error. Please contact support."}, 500
+
+        try:
+            if id:
+                # If an umbrella ID is provided, return that specific umbrella
+                item = self.model.query.get_or_404(id)
+                return marshal(item, self.fields), 200
+            
+            # Check for 'created_by' parameter in the request
+            created_by = request.args.get('created_by')
+            query = self.model.query
+
+            if created_by:
+                # Filter umbrellas based on the 'created_by' field
+                query = query.filter_by(created_by=created_by)
+
+            # Get all matching umbrellas
+            items = query.all()
+            return marshal(items, self.fields), 200
+        
+        except Exception as e:
+            return self.handle_error(e)
 
 class RolesResource(BaseResource):
     model = RoleModel
@@ -389,40 +538,121 @@ class MeetingsResource(BaseResource):
     fields = meeting_fields
     args = meeting_args
 
-
     def get(self, id=None):
         try:
+            logging.info(f"Incoming request received: {request.url}")
+
+            # Fetch meeting by ID if 'id' is provided
             if id:
-                # Fetch a specific meeting by ID
-                meeting = self.model.query.get_or_404(id)               
-                return marshal(meeting,self.fields), 200
+                logging.info(f"Fetching meeting with ID: {id}")
 
-            # Check for query parameters for filtering
+                meeting = self.model.query.get_or_404(id)
+                return marshal(meeting, self.fields), 200
+
+            # Get 'organizer_id', 'start', and 'end' query parameters
             organizer_id = request.args.get('organizer_id')
-            if organizer_id:
-                meeting = db.session.query(MeetingModel)\
-                                    .filter(MeetingModel.organizer_id == organizer_id)\
-                                    .first()
-                if meeting:
-                    # Fetch related block, zone, and host details
-                    meeting_details = {
-                        'meeting_block': meeting.block.name if meeting.block else 'Unknown Block',
-                        'meeting_zone': meeting.zone.name if meeting.zone else 'Unknown Zone',
-                        'host': meeting.host.full_name if meeting.host else 'Unknown Host',
-                        'when': meeting.date.strftime('%a, %d %b %Y %H:%M:%S')
-                    }
-                    return meeting_details, 200
-                return {'error': 'Meeting not found'}, 404
+            start_date = request.args.get('start')
+            end_date = request.args.get('end')
 
-            # If no filters are applied, fetch all meetings
+            logging.info(f"Query parameters: organizer_id={organizer_id}, start={start_date}, end={end_date}")
+
+            # Check if both 'organizer_id' and date range are provided
+            if organizer_id and start_date and end_date:
+                # Convert string query params to datetime objects
+                try:
+                    start_date = datetime.strptime(start_date, '%Y-%m-%d')
+                    end_date = datetime.strptime(end_date, '%Y-%m-%d')
+                    logging.info(f"Parsed start date: {start_date}, end date: {end_date}")
+
+                except ValueError:
+                    logging.error(f"Invalid date format received: start={start_date}, end={end_date}")
+
+                    return {'error': 'Invalid date format. Use YYYY-MM-DD.'}, 400
+
+                # Fetch meetings by organizer_id within the provided date range
+                meetings = MeetingModel.query.filter(MeetingModel.organizer_id == organizer_id,
+                                                     MeetingModel.date >= start_date,
+                                                     MeetingModel.date <= end_date).all()
+                logging.info(f"Meetings found: {len(meetings)}")
+
+                if meetings:
+                    # Prepare details for all meetings within the date range
+                    meeting_details = []
+                    for meeting in meetings:
+                        details = {
+                            'meeting_block': meeting.block.name if meeting.block else 'Unknown Block',
+                            'meeting_zone': meeting.zone.name if meeting.zone else 'Unknown Zone',
+                            'host': meeting.host.full_name if meeting.host else 'Unknown Host',
+                            'when': meeting.date.strftime('%a, %d %b %Y %H:%M:%S')
+                        }
+                        meeting_details.append(details)
+                    logging.info(f"Meeting details: {meeting_details}")
+
+                    return meeting_details, 200
+                else:
+                    return {'message': 'No meetings found for the organizer within the specified date range'}, 404
+
+            # If only 'organizer_id' is provided (no date range)
+            if organizer_id:
+                # Fetch all meetings by this organizer
+                meetings = MeetingModel.query.filter_by(organizer_id=organizer_id).all()
+
+                if meetings:
+                    meeting_details = []
+                    for meeting in meetings:
+                        details = {
+                            'meeting_block': meeting.block.name if meeting.block else 'Unknown Block',
+                            'meeting_zone': meeting.zone.name if meeting.zone else 'Unknown Zone',
+                            'host': meeting.host.full_name if meeting.host else 'Unknown Host',
+                            'when': meeting.date.strftime('%a, %d %b %Y %H:%M:%S')
+                        }
+                        meeting_details.append(details)
+
+                    return meeting_details, 200
+                else:
+                    logging.warning(f"No meetings found for organizer_id={organizer_id} within date range.")
+
+                    return {'message': 'No meetings found for this organizer'}, 404
+
+            # Check for 'start' and 'end' date filtering without 'organizer_id'
+            if start_date and end_date:
+                try:
+                    start_date = datetime.strptime(start_date, '%Y-%m-%d')
+                    end_date = datetime.strptime(end_date, '%Y-%m-%d')
+                except ValueError:
+                    return {'error': 'Invalid date format. Use YYYY-MM-DD.'}, 400
+
+                # Fetch meetings within the provided date range
+                meetings = MeetingModel.query.filter(MeetingModel.date >= start_date,
+                                                     MeetingModel.date <= end_date).all()
+
+                if meetings:
+                    meeting_details = []
+                    for meeting in meetings:
+                        details = {
+                            'meeting_block': meeting.block.name if meeting.block else 'Unknown Block',
+                            'meeting_zone': meeting.zone.name if meeting.zone else 'Unknown Zone',
+                            'host': meeting.host.full_name if meeting.host else 'Unknown Host',
+                            'when': meeting.date.strftime('%a, %d %b %Y %H:%M:%S')
+                        }
+                        meeting_details.append(details)
+
+                    return meeting_details, 200
+                else:
+                    return {'message': 'No meetings found within the specified date range'}, 404
+
+            # If no parameters are provided, fetch all meetings
             meetings = MeetingModel.query.all()
             if meetings:
                 return marshal(meetings, self.fields), 200
-            
-            return {'message': 'No meetings found'}, 404
+            else:
+                return {'message': 'No meetings found'}, 404
 
         except Exception as e:
+            logging.error(f"Exception in MeetingsResource: {e}", exc_info=True)
+
             return self.handle_error(e)
+
 
     def post(self):
         try:
@@ -434,6 +664,19 @@ class MeetingsResource(BaseResource):
                 meeting_date = datetime.strptime(args['date'], '%Y-%m-%d %H:%M:%S')
             except ValueError:
                 return {'error': 'Invalid date format, expected YYYY-MM-DD HH:MM:SS'}, 400
+
+            # Get the current week range (start and end of the week)
+            week_start = meeting_date - timedelta(days=meeting_date.weekday())
+            week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59)
+
+             # Check if there's already a meeting scheduled in any block for this week
+            existing_meeting = self.model.query.filter(
+                self.model.date >= week_start,
+                self.model.date <= week_end
+            ).first()
+
+            if existing_meeting:
+                return {'error': f'A meeting is already scheduled this week.', 'block': existing_meeting.block_id}, 400
 
             # Create the new meeting object with parsed date
             new_meeting = self.model(
@@ -481,83 +724,6 @@ class ZonesResource(BaseResource):
             return self.handle_error(e)
 
 
-class BlockReportsResource(Resource):
-    @marshal_with(block_report_fields)
-    def get(self):
-        args = block_report_args.parse_args()
-
-        try:
-            # Build the base query
-            query = db.session.query(
-                ZoneModel.name.label('zone'),
-                UserModel.full_name.label('host'),
-                func.sum(PaymentModel.amount).label('contributed_amount')
-            ).join(UserModel, PaymentModel.payer_id == UserModel.id
-                   ).join(ZoneModel, UserModel.zone_id == ZoneModel.name
-                          ).group_by(ZoneModel.name, UserModel.full_name)
-
-            # Apply filters
-            query = self._apply_filters(query, args)
-
-            # Pagination
-            page = args['page']
-            per_page = args['per_page']
-            paginated_results = query.paginate(page=page, per_page=per_page, error_out=False)
-
-            total_contributed = db.session.query(func.sum(PaymentModel.amount)).scalar() or 0
-
-            return {
-                'total_contributed': total_contributed,
-                'detailed_contributions': [
-                    {
-                        'zone': item.zone,
-                        'host': item.host,
-                        'contributed_amount': item.contributed_amount
-                    } for item in paginated_results.items
-                ],
-                'pagination': {
-                    'page': page,
-                    'per_page': per_page,
-                    'total_pages': paginated_results.pages,
-                    'total_items': paginated_results.total
-                }
-            }
-
-        except Exception as e:
-            db.session.rollback()
-            return {'error': str(e)}, 500
-
-    def _apply_filters(self, query, args):
-        if args['blocks']:
-            block = BlockModel.query.filter_by(name=args['blocks']).first()
-            if not block:
-                raise ValueError(f"Block '{args['blocks']}' not found")
-            members_in_block = [member.id for member in block.members]
-            query = query.filter(PaymentModel.payer_id.in_(members_in_block))
-
-        if args['member']:
-            member = UserModel.query.filter_by(full_name=args['member']).first()
-            if not member:
-                raise ValueError(f"Member '{args['member']}' not found")
-            query = query.filter(PaymentModel.payer_id == member.id)
-
-        start_date = self._parse_date(args['start_date'])
-        end_date = self._parse_date(args['end_date'])
-
-        if start_date:
-            query = query.filter(PaymentModel.payment_date >= start_date)
-        if end_date:
-            query = query.filter(PaymentModel.payment_date <= end_date)
-
-        return query
-
-    def _parse_date(self, date_str):
-        if not date_str:
-            return None
-        try:
-            return datetime.strptime(date_str, '%Y-%m-%d').date()
-        except ValueError:
-            raise ValueError(f"Invalid date format: {date_str}. Use YYYY-MM-DD.")
 
 
 # API routes
@@ -569,7 +735,6 @@ api.add_resource(BlocksResource, '/blocks/', '/blocks/<int:id>')
 api.add_resource(UmbrellasResource, '/umbrellas/', '/umbrellas/<int:id>')
 api.add_resource(ZonesResource, '/zones/', '/zones/<int:id>')
 api.add_resource(MeetingsResource, '/meetings/', '/meetings/<int:id>')
-api.add_resource(BlockReportsResource, '/block_reports/')
 api.add_resource(RolesResource, '/roles/','/roles/<int:id>')
 
 

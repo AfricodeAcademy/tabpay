@@ -6,6 +6,7 @@ from PIL import Image
 from flask import current_app
 import logging
 import os
+# import africastalking
 
 
 db = SQLAlchemy()
@@ -44,3 +45,30 @@ def save_picture(form_picture):
     except Exception as e:
         logging.error(f"Error saving picture: {e}")
         raise e
+
+
+
+
+# africastalking.initialize(
+#     username='sandbox',
+#     api_key='atsk_0e78a5d3700c5d2bffcce035d50e5f878e613f336ab0e05d4e2b33b789c1b8360963d1f5'
+# )
+
+
+# class SendSMS():
+#     def __init__(self):
+#         self.sms = africastalking.SMS
+
+#     def sending(self):
+#         # Set the numbers in international format
+#         recipients = ["+254798354820"]
+#         # Set your message
+#         message = "TabPay";
+#         # Set your shortCode or senderId
+#         sender = "42777"
+#         try:
+#             response = self.sms.send(message, recipients, sender)
+#             print (response)
+#         except Exception as e:
+#             print (f'Houston, we have a problem: {e}')
+
