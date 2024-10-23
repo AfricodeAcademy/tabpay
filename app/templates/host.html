@@ -229,8 +229,7 @@ Upcoming block is hosted by {{meeting_zone}}  and the host is {{host}}. Make pay
                 <th>Full Names</th>
                 <th>Phone Number</th>
                 <th>ID Number</th>
-                <th>Block</th>
-                <th>Zone</th>
+                <th>Membership</th>
                 <th>Bank</th>
                 <th>A/C Number</th>
                 <th>Edit</th>
@@ -243,8 +242,15 @@ Upcoming block is hosted by {{meeting_zone}}  and the host is {{host}}. Make pay
                 <td>{{ member.full_name }}</td>
                 <td>{{ member.phone_number }}</td>
                 <td>{{ member.id_number }}</td>
-                <td>{{ member.block_memberships[0]['name'] }}</td>
-                <td>{{ member.zone_name }}</td>
+                <td>
+                  {% for i in range(member.block_memberships | length) %} {{
+                  member.block_memberships[i]['name'] }} ({{
+                  member.zone_memberships[i]['name'] }}) {% if i + 1 <
+                  member.block_memberships | length %}
+                  <br />
+                  {% endif %} {% endfor %}
+                </td>
+
                 <td>{{ member.bank_name }}</td>
                 <td>{{ member.acc_number }}</td>
 
@@ -357,8 +363,9 @@ Upcoming block is hosted by {{meeting_zone}}  and the host is {{host}}. Make pay
                           {{
                           update_form.member_zone.label(class="update_form-label")
                           }} {{ update_form.member_zone(class="form-select",
-                          value=member.zone_name) }}
+                          value=member.zone_memberships[0]['name']) }}
                         </div>
+
                         <div class="mb-3">
                           {{
                           update_form.bank_id.label(class="update_form-label")

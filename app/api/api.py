@@ -219,6 +219,7 @@ class UsersResource(BaseResource):
         try:
             args = self.args.parse_args()
             logger.info(f"POST request received to create new user. Payload: {args}")
+    
 
             # Create the new user
             new_user = UserModel(
@@ -237,6 +238,13 @@ class UsersResource(BaseResource):
                 if role:
                     new_user.roles.append(role)
 
+            zone_id = args.get('zone_id')
+            if zone_id is not None:
+                zone = ZoneModel.query.get(zone_id)
+                if zone:
+                    new_user.zone_memberships.append(zone)
+                          
+
             # Fetch the block associated with the selected zone
             zone = ZoneModel.query.get(args['zone_id'])
             if zone and zone.parent_block_id:
@@ -245,7 +253,7 @@ class UsersResource(BaseResource):
                     new_user.block_memberships.append(block)  
 
             db.session.commit()
-            logger.info(f"Successfully created user {new_user.id} with roles {[r.name for r in new_user.roles]} and block memberships {[b.name for b in new_user.block_memberships]}")
+            logger.info(f"Successfully created user {new_user.id} with roles {[r.name for r in new_user.roles]},block memberships {[b.name for b in new_user.block_memberships]} and zone memberships {[z.name for z in new_user.zone_memberships]}")
 
             return marshal(new_user, self.fields), 201
 
@@ -282,6 +290,38 @@ class UsersResource(BaseResource):
                         updated = True
                     else:
                         unchanged_fields.append(field)
+
+                # Check if block_id is provided to update block memberships
+                block_id = args.get('block_id')
+                if block_id is not None:
+                    block = BlockModel.query.get(block_id)
+                    if block:
+                        if block not in user.block_memberships:
+                            user.block_memberships.append(block)
+                            logger.info(f"Added block {block.id} to user's block memberships.")
+                            updated = True
+                        else:
+                            logger.info(f"User {user.id} is already a member of block {block.id}.")
+                    else:
+                        logger.warning(f"Block {block_id} not found.")
+
+                # Check if zone_id is provided to update zone memberships
+                zone_id = args.get('zone_id')
+                if zone_id is not None:
+                    zone = ZoneModel.query.get(zone_id)
+                    if zone:
+                        if zone not in user.zone_memberships:
+                            user.zone_memberships.append(zone)
+                            logger.info(f"Added zone {zone.id} to user's zone memberships.")
+                            updated = True
+                        else:
+                            logger.info(f"User {user.id} is already a member of zone {zone.id}.")
+                    else:
+                        logger.warning(f"Zone {zone_id} not found.")
+
+                
+                
+                
 
                 role_id = args.get('role_id')
                 action = args.get('action')

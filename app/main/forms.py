@@ -1,8 +1,7 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, IntegerField, SubmitField,DateTimeField, HiddenField
+from wtforms import StringField, SelectField, IntegerField, SubmitField,DateTimeField
 from flask_wtf.file import FileField,FileAllowed
-from wtforms.validators import DataRequired, Length, ValidationError,NumberRange,Email
-from ..api.api import UserModel
+from wtforms.validators import DataRequired, Length, ValidationError,NumberRange,Email,Optional
 from datetime import datetime
 
 class AddMemberForm(FlaskForm):
@@ -14,16 +13,6 @@ class AddMemberForm(FlaskForm):
     acc_number = IntegerField('Bank Account Number',validators=[DataRequired()],render_kw={'placeholder':'xxxxxx'})
     submit = SubmitField('ADD MEMBER')
     
-    def validate_id_number(self,field):
-        user = UserModel.query.filter_by(id_number=field.data).first()
-        if user:
-            raise ValidationError('Member ID already exists')
-    
-    def validate_phone_number(self, field):
-        user = UserModel.query.filter_by(phone_number=str(field.data)).first()
-        if user:
-            raise ValidationError('Member phone number already exists')
-        
     
     
 class ProfileForm(FlaskForm):
@@ -85,11 +74,11 @@ class EditMemberForm(FlaskForm):
     full_name = StringField('Full Name', validators=[Length(min=3, max=100)])
     phone_number = StringField('Phone Number', validators=[Length(min=10, max=15)])
     id_number = IntegerField('ID Number', validators=[NumberRange(min=10000000, max=99999999, message="ID number must be exactly 8 digits.")])
-    member_zone = StringField('Member Zone',render_kw={'readonly': True}) 
-    bank_id = StringField('Bank',render_kw={'readonly': True}) 
-    block_id = StringField('Block',render_kw={'readonly': True}) 
-    account_number = StringField('Account Number',render_kw={'readonly': True}) 
-        
+    member_zone = SelectField('Select Additional Zone',validators=[Optional()])
+    block_id = SelectField('Select Additional Block',validators=[Optional()])  
+    bank_id = SelectField('Bank', validators=[Optional()], render_kw={'readonly': True})  
+    account_number = StringField('Account Number', validators=[Optional()], render_kw={'readonly': True})
+    
     submit = SubmitField('Save Changes')
 
 

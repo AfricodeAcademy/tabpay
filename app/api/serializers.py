@@ -4,12 +4,21 @@ from flask_restful import fields, reqparse
 def get_user_fields():
     block_fields = {
         "id": fields.Integer,
-        "name": fields.String       
+        "name": fields.String,
+        "parent_umbrella_id": fields.Integer,
     }
+    
     role_fields = {
-    "id": fields.Integer,
-    "name": fields.String
+        "id": fields.Integer,
+        "name": fields.String
     }
+
+    zone_fields = {
+        "id": fields.Integer,
+        "name": fields.String,
+        "parent_block_id": fields.Integer,
+    }
+
     user_fields = {
         "id": fields.Integer,
         "email": fields.String,
@@ -22,18 +31,19 @@ def get_user_fields():
         "image_file": fields.String,
         "registered_at": fields.DateTime,
         "updated_at": fields.DateTime,
-        "zone_id":  fields.Integer,
         "confirmed_at": fields.DateTime,
         "roles": fields.List(fields.Nested(role_fields)),
         "block_memberships": fields.List(fields.Nested(block_fields)),
-        "zone_name": fields.String(attribute='zone.name'),  
+        "zone_memberships": fields.List(fields.Nested(zone_fields)),  
         "bank_name": fields.String(attribute='bank.name'),
+
         "chaired_blocks": fields.List(fields.Nested(block_fields)),
         "secretary_blocks": fields.List(fields.Nested(block_fields)),
         "treasurer_blocks": fields.List(fields.Nested(block_fields))
-
     }
+
     return user_fields
+
 
 block_fields = {
     "id": fields.Integer,
