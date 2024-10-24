@@ -432,8 +432,6 @@ class PaymentsResource(BaseResource):
     fields = payment_fields
     args = payment_args
 
-
-    @marshal_with_fields(payment_fields)
     def get(self, id=None):
         if id:
             # Fetch a specific payment by ID
@@ -444,36 +442,44 @@ class PaymentsResource(BaseResource):
         
         if meeting_id:
             try:
+                logger.info(f"Fetching payments for meeting ID: {meeting_id}")
+
                 # Query payments by meeting_id and join payer (user) and block tables
                 payments = PaymentModel.query \
                     .filter_by(meeting_id=meeting_id) \
                     .join(UserModel, PaymentModel.payer_id == UserModel.id) \
                     .join(BlockModel, PaymentModel.block_id == BlockModel.id) \
+                    .options(joinedload(PaymentModel.payer), joinedload(PaymentModel.block)) \
                     .all()
-                
-                
+
+                logger.info(f"Payments fetched for meeting ID {meeting_id}: {payments}")
+                                    
                 payment_data = []
                 for payment in payments:
-                    print(f"Payment ID: {payment.id}, Payer: {payment.payer}, Block: {payment.block}")
+                    logger.debug(f"Processing payment: ID {payment.id}, Payer {payment.payer.full_name}, Block {payment.block.name}")
 
                     payment_data.append({
                         "mpesa_id": payment.mpesa_id,
                         "amount": payment.amount,
                         "transaction_status": payment.transaction_status,
-                        "payer_id": payment.payer.full_name,  
-                        "block_id": payment.block.name,            
+                        "payer_id": payment.payer.id,  # Payer ID
+                        "payer_full_name": payment.payer.full_name,  # Payer Full Name
+                        "block_id": payment.block.id,  # Block ID
+                        "block_name": payment.block.name,  # Block Name
                         "payment_date": payment.payment_date,
                         "status": "Contributed" if payment.transaction_status else "Pending"
                     })
-                
-                return jsonify({"success": True, "payments": payment_data}), 200
-            
+
+                logger.info(f"Payments query result: {payment_data}")
+                return marshal(payments, self.fields), 200
+
             except Exception as e:
-                print(f'Payments error: {e}')
+                logger.error(f'Payments error: {e}')
                 return self.handle_error(e)
         else:
             # Handle other queries for fetching all payments or specific payment by ID
             return super().get()
+
         
     def post(self):
         args = self.args.parse_args()
@@ -499,9 +505,12 @@ class PaymentsResource(BaseResource):
             payer_id=args['payer_id'],
             meeting_id=args['meeting_id']
         )
-        
+        if new_payment.amount > 200:
+            new_payment.transaction_status = True
+
         db.session.add(new_payment)
         db.session.commit()
+        
         
         return marshal(new_payment,self.fields), 201
 
@@ -623,7 +632,8 @@ class MeetingsResource(BaseResource):
                             'meeting_block': meeting.block.name if meeting.block else 'Unknown Block',
                             'meeting_zone': meeting.zone.name if meeting.zone else 'Unknown Zone',
                             'host': meeting.host.full_name if meeting.host else 'Unknown Host',
-                            'when': meeting.date.strftime('%a, %d %b %Y %H:%M:%S')
+                            'when': meeting.date.strftime('%a, %d %b %Y %H:%M:%S'),
+                            'meeting_id':meeting.id
                         }
                         meeting_details.append(details)
                     logging.info(f"Meeting details: {meeting_details}")

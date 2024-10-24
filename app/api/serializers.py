@@ -1,4 +1,6 @@
 from flask_restful import fields, reqparse
+from datetime import datetime
+
 
 # Fields for serialization
 def get_user_fields():
@@ -57,6 +59,16 @@ communication_fields = {
     "created_at": fields.DateTime,
     "member_id": fields.Integer
 }
+def format_datetime(value):
+    if isinstance(value, str):
+        # Convert the string to a datetime object if needed
+        try:
+            return datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            return value  # Leave it as is if it can't be parsed
+    elif isinstance(value, datetime):
+        return value
+    return None  # Handle None case
 
 payment_fields = {
     "id": fields.Integer,
@@ -64,21 +76,22 @@ payment_fields = {
     "account_number": fields.String,
     "source_phone_number": fields.String,
     "amount": fields.Integer,
-    "payment_date": fields.DateTime,
+    "payment_date": fields.DateTime(dt_format="rfc822", attribute=lambda x: format_datetime(x.payment_date)),
     "transaction_status": fields.Boolean,
     "bank_id":fields.Integer,
     "block_id": fields.Integer,
     "payer_id": fields.Integer,
+    "meeting_id": fields.Integer,
     "payer_full_name": fields.String(attribute=lambda x: getattr(x.payer, 'full_name', 'Unknown')),  
     "block_name": fields.String(attribute=lambda x: getattr(x.block, 'name', 'Unknown'))  
 }
+
 
 bank_fields = {
     "id": fields.Integer,
     "name": fields.String,
     "paybill_no": fields.Integer
 }
-
 
 
 umbrella_fields = {
@@ -142,7 +155,7 @@ payment_args.add_argument('amount', type=int, required=True, help='Amount is req
 payment_args.add_argument('bank_id', type=int, required=True, help='Bank ID is required')
 payment_args.add_argument('block_id', type=int, required=True, help='Block ID is required')
 payment_args.add_argument('payer_id', type=int, required=True, help='Payer ID is required')
-payment_args.add_argument('amount', type=int, required=True, help='Meeting ID is required')
+payment_args.add_argument('meeting_id', type=int, required=True, help='Meeting ID is required')
 
 block_args = reqparse.RequestParser()
 block_args.add_argument('name', type=str, required=True, help='Block Name is required')
