@@ -38,7 +38,7 @@ block content %}
 
       <!-- Tab Panes -->
       <div class="tab-content ps-5 pb-3 pe-5 pt-1">
-        <!-- <-- Block-->
+        <!-- Block Contributin-->
         <div
           id="block_contribution"
           class="tab-pane fade {% if active_tab == 'block_contribution' %}show active{% endif %}"
@@ -84,23 +84,6 @@ block content %}
           <table class="table table-responsive text-center mt-5">
             <thead>
               <tr>
-                <th colspan="5">
-                  <div
-                    style="
-                      display: flex;
-                      justify-content: space-between;
-                      width: 100%;
-                    "
-                  >
-                    <span>Host:</span>
-                    <span class="text-success">Patrick Cheruiyot</span>
-                    <span>Date:</span>
-                    <span class="text-success"> 20/11/2024</span>
-                  </div>
-                </th>
-              </tr>
-
-              <tr>
                 <th>Block</th>
                 <th>Flat Rate Totals</th>
                 <th>Guesting Totals</th>
@@ -143,9 +126,9 @@ block content %}
           <div class="flex-container mt-4">
             <div class="row">
               <div class="col-md-3">
-                <select id="block" name="block">
-                  {% for block in blocks %}
-                  <option value="{{ block.name }}">{{ block.name }}</option>
+                <select id="meeting" name="meeting">
+                  {% for meeting in meetings %}
+                  <option value="{{ meeting.name }}">{{ meeting.name }}</option>
                   {% endfor %}
                 </select>
               </div>
@@ -171,22 +154,7 @@ block content %}
           <table class="table table-responsive text-center">
             <thead>
               <tr></tr>
-              <tr>
-                <th colspan="5">
-                  <div
-                    style="
-                      display: flex;
-                      justify-content: space-between;
-                      width: 100%;
-                    "
-                  >
-                    <span>Host:</span>
-                    <span class="text-success">Patrick Cheruiyot</span>
-                    <span>Date:</span>
-                    <span class="text-success"> 20/11/2024</span>
-                  </div>
-                </th>
-              </tr>
+
               <tr>
                 <th>Full Names</th>
                 <th>Status</th>
@@ -198,8 +166,12 @@ block content %}
               {% for member in members %}
               <tr>
                 <td>{{member.full_name}}</td>
-                <td style="color: #4c9323">Pending</td>
-                <td>Kes 0.00</td>
+                <td
+                  style="color: {% if member.status == 'Pending' %}red{% else %}#4c9323{% endif %}"
+                >
+                  {{member.status}}
+                </td>
+                <td>Kes {{member.amount}}</td>
                 <td>
                   <button
                     class="btn"
@@ -212,6 +184,10 @@ block content %}
                     SEND
                   </button>
                 </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="4">No contributions found</td>
               </tr>
               {% endfor %}
             </tbody>
