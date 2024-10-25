@@ -1200,7 +1200,7 @@ def remove_committee_role(user_id, active_tab):
 
 
 # Helper function to render the reports page with member contributions
-def render_reports_page(active_tab=None, error=None):
+def render_reports_page(active_tab=None, error=None, host_id=None, member_id=None, status=None):
     schedule_form = ScheduleForm()
 
     # API call to get user details
@@ -1236,31 +1236,35 @@ def render_reports_page(active_tab=None, error=None):
 
     members = []
     member_contributions = []
+    combined_member_contributions = []
     try:
         # Fetch members
         members = get_members()
 
-
         # Fetch contributions for the most recent meeting
-        contributions = get_member_contributions()
-        logger.debug(f"Member Contributions Data: {member_contributions}")
+        contributions_data = get_member_contributions(host_id=host_id, member_id=member_id, status=status)
+        member_contributions = contributions_data['member_contributions']
+        host_name = contributions_data.get('host_name', 'Unknown Host')
+        meeting_date = contributions_data.get('meeting_date', 'Unknown Date')
+
 
 
         # Combine member data with their contributions
         for member in members:
-            contribution = next((c for c in contributions if c['full_name'] == member['full_name']), None)
+            contribution = next((c for c in member_contributions if c['full_name'] == member['full_name']), None)
             if contribution:
-                member_contributions.append({
+                combined_member_contributions.append({
                     'full_name': member['full_name'],
                     'amount': contribution['amount'],
-                    'status': contribution.get('status', 'Unknown'),  
+                    'status': contribution.get('status', 'Unknown'),
                 })
             else:
-                member_contributions.append({
+                combined_member_contributions.append({
                     'full_name': member['full_name'],
                     'amount': 0.0,
                     'status': 'Pending',
                 })
+        block_contributions_data = get_block_contributions(host_id=host_id)
 
     except Exception as e:
         flash(f'Error fetching members or contributions. Please try again later.', 'danger')
@@ -1268,8 +1272,11 @@ def render_reports_page(active_tab=None, error=None):
     # Render the reports page
     return render_template('block_reports.html', title='Block_Reports | Dashboard',
                            user=current_user,
-                           members=member_contributions, 
+                           host_name=host_name,
+                           meeting_date=meeting_date,
+                           members=combined_member_contributions, 
                            schedule_form=schedule_form,
+                           block_contributions=block_contributions_data['block_contributions'],
                            blocks=blocks,
                            active_tab=active_tab,
                            error=error)
@@ -1279,10 +1286,17 @@ def render_reports_page(active_tab=None, error=None):
 @roles_accepted('Admin', 'SuperUser')
 @login_required
 def block_reports():
-    return render_reports_page(active_tab=request.args.get('active_tab', 'block_contribution'))
+    host_id = request.args.get('host')
+    member_id = request.args.get('member')
+    status = request.args.get('status')
+
+    
+    return render_reports_page(active_tab=request.args.get('active_tab', 'block_contribution'), host_id=host_id,
+        member_id=member_id,
+        status=status)
 
 
-def get_member_contributions(meeting_id=None, host_id=None, status=None):
+def get_member_contributions(meeting_id=None, host_id=None, status=None,member_id=None):
     umbrella_id = get_umbrella_by_user(current_user.id)
     try:
 
@@ -1302,11 +1316,15 @@ def get_member_contributions(meeting_id=None, host_id=None, status=None):
         if not meeting_id:
             meeting = get_upcoming_meeting_details()
             meeting_id = meeting['meeting_id']
+            host_name = meeting['host']  
+            meeting_date = meeting['when'] 
         
         # Fetch contributions for the meeting and apply filters if provided
         contributions_params = {'meeting_id': meeting_id}
         if host_id:
             contributions_params['host_id'] = host_id
+        if member_id:
+            contributions_params['payer_id'] = member_id
         if status:
             contributions_params['status'] = status
 
@@ -1340,10 +1358,72 @@ def get_member_contributions(meeting_id=None, host_id=None, status=None):
                     'status': 'Pending',
                 })
 
-        return member_contributions
+        return {
+                    'member_contributions': member_contributions,
+                    'host_name': host_name,
+                    'meeting_date': meeting_date
+                }
 
     except Exception as e:
         return []
+
+
+def get_block_contributions(meeting_id=None, host_id=None):
+    umbrella_id = get_umbrella_by_user(current_user.id)
+    try:
+        # Fetch all blocks under the umbrella
+        blocks_response = requests.get(
+            f"{current_app.config['API_BASE_URL']}/api/v1/blocks/",
+            params={'umbrella_id': umbrella_id['id']}
+        )
+
+        if blocks_response.status_code != 200:
+            flash("Error fetching blocks. Please try again later.", "danger")
+            return []
+
+        blocks = blocks_response.json()
+
+        # Fetch the latest meeting if no meeting ID is provided
+        if not meeting_id:
+            meeting = get_upcoming_meeting_details()
+            meeting_id = meeting['meeting_id']
+            host_name = meeting['host']
+            meeting_date = meeting['when']
+
+        # Fetch contributions for the meeting and filter by host if provided
+        contributions_params = {'meeting_id': meeting_id}
+        if host_id:
+            contributions_params['host_id'] = host_id
+
+        contributions_response = requests.get(
+            f"{current_app.config['API_BASE_URL']}/api/v1/payments/",
+            params=contributions_params
+        )
+
+        if contributions_response.status_code != 200:
+            flash("Error fetching contributions. Please try again later.", "danger")
+            return []
+
+        contributions = contributions_response.json()
+
+        # Aggregate contributions by block
+        block_contributions = {}
+        for block in blocks:
+            block_contributions[block['name']] = sum(
+                contribution['amount'] for contribution in contributions
+                if contribution['block_id'] == block['id']
+            )
+
+        return {
+            'block_contributions': block_contributions,
+            'host_name': host_name,
+            'meeting_date': meeting_date
+        }
+
+    except Exception as e:
+        flash("Error fetching block contributions.", "danger")
+        return []
+
 
 
 def render_contribution_page(active_tab=None, error=None):
