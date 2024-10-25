@@ -30,6 +30,9 @@ class Config:
     MAIL_DEFAULT_SENDER = 'enockbett427@gmail.com'
 
     SECURITY_CHANGE_EMAIL = True
+    AT_USERNAME='africode'
+    AT_API_KEY='atsk_26b6fd63c4ab81592df201a60a3b3c3b221234128dc34046355f0cd9198e1a7afc6e724a'
+    AT_SENDER_ID='Africode'
 
 
 class DevelopmentConfig(Config):
