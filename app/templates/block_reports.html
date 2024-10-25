@@ -38,88 +38,87 @@ block content %}
 
       <!-- Tab Panes -->
       <div class="tab-content ps-5 pb-3 pe-5 pt-1">
-        <!-- <-- Block-->
-        <div
-          id="block_contribution"
-          class="tab-pane fade {% if active_tab == 'block_contribution' %}show active{% endif %}"
-        >
-          <p>
-            The total amount contributed by each block to the hosting member.
-          </p>
-          <h4
-            style="
-              font-weight: 500;
-              color: rgb(0, 0, 0);
-              letter-spacing: 2px;
-              text-decoration: underline;
-              font-size: large;
-            "
-          >
-            Filter By:
-          </h4>
-          <div class="flex-container mt-4">
-            <div class="row">
-              <div class="col-md-3">
-                <select id="block" name="block">
-                  {% for block in blocks %}
-                  <option value="{{ block.name }}">{{ block.name }}</option>
-                  {% endfor %}
-                </select>
-              </div>
+      <!-- Block Contribution -->
+            <div
+            id="block_contribution"
+            class="tab-pane fade {% if active_tab == 'block_contribution' %}show active{% endif %}"
+            >
+            <p>
+              The total amount contributed by each block to the hosting member.
+            </p>
+            <h4
+              style="
+                font-weight: 500;
+                color: rgb(0, 0, 0);
+                letter-spacing: 2px;
+                text-decoration: underline;
+                font-size: large;
+              "
+            >
+              Filter By:
+            </h4>
+            <div class="flex-container mt-4">
+              <div class="row">
+                <div class="col-md-3">
+                  <select id="block" name="block">
+                    {% for block in blocks %}
+                    <option value="{{ block.name }}">{{ block.name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
 
-              <div class="col-md-3">
-                <select id="date" name="date">
-                  <option>Week 1</option>
-                  <option>Week 2</option>
-                  <option>Week 3</option>
-                </select>
-              </div>
-              <div class="col-md-3 tt-contributed">
-                Total Contributed:
-                <span style="color: rgb(14, 169, 14)"> Kes 2,000</span>
+                <div class="col-md-3">
+                  <select id="date" name="date">
+                    <option>Week 1</option>
+                    <option>Week 2</option>
+                    <option>Week 3</option>
+                  </select>
+                </div>
+                <div class="col-md-3 tt-contributed">
+                  {% set total_contributed = block_contributions.values()|sum %}
+
+                  Total Contributed:
+                  <span style="color: rgb(14, 169, 14)">Kes {{ total_contributed }}</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <table class="table table-responsive text-center mt-5">
-            <thead>
-              <tr>
-                <th colspan="5">
-                  <div
-                    style="
-                      display: flex;
-                      justify-content: space-between;
-                      width: 100%;
-                    "
-                  >
-                    <span>Host:</span>
-                    <span class="text-success">Patrick Cheruiyot</span>
-                    <span>Date:</span>
-                    <span class="text-success"> 20/11/2024</span>
-                  </div>
-                </th>
-              </tr>
+            <table class="table table-responsive text-center mt-5">
+              <thead>
+                <tr>
+                  <th colspan="5">
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        width: 100%;
+                      "
+                    >
+                      <span>Host:</span>
+                      <span class="text-success">{{ host_name }}</span>
+                      <span>Date:</span>
+                      <span class="text-success"> {{ meeting_date }}</span>
+                    </div>
+                  </th>
+                </tr>
+                <tr>
+                  <th>Block</th>
+                  <th>Amount Contributed</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for block, amount in block_contributions.items() %}
+                <tr>
+                  <td>{{ block }}</td>
+                  <td>Kes {{ amount }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            </div>
+            <!-- End Block Contribution -->
 
-              <tr>
-                <th>Block</th>
-                <th>Flat Rate Totals</th>
-                <th>Guesting Totals</th>
-                <th>Total Contributed Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Block 1</td>
-                <td>Kes 1,000</td>
-                <td>Kes 1,000</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <!-- Block contribution  -->
-
-        <!-- member Contribution  -->
-
+        <!-- Member Contribution -->
         <div
           id="member_contribution"
           class="tab-pane fade {% if active_tab == 'member_contribution' %}show active{% endif %}"
@@ -142,27 +141,42 @@ block content %}
 
           <div class="flex-container mt-4">
             <div class="row">
+              <!-- Filter by Meeting Host -->
               <div class="col-md-3">
-                <select id="block" name="block">
-                  {% for block in blocks %}
-                  <option value="{{ block.name }}">{{ block.name }}</option>
+                <select id="host" name="host" onchange="filterContributions()">
+                  <option value="">-- Select Host --</option>
+                  {% for host in hosts %}
+                  <option value="{{ host.id }}">{{ host.full_name }}</option>
                   {% endfor %}
                 </select>
               </div>
+
+              <!-- Filter by Member -->
               <div class="col-md-3">
-                <select id="member" name="member">
+                <select
+                  id="member"
+                  name="member"
+                  onchange="filterContributions()"
+                >
+                  <option value="">-- Select Member --</option>
                   {% for member in members %}
-                  <option value="{{ member.full_name }}">
+                  <option value="{{ member.id }}">
                     {{ member.full_name }}
                   </option>
                   {% endfor %}
                 </select>
               </div>
+
+              <!-- Filter by Contribution Status -->
               <div class="col-md-3">
-                <select id="date" name="date">
-                  <option>Week 1</option>
-                  <option>Week 2</option>
-                  <option>Week 3</option>
+                <select
+                  id="status"
+                  name="status"
+                  onchange="filterContributions()"
+                >
+                  <option value="">-- Select Status --</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Contributed">Contributed</option>
                 </select>
               </div>
             </div>
@@ -170,36 +184,39 @@ block content %}
 
           <table class="table table-responsive text-center">
             <thead>
-              <tr></tr>
               <tr>
-                <th colspan="5">
-                  <div
-                    style="
-                      display: flex;
-                      justify-content: space-between;
-                      width: 100%;
-                    "
-                  >
-                    <span>Host:</span>
-                    <span class="text-success">Patrick Cheruiyot</span>
-                    <span>Date:</span>
-                    <span class="text-success"> 20/11/2024</span>
-                  </div>
-                </th>
-              </tr>
-              <tr>
+                <tr>
+                  <th colspan="5">
+                    <div
+                      style="
+                        display: flex;
+                        justify-content: space-between;
+                        width: 100%;
+                      "
+                    >
+                      <span>Host:</span>
+                      <span class="text-success">{{host_name}}</span>
+                      <span>Date:</span>
+                      <span class="text-success"> {{meeting_date}}</span>
+                    </div>
+                  </th>
+                </tr>
                 <th>Full Names</th>
                 <th>Status</th>
                 <th>Amount</th>
                 <th>Send reminder</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="contribution-details">
               {% for member in members %}
               <tr>
                 <td>{{member.full_name}}</td>
-                <td style="color: #4c9323">Pending</td>
-                <td>Kes 0.00</td>
+                <td
+                  style="color: {% if member.status == 'Pending' %}red{% else %}#4c9323{% endif %}"
+                >
+                  {{member.status}}
+                </td>
+                <td>Kes {{member.amount}}</td>
                 <td>
                   <button
                     class="btn"
@@ -213,12 +230,15 @@ block content %}
                   </button>
                 </td>
               </tr>
+              {% else %}
+              <tr>
+                <td colspan="4">No contributions found</td>
+              </tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
-
-        <!--/  Member Contribution -->
+        <!-- /Member Contribution -->
 
         <!--  Analytics -->
         <div

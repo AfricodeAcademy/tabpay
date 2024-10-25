@@ -1,9 +1,12 @@
+africastalking==1.2.9
 aniso8601==9.0.1
 argon2-cffi==23.1.0
 argon2-cffi-bindings==21.2.0
 bcrypt==4.2.0
 blinker==1.8.2
+certifi==2024.8.30
 cffi==1.17.1
+charset-normalizer==3.4.0
 click==8.1.7
 dnspython==2.6.1
 email_validator==2.2.0
@@ -27,8 +30,12 @@ pillow==10.4.0
 psycopg2-binary==2.9.9
 pycparser==2.22
 pytz==2024.2
+requests==2.32.3
+schema==0.7.7
+setuptools==75.1.0
 six==1.16.0
 SQLAlchemy==2.0.34
 typing_extensions==4.12.2
+urllib3==2.2.3
 Werkzeug==3.0.4
 WTForms==3.1.2
