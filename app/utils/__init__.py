@@ -6,6 +6,7 @@ from PIL import Image
 from flask import current_app
 import logging
 import os
+from .send_sms import SendSMS # SMS service
 # import africastalking
 
 
@@ -13,6 +14,20 @@ db = SQLAlchemy()
 security = Security()
 mail = Mail()
 
+# SMS service
+# Initialize SMS service as None first
+sms = None
+
+def init_sms(app):
+    """Initialize SMS service with application config"""
+    global sms
+    try:
+        sms = SendSMS()
+        return sms
+    except Exception as e:
+        app.logger.error(f"Failed to initialize SMS service: {e}")
+        return None
+    # SMS service - ENDS********
 
 # Function to save the profile picture
 def save_picture(form_picture):
@@ -47,28 +62,6 @@ def save_picture(form_picture):
         raise e
 
 
+__all__ = ['db', 'mail', 'security', 'sms', 'init_sms'] # SMS service
 
-
-# africastalking.initialize(
-#     username='sandbox',
-#     api_key='atsk_0e78a5d3700c5d2bffcce035d50e5f878e613f336ab0e05d4e2b33b789c1b8360963d1f5'
-# )
-
-
-# class SendSMS():
-#     def __init__(self):
-#         self.sms = africastalking.SMS
-
-#     def sending(self):
-#         # Set the numbers in international format
-#         recipients = ["+254798354820"]
-#         # Set your message
-#         message = "TabPay";
-#         # Set your shortCode or senderId
-#         sender = "42777"
-#         try:
-#             response = self.sms.send(message, recipients, sender)
-#             print (response)
-#         except Exception as e:
-#             print (f'Houston, we have a problem: {e}')
 

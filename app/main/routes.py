@@ -4,7 +4,7 @@ from flask_security import login_required, current_user, roles_accepted
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm,PaymentForm
 import logging
 import os
-from ..utils import save_picture
+from ..utils import save_picture, sms
 from flask import current_app
 from datetime import datetime,timedelta
 
@@ -255,6 +255,68 @@ def get_user(id_number):
     current_app.logger.debug("User not found")
     return jsonify({'error': 'User not found'}), 404
 
+
+# SMS service
+
+# @main.route('/notify-members', methods=['POST'])
+# # @login_required
+# def notify_members():
+#     try:
+#         # Example: Send SMS to multiple members
+#         message = "Important: Your TabPay meeting is scheduled for tomorrow at 8 AM"
+#         recipients = ['0729057932', '0725132294']  
+        
+#         if sms is None:
+#             return jsonify({
+#                 'status': 'error',
+#                 'message': 'SMS service not initialized'
+#             }), 500
+        
+#         response = sms.send(
+#             message=message,
+#             recipients=recipients
+#         )
+        
+#         return jsonify({
+#             'status': 'success',
+#             'message': 'Notifications sent successfully',
+#             'details': response
+#         })
+        
+#     except Exception as e:
+#         current_app.logger.error(f"Failed to send notifications: {e}")
+#         return jsonify({
+#             'status': 'error',
+#             'message': str(e)
+#         }), 500
+
+
+# def send_notification(phone_numbers, message):
+#     """
+#     Send SMS notification to one or more phone numbers
+    
+#     Args:
+#         phone_numbers (list): List of phone numbers to send SMS to
+#         message (str): Message to send
+        
+#     Returns:
+#         tuple: (success boolean, response/error message)
+#     """
+#     try:
+#         if sms is None:
+#             raise Exception("SMS service not initialized")
+            
+#         response = sms.send(
+#             message=message,
+#             recipients=phone_numbers if isinstance(phone_numbers, list) else [phone_numbers]
+#         )
+        
+#         return True, response
+        
+#     except Exception as e:
+#         current_app.logger.error(f"SMS notification failed: {e}")
+#         return False, str(e)
+    
 
 def handle_committee_addition():
     committee_form = AddCommitteForm()

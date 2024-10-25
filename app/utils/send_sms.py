@@ -10,7 +10,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-class SendSMS:
+class SendSMS():
     def __init__(self):
         """Initialize Africa's Talking SMS service"""
         try:
