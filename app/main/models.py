@@ -11,6 +11,12 @@ member_blocks = db.Table('member_blocks',
     db.Column('block_id', db.Integer, db.ForeignKey('blocks.id'), primary_key=True)
 )
 
+member_zones = db.Table(
+    'member_zones',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('zone_id', db.Integer, db.ForeignKey('zones.id'), primary_key=True)
+)
+
 roles_users = db.Table('roles_users',
     db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
     db.Column('role_id', db.Integer, db.ForeignKey('roles.id'), primary_key=True),
@@ -32,8 +38,8 @@ class UserModel(db.Model, UserMixin):
     email = db.Column(db.String(255), unique=True)
     password = db.Column(db.String(255))
     full_name = db.Column(db.String(255))
-    id_number = db.Column(db.Integer, index=True, unique=True)
-    phone_number = db.Column(db.String(80), unique=True)
+    id_number = db.Column(db.Integer, index=True)
+    phone_number = db.Column(db.String(80))
     active = db.Column(db.Boolean, default=True)
     bank_id = db.Column(db.Integer, db.ForeignKey('banks.id'))
     acc_number = db.Column(db.String(50))
@@ -43,12 +49,16 @@ class UserModel(db.Model, UserMixin):
     fs_uniquifier = db.Column(db.String(64), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
     zone_id = db.Column(db.Integer, db.ForeignKey('zones.id'))
     confirmed_at = db.Column(db.DateTime)
+     # Add composite unique constraint
+    __table_args__ = (db.UniqueConstraint('id_number', 'phone_number', 'zone_id', name='uq_user_id_phone_zone'),)
+
 
     # Relationships
     roles = db.relationship('RoleModel', secondary=roles_users, backref=db.backref('users', lazy=True))
     messages = db.relationship('CommunicationModel', backref='author', lazy=True)
     payments = db.relationship('PaymentModel', backref='payer', lazy=True)
-    block_memberships = db.relationship('BlockModel', secondary=member_blocks, backref=db.backref('members', lazy=True))
+    block_memberships = db.relationship('BlockModel', secondary=member_blocks, backref=db.backref('block_members', lazy=True))
+    zone_memberships = db.relationship('ZoneModel', secondary=member_zones, backref=db.backref('zone_members', lazy=True))
     webauth = db.relationship('WebAuth', backref='user', uselist=False)
     hosted_meetings = db.relationship('MeetingModel', backref='host', foreign_keys='MeetingModel.host_id')
 
@@ -109,6 +119,7 @@ class ZoneModel(db.Model):
 
     # Members of the zone (users)
     members = db.relationship('UserModel', foreign_keys='UserModel.zone_id', backref='zone', lazy=True)
+
 
     def __repr__(self):
         return f"<Zone {self.name}>"
