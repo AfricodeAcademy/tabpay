@@ -1,5 +1,5 @@
 from flask import Flask
-from .utils import db, mail, security, init_sms # SMS service
+from .utils import db, mail, security # SMS service
 from .main.models import UserModel, RoleModel
 from flask_security import SQLAlchemyUserDatastore
 from flask_security.utils import hash_password
@@ -21,8 +21,8 @@ def create_app(config_name):
     mail.init_app(app)
 
     # SMS service
-    with app.app_context():
-        init_sms(app)
+    # with app.app_context():
+        # init_sms(app)
     
     security.init_app(app, user_datastore, confirm_register_form=ExtendedConfirmRegisterForm,
                       register_form=ExtendedRegisterForm, login_form=ExtendedLoginForm)
@@ -50,10 +50,10 @@ def create_app(config_name):
         user_datastore.find_or_create_role(name='Treasurer',description='Block Treasurer')
         
         # Create Admin
-        if not user_datastore.find_user(email='biikate48@gmail.com'):
+        if not user_datastore.find_user(email='enockbett427@gmail.com'):
             hashed_password = hash_password('123456')
-            user_datastore.create_user(email='biikate48@gmail.com', password=hashed_password,
-                                       id_number=42635058, full_name='Ronoh Benard', phone_number='0729057932',
+            user_datastore.create_user(email='enockbett427@gmail.com', password=hashed_password,
+                                       id_number=42635058, full_name='Enock Bett', phone_number='0729057932',
                                        roles=[user_datastore.find_role('Admin')])
             db.session.commit()
             print('Admin created successfully')

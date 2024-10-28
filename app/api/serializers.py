@@ -120,8 +120,12 @@ meeting_fields = {
     "zone_id": fields.Integer,
     "host_id": fields.Integer,
     "organizer_id": fields.Integer,
-    "date": fields.DateTime
+    "date": fields.DateTime,
+    "paybill_no": fields.Integer,  
+    "acc_number": fields.String
 }
+
+
 
 
 user_args = reqparse.RequestParser()

@@ -628,10 +628,16 @@ class MeetingsResource(BaseResource):
                     # Prepare details for all meetings within the date range
                     meeting_details = []
                     for meeting in meetings:
+                        host = meeting.host
+                        paybill_no = host.bank.paybill_no if host and host.bank else 'Unknown Paybill'
+                        acc_number = host.acc_number if host else 'Unknown Account'
+
                         details = {
                             'meeting_block': meeting.block.name if meeting.block else 'Unknown Block',
                             'meeting_zone': meeting.zone.name if meeting.zone else 'Unknown Zone',
                             'host': meeting.host.full_name if meeting.host else 'Unknown Host',
+                            'paybill_no': paybill_no,
+                            'acc_number': acc_number,
                             'when': meeting.date.strftime('%a, %d %b %Y %H:%M:%S'),
                             'meeting_id':meeting.id
                         }
@@ -650,10 +656,17 @@ class MeetingsResource(BaseResource):
                 if meetings:
                     meeting_details = []
                     for meeting in meetings:
+                        host = meeting.host
+                        paybill_no = host.bank.paybill_no if host and host.bank else 'Unknown Paybill'
+                        acc_number = host.acc_number if host else 'Unknown Account'
+
                         details = {
                             'meeting_block': meeting.block.name if meeting.block else 'Unknown Block',
                             'meeting_zone': meeting.zone.name if meeting.zone else 'Unknown Zone',
                             'host': meeting.host.full_name if meeting.host else 'Unknown Host',
+                            'meeting_id':meeting.id,
+                            'paybill_no': paybill_no,
+                            'acc_number': acc_number,
                             'when': meeting.date.strftime('%a, %d %b %Y %H:%M:%S')
                         }
                         meeting_details.append(details)
@@ -677,12 +690,20 @@ class MeetingsResource(BaseResource):
                                                      MeetingModel.date <= end_date).all()
 
                 if meetings:
+                  
                     meeting_details = []
                     for meeting in meetings:
+                        host = meeting.host
+                        paybill_no = host.bank.paybill_no if host and host.bank else 'Unknown Paybill'
+                        acc_number = host.acc_number if host else 'Unknown Account'
+
                         details = {
                             'meeting_block': meeting.block.name if meeting.block else 'Unknown Block',
                             'meeting_zone': meeting.zone.name if meeting.zone else 'Unknown Zone',
                             'host': meeting.host.full_name if meeting.host else 'Unknown Host',
+                            'paybill_no': paybill_no,
+                            'acc_number': acc_number,
+                            'meeting_id':meeting.id,
                             'when': meeting.date.strftime('%a, %d %b %Y %H:%M:%S')
                         }
                         meeting_details.append(details)

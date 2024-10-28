@@ -4,14 +4,15 @@ from flask_security import login_required, current_user, roles_accepted
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm,PaymentForm
 import logging
 import os
-from ..utils import save_picture, sms
+from ..utils import save_picture
 from flask import current_app
 from datetime import datetime,timedelta
-
+from ..utils.send_sms import SendSMS
 
 
 main = Blueprint('main', __name__)
 
+sms = SendSMS()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -256,66 +257,6 @@ def get_user(id_number):
     return jsonify({'error': 'User not found'}), 404
 
 
-# SMS service
-
-@main.route('/notify-members', methods=['POST'])
-# @login_required
-def notify_members():
-    try:
-        # Example: Send SMS to multiple members
-        message = "Important: Your TabPay meeting is scheduled for tomorrow at 8 AM"
-        recipients = ['0729057932', '0725132294']  
-        
-        if sms is None:
-            return jsonify({
-                'status': 'error',
-                'message': 'SMS service not initialized'
-            }), 500
-        
-        response = sms.send(
-            message=message,
-            recipients=recipients
-        )
-        
-        return jsonify({
-            'status': 'success',
-            'message': 'Notifications sent successfully',
-            'details': response
-        })
-        
-    except Exception as e:
-        current_app.logger.error(f"Failed to send notifications: {e}")
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
-
-
-def send_notification(phone_numbers, message):
-    """
-    Send SMS notification to one or more phone numbers
-    
-    Args:
-        phone_numbers (list): List of phone numbers to send SMS to
-        message (str): Message to send
-        
-    Returns:
-        tuple: (success boolean, response/error message)
-    """
-    try:
-        if sms is None:
-            raise Exception("SMS service not initialized")
-            
-        response = sms.send(
-            message=message,
-            recipients=phone_numbers if isinstance(phone_numbers, list) else [phone_numbers]
-        )
-        
-        return True, response
-        
-    except Exception as e:
-        current_app.logger.error(f"SMS notification failed: {e}")
-        return False, str(e)
     
 
 def handle_committee_addition():
@@ -798,6 +739,7 @@ def render_host_page(active_tab=None, error=None):
     schedule_form = ScheduleForm()
     update_form = EditMemberForm()
 
+
     if not active_tab:
         active_tab = request.args.get('active_tab', 'schedule_meeting')
 
@@ -809,9 +751,14 @@ def render_host_page(active_tab=None, error=None):
         meeting_zone = meeting_details['meeting_zone']
         host = meeting_details['host']
         when = meeting_details['when']
+        acc_number = meeting_details['acc_number']
+        paybill_no = meeting_details['paybill_no']
     else:
-        meeting_block = meeting_zone = host = when = None
+        meeting_block = meeting_zone = host = when = paybill_no = acc_number = None
     
+    message = f"""
+Dear Member,
+Upcoming block is hosted by {meeting_zone} and the host is {host}. Paybill: {paybill_no}, Account Number: {acc_number}."""
 
     try:
         user = get_user_from_api(current_user.id)
@@ -870,8 +817,8 @@ def render_host_page(active_tab=None, error=None):
                            schedule_form=schedule_form,
                            update_form=update_form,
                            user=current_user,
-                           blocks=blocks,
-                           zones=zones,
+                           blocks=blocks,message=message,
+                           zones=zones,acc_number=acc_number,paybill_no=paybill_no,
                            members=members,
                            active_tab=active_tab,  
                            error=error,meeting_block=meeting_block,host=host,meeting_zone=meeting_zone,when=when)
@@ -891,9 +838,12 @@ def host():
         if request.form.get('_method') == 'DELETE':
             user_id = request.args.get('user_id')   
             return remove_member(user_id)
+    elif 'send_sms' in request.form:  
+        return send_sms_notifications()
         
     # Default GET request rendering the host page
     return render_host_page(active_tab=request.args.get('active_tab', 'schedule_meeting'))
+
 
 
 # Handle schedule creation
@@ -1018,6 +968,8 @@ def get_upcoming_meeting_details():
                 host_name = first_meeting.get('host', 'Unknown Host')
                 meeting_date = first_meeting.get('when', 'Unknown Date')
                 meeting_id = first_meeting.get('meeting_id', 'Unknown meeting ID')
+                paybill_no = first_meeting.get('paybill_no', 'Unknown Paybill')
+                acc_number = first_meeting.get('acc_number', 'Unknown Account')
                 
 
                 logging.info(f"Extracted meeting details: Block - {block_name}, Zone - {zone_name}, Host - {host_name}, When - {meeting_date}")
@@ -1027,6 +979,9 @@ def get_upcoming_meeting_details():
                     'host': host_name,
                     'when': meeting_date,
                     'meeting_id': meeting_id,
+                    'paybill_no': paybill_no,
+                    'acc_number': acc_number
+                 
                 }
             elif isinstance(meeting_data, dict):
                 block_name = meeting_data.get('meeting_block', 'Unknown Block')
@@ -1034,12 +989,17 @@ def get_upcoming_meeting_details():
                 host_name = meeting_data.get('host', 'Unknown Host')
                 meeting_date = meeting_data.get('when', 'Unknown Date')
                 meeting_id = meeting_data.get('meeting_id', 'Unknown meeting ID')
+                paybill_no = meeting_data.get('paybill_no', 'Unknown Paybill')
+                acc_number = meeting_data.get('acc_number', 'Unknown Account')
+                
                 return {
                     'meeting_block': block_name,
                     'meeting_zone': zone_name,
                     'host': host_name,
                     'when': meeting_date,
-                    'meeting_id':meeting_id
+                    'meeting_id':meeting_id,
+                    'paybill_no': paybill_no,
+                    'acc_number': acc_number
                 }
             else:
                 logging.warning("No upcoming meetings found or unexpected response format.")
@@ -1051,7 +1011,60 @@ def get_upcoming_meeting_details():
     except requests.exceptions.RequestException as e:
         logging.error(f"An error occurred while fetching data from the API: {e}")
         return None
-    
+
+
+def send_sms_notifications():
+    try:
+        # Retrieve message from the form data
+        message = request.form.get('message')
+        print(f"Message: {message}") 
+        
+        recipients = get_member_phone_numbers()
+        print(f"Recipients: {recipients}") 
+        if not recipients:
+            flash('No recipients found for SMS notification','danger')
+            return redirect(url_for('main.host', active_tab='upcoming_block'))
+
+
+        # Check if the SMS service is initialized
+        if sms is None:
+            flash('SMS service not initialized','danger')
+            return redirect(url_for('main.host', active_tab='upcoming_block'))
+
+        # Send SMS to all recipients
+        response = sms.send(
+            message=message,
+            recipients=recipients
+            )
+        print(f"SMS API Response: {response}") 
+        response_data = response
+        
+        # Check if all recipients have a statusCode of 101
+        all_successful = all(recipient['statusCode'] == 101 for recipient in response_data['SMSMessageData']['Recipients'])
+
+        if all_successful:
+            flash("Message sent successfully!", "success")
+            return redirect(url_for('main.host', active_tab='upcoming_block'))
+        else:
+            flash("Failed to send message!", "danger")
+            return redirect(url_for('main.host', active_tab='upcoming_block'))
+
+    except Exception as e:
+        current_app.logger.error(f"Failed to send notifications: {e}")
+   
+def get_member_phone_numbers():
+    try:
+        # Fetch members' details from the API
+        members = get_members()  
+
+        # Extract phone numbers, ensuring no duplicates
+        phone_numbers = list({member['phone_number'] for member in members if 'phone_number' in member})
+        return phone_numbers
+    except Exception as e:
+        current_app.logger.error(f"Error fetching phone numbers: {e}")
+        return []
+
+
 def update_member(user_id):
     update_form = EditMemberForm()
 
@@ -1299,6 +1312,9 @@ def render_reports_page(active_tab=None, error=None, host_id=None, member_id=Non
     members = []
     member_contributions = []
     combined_member_contributions = []
+    host_name = 'Unknown Host'
+    meeting_date = 'Unknown Date'
+    block_contributions_data = {'block_contributions': []}
     try:
         # Fetch members
         members = get_members()
@@ -1306,8 +1322,8 @@ def render_reports_page(active_tab=None, error=None, host_id=None, member_id=Non
         # Fetch contributions for the most recent meeting
         contributions_data = get_member_contributions(host_id=host_id, member_id=member_id, status=status)
         member_contributions = contributions_data['member_contributions']
-        host_name = contributions_data.get('host_name', 'Unknown Host')
-        meeting_date = contributions_data.get('meeting_date', 'Unknown Date')
+        host_name = contributions_data.get('host_name', host_name)
+        meeting_date = contributions_data.get('meeting_date', meeting_date)
 
 
 
@@ -1327,6 +1343,9 @@ def render_reports_page(active_tab=None, error=None, host_id=None, member_id=Non
                     'status': 'Pending',
                 })
         block_contributions_data = get_block_contributions(host_id=host_id)
+        print(f'Block contributions: {block_contributions_data}')
+        if 'block_contributions' not in block_contributions_data:
+            block_contributions_data['block_contributions'] = []
 
     except Exception as e:
         flash(f'Error fetching members or contributions. Please try again later.', 'danger')
@@ -1338,7 +1357,7 @@ def render_reports_page(active_tab=None, error=None, host_id=None, member_id=Non
                            meeting_date=meeting_date,
                            members=combined_member_contributions, 
                            schedule_form=schedule_form,
-                           block_contributions=block_contributions_data['block_contributions'],
+                        block_contributions=block_contributions_data.get('block_contributions', []),  
                            blocks=blocks,
                            active_tab=active_tab,
                            error=error)
@@ -1378,7 +1397,7 @@ def get_member_contributions(meeting_id=None, host_id=None, status=None,member_i
         if not meeting_id:
             meeting = get_upcoming_meeting_details()
             meeting_id = meeting['meeting_id']
-            host_name = meeting['host']  
+            host_name = meeting['host']
             meeting_date = meeting['when'] 
         
         # Fetch contributions for the meeting and apply filters if provided
@@ -1432,6 +1451,11 @@ def get_member_contributions(meeting_id=None, host_id=None, status=None,member_i
 
 def get_block_contributions(meeting_id=None, host_id=None):
     umbrella_id = get_umbrella_by_user(current_user.id)
+    default_return = {
+        'block_contributions': {}, 
+        'host_name': 'Unknown Host',
+        'meeting_date': 'Unknown Date'
+    }
     try:
         # Fetch all blocks under the umbrella
         blocks_response = requests.get(
@@ -1449,8 +1473,9 @@ def get_block_contributions(meeting_id=None, host_id=None):
         if not meeting_id:
             meeting = get_upcoming_meeting_details()
             meeting_id = meeting['meeting_id']
-            host_name = meeting['host']
-            meeting_date = meeting['when']
+            default_return['host_name'] = meeting['host']
+            default_return['meeting_date'] = meeting['when']
+
 
         # Fetch contributions for the meeting and filter by host if provided
         contributions_params = {'meeting_id': meeting_id}
@@ -1470,6 +1495,7 @@ def get_block_contributions(meeting_id=None, host_id=None):
 
         # Aggregate contributions by block
         block_contributions = {}
+        print(f'Block contributions: {block_contributions}')
         for block in blocks:
             block_contributions[block['name']] = sum(
                 contribution['amount'] for contribution in contributions
@@ -1478,8 +1504,8 @@ def get_block_contributions(meeting_id=None, host_id=None):
 
         return {
             'block_contributions': block_contributions,
-            'host_name': host_name,
-            'meeting_date': meeting_date
+            'host_name': default_return['host_name'],
+            'meeting_date': default_return['meeting_date']
         }
 
     except Exception as e:
@@ -1653,3 +1679,6 @@ def handle_request_payment(payment_form):
 
     # Redirect back to the 'Request Payment' tab
     return redirect(url_for('main.manage_contribution', active_tab='request_payment'))
+
+
+
