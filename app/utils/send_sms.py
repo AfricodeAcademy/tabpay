@@ -2,6 +2,7 @@ import os
 import africastalking
 from typing import List
 import logging
+from config import Config
 
 # Configure logging with more detail
 logging.basicConfig(
@@ -15,9 +16,9 @@ class SendSMS():
         """Initialize Africa's Talking SMS service"""
         try:
             # Get credentials from environment variables
-            username = os.getenv('AT_USERNAME')
-            api_key = os.getenv('AT_API_KEY')
-            self.sender_id = os.getenv('AT_SENDER_ID')
+            username = Config.AT_USERNAME
+            api_key = Config.AT_API_KEY
+            self.sender_id = Config.AT_SENDER_ID
             
             if not all([username, api_key, self.sender_id]):
                 raise ValueError("Missing required environment variables")
