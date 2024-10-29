@@ -143,7 +143,8 @@ def settings():
     return render_settings_page(active_tab=request.args.get('active_tab', 'profile'))
 
 
-# Handle profile update
+
+
 def handle_profile_update():
     profile_form = ProfileForm()
     api_url = f"{current_app.config['API_BASE_URL']}/api/v1/users/{current_user.id}"
@@ -161,68 +162,68 @@ def handle_profile_update():
                 image_path = os.path.join(current_app.root_path, 'static/images', picture_file)
 
                 if current_user.image_file != picture_file:
-                    # Prepare multipart data for the API request
                     with open(image_path, 'rb') as f:
                         files = {'picture': (picture_file, f, 'image/png')}
-                        response = requests.patch(api_url, files=files)
-
+                        response = requests.patch(api_url, files=files, headers={'Authorization': f"Bearer {current_user.get_auth_token()}"})
+                    
                     if response.status_code == 200:
                         flash('Profile picture updated successfully!', 'success')
                         current_user.image_file = picture_file
                         user_changed = True
+                        logger.info("Profile picture updated successfully via API.")
                     else:
+                        logger.error(f"Failed to update profile picture. API response: {response.status_code} - {response.text}")
                         flash('Failed to update profile picture.', 'danger')
                 else:
                     flash('The new profile picture is the same as the current one.', 'info')
 
             except Exception as e:
+                logger.error(f"Error updating profile picture: {e}")
                 flash('An error occurred while updating the profile picture.', 'danger')
 
-
         # Handle other profile field updates (name, email, phone number)
-        if (profile_form.full_name.data != current_user.full_name or
-            profile_form.email.data != current_user.email or
-            profile_form.phone_number.data != current_user.phone_number):
-            
-            logger.info("Processing other profile fields for update.")
+        if profile_form.full_name.data != current_user.full_name:
+            update_data['full_name'] = profile_form.full_name.data
+            user_changed = True
+        if profile_form.email.data != current_user.email:
+            update_data['email'] = profile_form.email.data
+            user_changed = True
+        if profile_form.phone_number.data != current_user.phone_number:
+            update_data['phone_number'] = profile_form.phone_number.data
+            user_changed = True
 
-            # Collect the fields to update if they are different
-            if profile_form.full_name.data and profile_form.full_name.data != current_user.full_name:
-                update_data['full_name'] = profile_form.full_name.data
-            if profile_form.email.data and profile_form.email.data != current_user.email:
-                update_data['email'] = profile_form.email.data
-            if profile_form.phone_number.data and profile_form.phone_number.data != current_user.phone_number:
-                update_data['phone_number'] = profile_form.phone_number.data
-
-        # Make API call to update the profile fields
+        # Make API call to update profile fields if any data changed
         if update_data:
             try:
-                response = requests.patch(api_url, json=update_data)
+                response = requests.patch(api_url, json=update_data, headers={'Authorization': f"Bearer {current_user.get_auth_token()}"})
                 if response.status_code == 200:
-                    logger.info("Profile fields updated successfully via API.")
                     flash("Profile updated successfully!", "success")
+                    logger.info("Profile fields updated successfully via API.")
                     user_changed = True
+                    # Update the current user details in session after successful update
+                    current_user.full_name = update_data.get('full_name', current_user.full_name)
+                    current_user.email = update_data.get('email', current_user.email)
+                    current_user.phone_number = update_data.get('phone_number', current_user.phone_number)
                 else:
-                    logger.error(f"Failed to update profile fields: {response.status_code} - {response.text}")
+                    logger.error(f"Failed to update profile fields. API response: {response.status_code} - {response.text}")
                     errors = response.json().get('message', "An error occurred")
                     flash(errors, "danger")
             except Exception as e:
                 logger.error(f"Error while updating profile fields: {e}")
-                flash(f"An error occurred: {e}", "danger")
-        else:
-            logger.info("No changes made to profile fields.")
-            flash("No changes made to the profile details.", "info")
-        
+                flash("An error occurred while updating profile details.", "danger")
+
+        # Inform user if no changes were detected
         if not user_changed:
-            logger.info("No updates were made to the profile.")
-            flash('No changes made to your profile.', 'info')
-        
+            logger.info("No changes made to profile fields or picture.")
+            flash("No changes made to your profile.", "info")
+
     else:
         for field, errors in profile_form.errors.items():
             for error in errors:
-                flash(f'{error}', 'danger')
+                flash(f"{field}: {error}", "danger")
 
     return render_settings_page(active_tab='profile')
+
 
 
 def get_roles():

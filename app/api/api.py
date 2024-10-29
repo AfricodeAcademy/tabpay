@@ -265,6 +265,8 @@ class UsersResource(BaseResource):
         
     def patch(self, id):
         try:
+            args = self.args.parse_args() if 'multipart/form-data' not in request.content_type else {}
+            
             user = UserModel.query.get_or_404(id)
             updated = False
 
@@ -280,136 +282,133 @@ class UsersResource(BaseResource):
                         logger.error("No image file provided in multipart request")
                         return {"message": "No image file provided."}, 400
             else:
-                args = self.args.parse_args()
                 logger.info(f"PATCH request received to update user {id}. Payload: {args}")
                 unchanged_fields = []
 
-                for field in ['full_name', 'id_number', 'phone_number', 'zone_id', 'bank_id', 'acc_number', 'email', 'image_file']:
+                for field in ['full_name', 'id_number', 'phone_number', 'zone_id', 'bank_id', 'acc_number', 'email','image_file']:
                     if args[field] is not None and getattr(user, field) != args[field]:
                         setattr(user, field, args[field])
                         updated = True
                     else:
                         unchanged_fields.append(field)
 
-                # Check if block_id is provided to update block memberships
-                block_id = args.get('block_id')
-                if block_id is not None:
-                    block = BlockModel.query.get(block_id)
-                    if block:
-                        if block not in user.block_memberships:
-                            user.block_memberships.append(block)
-                            logger.info(f"Added block {block.id} to user's block memberships.")
-                            updated = True
-                        else:
-                            logger.info(f"User {user.id} is already a member of block {block.id}.")
+            # Check if block_id is provided to update block memberships
+            block_id = args.get('block_id')
+            if block_id is not None:
+                block = BlockModel.query.get(block_id)
+                if block:
+                    if block not in user.block_memberships:
+                        user.block_memberships.append(block)
+                        logger.info(f"Added block {block.id} to user's block memberships.")
+                        updated = True
                     else:
-                        logger.warning(f"Block {block_id} not found.")
+                        logger.info(f"User {user.id} is already a member of block {block.id}.")
+                else:
+                    logger.warning(f"Block {block_id} not found.")
 
-                # Check if zone_id is provided to update zone memberships
-                zone_id = args.get('zone_id')
-                if zone_id is not None:
-                    zone = ZoneModel.query.get(zone_id)
-                    if zone:
-                        if zone not in user.zone_memberships:
-                            user.zone_memberships.append(zone)
-                            logger.info(f"Added zone {zone.id} to user's zone memberships.")
-                            updated = True
-                        else:
-                            logger.info(f"User {user.id} is already a member of zone {zone.id}.")
+            # Check if zone_id is provided to update zone memberships
+            zone_id = args.get('zone_id')
+            if zone_id is not None:
+                zone = ZoneModel.query.get(zone_id)
+                if zone:
+                    if zone not in user.zone_memberships:
+                        user.zone_memberships.append(zone)
+                        logger.info(f"Added zone {zone.id} to user's zone memberships.")
+                        updated = True
                     else:
-                        logger.warning(f"Zone {zone_id} not found.")
+                        logger.info(f"User {user.id} is already a member of zone {zone.id}.")
+                else:
+                    logger.warning(f"Zone {zone_id} not found.")               
+            
+            
 
-                
-                
-                
+            role_id = args.get('role_id')
+            action = args.get('action')
 
-                role_id = args.get('role_id')
-                action = args.get('action')
+            if role_id is not None:
+                role = RoleModel.query.get(role_id)
 
-                if role_id is not None:
-                    role = RoleModel.query.get(role_id)
+                if role:
+                    # Ensure Chairman, Secretary, and Treasurer are mutually exclusive
+                    if role_id == 3 and any(r.id in [4, 6] for r in user.roles):
+                        logger.warning("Cannot assign Chairman role when the user already has the Secretary or Umbrella Treasurer role.")
+                        return {"message": "Cannot assign Chairman when the user is already a Secretary or Treasurer."}, 400
 
-                    if role:
-                        # Ensure Chairman, Secretary, and Treasurer are mutually exclusive
-                        if role_id == 3 and any(r.id in [4, 6] for r in user.roles):
-                            logger.warning("Cannot assign Chairman role when the user already has the Secretary or Umbrella Treasurer role.")
-                            return {"message": "Cannot assign Chairman when the user is already a Secretary or Treasurer."}, 400
+                    elif role_id == 4 and any(r.id in [3, 6] for r in user.roles):
+                        logger.warning("Cannot assign Secretary role when the user already has the Chairman or Treasurer role.")
+                        return {"message": "Cannot assign Secretary when the user is already a Chairman or Treasurer."}, 400
 
-                        elif role_id == 4 and any(r.id in [3, 6] for r in user.roles):
-                            logger.warning("Cannot assign Secretary role when the user already has the Chairman or Treasurer role.")
-                            return {"message": "Cannot assign Secretary when the user is already a Chairman or Treasurer."}, 400
+                    elif role_id == 6 and any(r.id in [3, 4] for r in user.roles):
+                        logger.warning("Cannot assign Treasurer role when the user already has the Chairman or Secretary role.")
+                        return {"message": "Cannot assign Treasurer when the user is already a Chairman or Secretary."}, 400
 
-                        elif role_id == 6 and any(r.id in [3, 4] for r in user.roles):
-                            logger.warning("Cannot assign Treasurer role when the user already has the Chairman or Secretary role.")
-                            return {"message": "Cannot assign Treasurer when the user is already a Chairman or Secretary."}, 400
+                    # Handle Role Removal
+                    if action == 'remove':
+                        if role in user.roles:
+                            # Retrieve the block_id associated with the user's role
+                            role_assignment = db.session.query(roles_users).filter_by(user_id=user.id, role_id=role_id).first()
+                            if role_assignment:
+                                block_id = role_assignment.block_id  # Get the block_id
 
-                        # Handle Role Removal
-                        if action == 'remove':
-                            if role in user.roles:
-                                # Retrieve the block_id associated with the user's role
-                                role_assignment = db.session.query(roles_users).filter_by(user_id=user.id, role_id=role_id).first()
-                                if role_assignment:
-                                    block_id = role_assignment.block_id  # Get the block_id
-
-                                    # Remove the role from the user
-                                    user.roles.remove(role)
-                                    logger.info(f"Removed role {role.name} from user {user.id}")
-                                    updated = True
-
-                                    # Remove the block from the corresponding block list
-                                    if block_id:
-                                        if role_id == 3:  # Chairman
-                                            user.chaired_blocks = [b for b in user.chaired_blocks if b.id != block_id]
-                                            logger.info(f"Removed block {block_id} from user's chaired_blocks.")
-                                        elif role_id == 4:  # Secretary
-                                            user.secretary_blocks = [b for b in user.secretary_blocks if b.id != block_id]
-                                            logger.info(f"Removed block {block_id} from user's secretary_blocks.")
-                                        elif role_id == 6:  # Treasurer
-                                            user.treasurer_blocks = [b for b in user.treasurer_blocks if b.id != block_id]
-                                            logger.info(f"Removed block {block_id} from user's treasurer_blocks.")
-
-                            else:
-                                return {"message": "User does not have this role"}, 400
-
-
-                        # Handle Role Addition
-                        elif action == 'add':
-                            if role in user.roles:
-                                logger.info(f"User {user.id} already has the role {role.name}.")
-                                return {"message": f"User already has the role '{role.name}'."}, 400
-                            else:
-                                user.roles.append(role)  # Add the role if it's not already assigned
-                                logger.info(f"Assigned additional role {role.name} to user {user.id}")
+                                # Remove the role from the user
+                                user.roles.remove(role)
+                                logger.info(f"Removed role {role.name} from user {user.id}")
                                 updated = True
 
-                        # Update Blocks Based on Role
-                        block_id = args.get('block_id')
-                        if block_id is not None:
-                            block = BlockModel.query.get(block_id)
-                            if block:
-                                if role_id == 3:  # Chairman
-                                    if block not in user.chaired_blocks:
-                                        user.chaired_blocks.append(block)
-                                        logger.info(f"Added block {block.id} to user's chaired_blocks.")
+                                # Remove the block from the corresponding block list
+                                if block_id:
+                                    if role_id == 3:  # Chairman
+                                        user.chaired_blocks = [b for b in user.chaired_blocks if b.id != block_id]
+                                        logger.info(f"Removed block {block_id} from user's chaired_blocks.")
+                                    elif role_id == 4:  # Secretary
+                                        user.secretary_blocks = [b for b in user.secretary_blocks if b.id != block_id]
+                                        logger.info(f"Removed block {block_id} from user's secretary_blocks.")
+                                    elif role_id == 6:  # Treasurer
+                                        user.treasurer_blocks = [b for b in user.treasurer_blocks if b.id != block_id]
+                                        logger.info(f"Removed block {block_id} from user's treasurer_blocks.")
 
-                                elif role_id == 4:  # Secretary
-                                    if block not in user.secretary_blocks:
-                                        user.secretary_blocks.append(block)
-                                        logger.info(f"Added block {block.id} to user's secretary_blocks.")
+                        else:
+                            return {"message": "User does not have this role"}, 400
 
-                                elif role_id == 5:  # Treasurer
-                                    if block not in user.treasurer_blocks:
-                                        user.treasurer_blocks.append(block)
-                                        logger.info(f"Added block {block.id} to user's treasurer_blocks.")
-                            else:
-                                logger.warning(f"Block {block_id} not found.")
 
-                if updated:
-                    db.session.commit()
-                    logger.info(f"Successfully updated user {user.id} with roles {[r.name for r in user.roles]}")
-                    return marshal(user, self.fields), 200
+                    # Handle Role Addition
+                    elif action == 'add':
+                        if role in user.roles:
+                            logger.info(f"User {user.id} already has the role {role.name}.")
+                            return {"message": f"User already has the role '{role.name}'."}, 400
+                        else:
+                            user.roles.append(role)  # Add the role if it's not already assigned
+                            logger.info(f"Assigned additional role {role.name} to user {user.id}")
+                            updated = True
 
-                return {"message": "No updates made to user."}, 400
+                    # Update Blocks Based on Role
+                    block_id = args.get('block_id')
+                    if block_id is not None:
+                        block = BlockModel.query.get(block_id)
+                        if block:
+                            if role_id == 3:  # Chairman
+                                if block not in user.chaired_blocks:
+                                    user.chaired_blocks.append(block)
+                                    logger.info(f"Added block {block.id} to user's chaired_blocks.")
+
+                            elif role_id == 4:  # Secretary
+                                if block not in user.secretary_blocks:
+                                    user.secretary_blocks.append(block)
+                                    logger.info(f"Added block {block.id} to user's secretary_blocks.")
+
+                            elif role_id == 5:  # Treasurer
+                                if block not in user.treasurer_blocks:
+                                    user.treasurer_blocks.append(block)
+                                    logger.info(f"Added block {block.id} to user's treasurer_blocks.")
+                        else:
+                            logger.warning(f"Block {block_id} not found.")
+
+            if updated:
+                db.session.commit()
+                logger.info(f"Successfully updated user {user.id} with roles {[r.name for r in user.roles]}")
+                return marshal(user, self.fields), 200
+
+            return {"message": "No updates made to user."}, 400
 
         except Exception as e:
             logger.error(f"Error updating user {id}: {str(e)}")

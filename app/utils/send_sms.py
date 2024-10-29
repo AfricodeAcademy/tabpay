@@ -131,8 +131,8 @@ class SendSMS:
         """
         try:
             account_info = africastalking.Application.fetch_application_data()
-            # logger.info(f"Connection test successful. Account info: {account_info}")
+            logger.info(f"Connection test successful. Account info: {account_info}")
             return True
         except Exception as e:
-            # logger.error(f"Connection test failed: {str(e)}")
+            logger.error(f"Connection test failed: {str(e)}")
             return False
