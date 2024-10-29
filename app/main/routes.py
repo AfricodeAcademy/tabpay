@@ -31,17 +31,22 @@ def forbidden_error(error):
 
 
 # Helper function to render the settings page with forms
-def render_settings_page(active_tab=None, error=None):
+def render_settings_page(active_tab=None,umbrella_form=None,block_form=None,committee_form=None,zone_form=None, member_form=None,error=None):
     # Instantiate all forms
     profile_form = ProfileForm()
-    umbrella_form = UmbrellaForm()
-    committee_form = AddCommitteForm()
-    block_form = BlockForm()
-    member_form = AddMemberForm()
-    zone_form = ZoneForm()
 
-    if not active_tab:
-        active_tab = request.args.get('active_tab', 'profile')
+    if umbrella_form is None:
+        umbrella_form = UmbrellaForm()    
+    if block_form is None:
+        block_form = BlockForm()
+    if zone_form is None:
+        zone_form = ZoneForm()
+    if member_form is None:
+        member_form = AddMemberForm()
+    if committee_form is None:
+        committee_form = AddCommitteForm()
+
+
 
   # API call to get user details
     try:
@@ -65,8 +70,8 @@ def render_settings_page(active_tab=None, error=None):
 
             # API calls to dynamically fetch blocks and zones
             blocks = get_blocks_by_umbrella()
-            zone_form.parent_block.choices = [(str(block['id']), block['name']) for block in blocks]
-            committee_form.block_id.choices = [(str(block['id']), block['name']) for block in blocks]
+            zone_form.parent_block.choices = [("", "--Choose Parent Block--")] + [(str(block['id']), block['name']) for block in blocks]
+            committee_form.block_id.choices = [("", "--Choose a Block--")] + [(str(block['id']), block['name']) for block in blocks]
 
             # Prepare a mapping for zones with block names
             zone_map = {}  # Store a mapping of zone_id to (zone_name, block_name)
@@ -79,7 +84,7 @@ def render_settings_page(active_tab=None, error=None):
                     zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
 
             # Set the choices for the member_zone field in the form
-            member_form.member_zone.choices = [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
+            member_form.member_zone.choices = [("", "--Choose a Zone--")] + [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
 
         else:
             flash('No umbrella found. Please create one first.', 'danger')
@@ -89,7 +94,7 @@ def render_settings_page(active_tab=None, error=None):
     # API call to get banks
     try:
         banks = get_banks()
-        member_form.bank_id.choices = [(str(bank['id']), bank['name']) for bank in banks]
+        member_form.bank_id.choices = [("", "--Choose a Bank--")] + [(str(bank['id']), bank['name']) for bank in banks]
     except Exception as e:
         flash('Error loading bank information. Please try again later.', 'danger')
 
@@ -98,7 +103,7 @@ def render_settings_page(active_tab=None, error=None):
         filtered_roles = [role for role in roles if role['id'] in [3, 4, 6]]
         
         if filtered_roles:
-            committee_form.role_id.choices = [(str(role['id']), role['name']) for role in filtered_roles]
+            committee_form.role_id.choices = [("", "--Choose a committee role--")] + [(str(role['id']), role['name']) for role in filtered_roles]
 
     except Exception as e:
         flash('Error loading role information. Please try again later.', 'danger')
@@ -125,22 +130,30 @@ def render_settings_page(active_tab=None, error=None):
 @roles_accepted('Admin', 'SuperUser')
 @login_required
 def settings():
+    umbrella_form = UmbrellaForm()
+    block_form = BlockForm()
+    zone_form = ZoneForm()
+    member_form = AddMemberForm()
+    committee_form = AddCommitteForm()
+
     # Check which form was submitted
     if 'profile_submit' in request.form:
         return handle_profile_update()
     elif 'umbrella_submit' in request.form:
-        return handle_umbrella_creation()
+        return handle_umbrella_creation(umbrella_form=umbrella_form)
     elif 'committee_submit' in request.form:
-        return handle_committee_addition()
+        return handle_committee_addition(committee_form=committee_form)
     elif 'block_submit' in request.form:
-        return handle_block_creation()
+        return handle_block_creation(block_form=block_form)
     elif 'zone_submit' in request.form:
-        return handle_zone_creation()
+        return handle_zone_creation(zone_form=zone_form)
     elif 'member_submit' in request.form:
-        return handle_member_creation()
+        return handle_member_creation(member_form=member_form)
     
     # Default GET request rendering the settings page
-    return render_settings_page(active_tab=request.args.get('active_tab', 'profile'))
+    return render_settings_page(                           
+        umbrella_form=umbrella_form,block_form=block_form,zone_form=zone_form,member_form=member_form,committee_form=committee_form,
+active_tab=request.args.get('active_tab', 'profile'))
 
 
 
@@ -260,8 +273,7 @@ def get_user(id_number):
 
     
 
-def handle_committee_addition():
-    committee_form = AddCommitteForm()
+def handle_committee_addition(committee_form):
 
     # Retrieve the umbrella for the current user
     umbrella = get_umbrella_by_user(current_user.id)
@@ -275,7 +287,7 @@ def handle_committee_addition():
     except Exception as e:
         return "An error occurred while fetching data.", 500  
     
-    committee_form.block_id.choices = [(str(block['id']), block['name']) for block in blocks]
+    committee_form.block_id.choices = [("", "--Choose a Block--")] + [(str(block['id']), block['name']) for block in blocks]
 
     if not blocks:
         flash('There are no blocks yet!', 'danger')
@@ -288,7 +300,7 @@ def handle_committee_addition():
     filtered_roles = [role for role in roles if role['id'] in [3, 4, 6]]
     
     if filtered_roles:
-        committee_form.role_id.choices = [(str(role['id']), role['name']) for role in filtered_roles]
+        committee_form.role_id.choices = [("", "--Choose a committee role--")] + [(str(role['id']), role['name']) for role in filtered_roles]
 
     if committee_form.validate_on_submit():
         id_number = committee_form.id_number.data  
@@ -388,13 +400,7 @@ def handle_committee_addition():
             flash('User not found.', 'danger')
             return redirect(url_for('main.settings', active_tab='committee'))
 
-    # Handle form errors
-    else:
-        for field, errors in committee_form.errors.items():
-            for error in errors:
-                flash(f'{error}', 'danger')
-
-    return render_settings_page(active_tab='committee')
+    return render_settings_page(committee_form=committee_form,active_tab='committee')
 
 def get_umbrellas():
     umbrellas_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/umbrellas")
@@ -403,8 +409,7 @@ def get_umbrellas():
 
 
 # Handle umbrella creation
-def handle_umbrella_creation():
-    umbrella_form = UmbrellaForm()
+def handle_umbrella_creation(umbrella_form):
 
     if umbrella_form.validate_on_submit():
         # API call to check existing umbrella
@@ -440,17 +445,10 @@ def handle_umbrella_creation():
         flash('Umbrella created successfully!', 'success')
         return redirect(url_for('main.settings', active_tab='block'))
 
-    # Handle form validation errors
-    else:
-        for field, errors in umbrella_form.errors.items():
-            for error in errors:
-                flash(f'{error}', 'danger')
-
-    return render_settings_page(active_tab='umbrella')
+    return render_settings_page(umbrella_form=umbrella_form,active_tab='umbrella')
 
 # Handle block creation using API
-def handle_block_creation():
-    block_form = BlockForm()
+def handle_block_creation(block_form):
     umbrella = get_umbrella_by_user(current_user.id)
 
     if umbrella:
@@ -475,16 +473,11 @@ def handle_block_creation():
         flash('Block created successfully!', 'success')
         return redirect(url_for('main.settings', active_tab='block'))
 
-    else:
-        for field, errors in block_form.errors.items():
-            for error in errors:
-                flash(f'{error}', 'danger')
-    return render_settings_page(active_tab='block')
+    return render_settings_page(block_form=block_form,active_tab='block')
 
 
 # Handle zone creation using API
-def handle_zone_creation():
-    zone_form = ZoneForm()
+def handle_zone_creation(zone_form):
     
     # Retrieve the umbrella for the current user
     umbrella = get_umbrella_by_user(current_user.id)
@@ -498,7 +491,7 @@ def handle_zone_creation():
     except Exception as e:
         return "An error occurred while fetching data.", 500  
     
-    zone_form.parent_block.choices = [(str(block['id']), block['name']) for block in blocks]
+    zone_form.parent_block.choices = [("", "--Choose Parent Block--")] + [(str(block['id']), block['name']) for block in blocks]
 
     if not blocks:
         flash('You need to create a block before adding a zone!', 'danger')
@@ -521,17 +514,12 @@ def handle_zone_creation():
         flash('Zone created successfully!', 'success')
         # Persist block selection for convenience
         return redirect(url_for('main.settings', active_tab='zone', block_id=zone_form.parent_block.data))
-
-    else:
-        for field, errors in zone_form.errors.items():
-            for error in errors:
-                flash(f'{error}', 'danger')
-    return render_settings_page(active_tab='zone')
+    
+    return render_settings_page(zone_form=zone_form,active_tab='zone')
 
 
 # Handle member creation
-def handle_member_creation():
-    member_form = AddMemberForm()
+def handle_member_creation(member_form):
 
     # Retrieve the umbrella for the current user
     umbrella = get_umbrella_by_user(current_user.id)
@@ -557,10 +545,10 @@ def handle_member_creation():
             zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
 
     # Set the choices for the member_zone field in the form
-    member_form.member_zone.choices = [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
+    member_form.member_zone.choices = [("", "--Choose a Zone--")] + [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
 
     banks = get_banks()
-    member_form.bank_id.choices = [(str(bank['id']), bank['name']) for bank in banks]
+    member_form.bank_id.choices = [("", "--Choose a Bank--")] + [(str(bank['id']), bank['name']) for bank in banks]
 
     if member_form.validate_on_submit():
         # Check for duplicate members via the API
@@ -600,12 +588,8 @@ def handle_member_creation():
     if zone_id:
         member_form.member_zone.data = str(zone_id)
 
-    # Collect any form errors
-    else:
-        for field, errors in member_form.errors.items():
-            for error in errors:
-                flash(f'{error}', 'danger')
-    return render_settings_page(active_tab='member')
+  
+    return render_settings_page(member_form=member_form,active_tab='member')
 
 
 
@@ -733,16 +717,15 @@ def statistics():
 
 
 # Helper function to render the host page with forms
-def render_host_page(active_tab=None, error=None):
+def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=None):
     logging.info("Rendering host page...")
 
-    # Instantiate all forms
-    schedule_form = ScheduleForm()
-    update_form = EditMemberForm()
+    if schedule_form is None:
+        schedule_form = ScheduleForm()
 
+    if update_form is None:
+        update_form = EditMemberForm()
 
-    if not active_tab:
-        active_tab = request.args.get('active_tab', 'schedule_meeting')
 
      # Call API or database to get upcoming meeting details
     meeting_details = get_upcoming_meeting_details()
@@ -777,8 +760,8 @@ Upcoming block is hosted by {meeting_zone} and the host is {host}. Paybill: {pay
 
             # API calls to dynamically fetch blocks and zones
             blocks = get_blocks_by_umbrella()
-            schedule_form.block.choices = [(str(block['id']), block['name']) for block in blocks]
-            update_form.block_id.choices = [(str(block['id']), block['name']) for block in blocks]
+            schedule_form.block.choices = [("", "--Choose a Block--")] + [(str(block['id']), block['name']) for block in blocks]
+            update_form.block_id.choices =  [("", "--Choose an Additional Block--")] + [(str(block['id']), block['name']) for block in blocks]
 
              # Prepare a mapping for zones with block names
             zone_map = {}  # Store a mapping of zone_id to (zone_name, block_name)
@@ -791,20 +774,21 @@ Upcoming block is hosted by {meeting_zone} and the host is {host}. Paybill: {pay
                     zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
 
             # Set the choices for the member_zone field in the form
-            schedule_form.zone.choices = [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
-            update_form.member_zone.choices = [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
+            schedule_form.zone.choices = [("", "--Choose a Zone--")] + [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
+
+            update_form.member_zone.choices = [("", "--Choose an Additional Zone--")] +[(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
 
             # Fetch members
             members = get_members()
             if members:
                 for member in members:
                     member['bank_name'] = member.get('bank_name', 'Unknown Bank')
-                    schedule_form.member.choices = [(str(member['id']), member['full_name']) for member in members]
+                    schedule_form.member.choices = [("", "--Choose a Member--")] + [(str(member['id']), member['full_name']) for member in members]
             else:
                 schedule_form.member.choice = []
 
             banks = get_banks()
-            update_form.bank_id.choices = [(str(bank['id']), bank['name']) for bank in banks]
+            update_form.bank_id.choices = [("", "--Choose Bank--")] + [(str(bank['id']), bank['name']) for bank in banks]
 
         else:
             flash('Please create an umbrella first to schedule a meeting!', 'danger')
@@ -815,9 +799,9 @@ Upcoming block is hosted by {meeting_zone} and the host is {host}. Paybill: {pay
 
     # Render the host page
     return render_template('host.html', title='Host | Dashboard',
-                           schedule_form=schedule_form,
                            update_form=update_form,
                            user=current_user,
+                           schedule_form=schedule_form,
                            blocks=blocks,message=message,
                            zones=zones,acc_number=acc_number,paybill_no=paybill_no,
                            members=members,
@@ -829,12 +813,14 @@ Upcoming block is hosted by {meeting_zone} and the host is {host}. Paybill: {pay
 @roles_accepted('Admin', 'SuperUser')
 @login_required
 def host():
+    schedule_form = ScheduleForm()
+    update_form = EditMemberForm()
     # Check which form was submitted
     if 'schedule_submit' in request.form:
-        return handle_schedule_creation()
+        return handle_schedule_creation(schedule_form=schedule_form)
     elif 'edit_member_submit' in request.form:  
         user_id = request.args.get('user_id')  
-        return update_member(user_id)
+        return update_member(user_id, update_form=update_form)
     elif 'remove_member_submit' in request.form: 
         if request.form.get('_method') == 'DELETE':
             user_id = request.args.get('user_id')   
@@ -843,13 +829,12 @@ def host():
         return send_sms_notifications()
         
     # Default GET request rendering the host page
-    return render_host_page(active_tab=request.args.get('active_tab', 'schedule_meeting'))
+    return render_host_page(schedule_form=schedule_form,update_form=update_form,active_tab=request.args.get('active_tab', 'schedule_meeting'))
 
 
 
 # Handle schedule creation
-def handle_schedule_creation():
-    schedule_form = ScheduleForm()
+def handle_schedule_creation(schedule_form):
      # Retrieve the umbrella for the current user
     umbrella = get_umbrella_by_user(current_user.id)
 
@@ -858,7 +843,7 @@ def handle_schedule_creation():
 
     # Fetch blocks associated with the umbrella
     blocks = get_blocks_by_umbrella()
-    schedule_form.block.choices = [(str(block['id']), block['name']) for block in blocks]
+    schedule_form.block.choices = [("", "--Choose a Block--")] + [(str(block['id']), block['name']) for block in blocks]
 
      # Prepare a mapping for zones with block names
     zone_map = {}  # Store a mapping of zone_id to (zone_name, block_name)
@@ -871,12 +856,12 @@ def handle_schedule_creation():
             zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
 
     # Set the choices for the member_zone field in the form
-    schedule_form.zone.choices = [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
+    schedule_form.zone.choices = [("", "--Choose a Zone--")] + [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
 
     # Fetch members filtered by zone
     members = get_members()
     if members:
-        schedule_form.member.choices = [(str(member['id']), member['full_name']) for member in members]
+        schedule_form.member.choices = [("", "--Choose a Member--")] + [(str(member['id']), member['full_name']) for member in members]
 
 
 
@@ -930,12 +915,9 @@ def handle_schedule_creation():
             print(f"Meeting scheduling error: {e}")
             flash('Error creating meeting. Please try again later.', 'danger')
 
-    # Handle form errors
-    for field, errors in schedule_form.errors.items():
-        for error in errors:
-            flash(f'{error}', 'danger')
+ 
 
-    return render_host_page(active_tab='schedule_meeting')
+    return render_host_page(schedule_form=schedule_form,active_tab='schedule_meeting')
 
 
 def get_upcoming_meeting_details():
@@ -1066,11 +1048,10 @@ def get_member_phone_numbers():
         return []
 
 
-def update_member(user_id):
-    update_form = EditMemberForm()
+def update_member(user_id,update_form):
 
     blocks = get_blocks_by_umbrella()
-    update_form.block_id.choices = [(str(block['id']), block['name']) for block in blocks]
+    update_form.block_id.choices =  [("", "--Choose an Additional Block--")] + [(str(block['id']), block['name']) for block in blocks]
 
     # Prepare a mapping for zones with block names
     zone_map = {}
@@ -1081,10 +1062,10 @@ def update_member(user_id):
         for zone in block_zones:
             zone_map[zone['id']] = (zone['name'], block_name)
 
-    update_form.member_zone.choices = [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
+    update_form.member_zone.choices =  [("", "--Choose an Additional Zone--")] + [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
 
     banks = get_banks()
-    update_form.bank_id.choices = [(str(bank['id']), bank['name']) for bank in banks]
+    update_form.bank_id.choices = [("", "--Choose Bank--")] +  [(str(bank['id']), bank['name']) for bank in banks]
 
     # Fetch current user data
     try:
@@ -1139,13 +1120,7 @@ def update_member(user_id):
 
         return redirect(url_for('main.host', active_tab='block_members'))
 
-    # Handle form validation errors
-    for field, errors in update_form.errors.items():
-        for error in errors:
-            flash(f'{field}: {error}', 'danger')
-
-
-    return render_host_page(active_tab='block_members')
+    return render_host_page(update_form=update_form,active_tab='block_members')
 
 
 # Function to handle member removal
@@ -1296,7 +1271,7 @@ def render_reports_page(active_tab=None, error=None, host_id=None, member_id=Non
 
     # Fetch blocks associated with the umbrella
     blocks = get_blocks_by_umbrella()
-    schedule_form.block.choices = [(str(block['id']), block['name']) for block in blocks]
+    schedule_form.block.choices = [("", "--Choose a Block--")] + [(str(block['id']), block['name']) for block in blocks]
 
     # Prepare a mapping for zones with block names
     zone_map = {}
@@ -1308,7 +1283,7 @@ def render_reports_page(active_tab=None, error=None, host_id=None, member_id=Non
             zone_map[zone['id']] = (zone['name'], block_name)
 
     # Set the choices for the member_zone field in the form
-    schedule_form.zone.choices = [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
+    schedule_form.zone.choices = [("", "--Choose a Zone--")] + [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
 
     members = []
     member_contributions = []
@@ -1346,7 +1321,8 @@ def render_reports_page(active_tab=None, error=None, host_id=None, member_id=Non
         block_contributions_data = get_block_contributions(host_id=host_id)
         print(f'Block contributions: {block_contributions_data}')
         if 'block_contributions' not in block_contributions_data:
-            block_contributions_data['block_contributions'] = []
+            block_contributions_data['block_contributions'] = {}
+
 
     except Exception as e:
         flash(f'Error fetching members or contributions. Please try again later.', 'danger')
@@ -1515,9 +1491,10 @@ def get_block_contributions(meeting_id=None, host_id=None):
 
 
 
-def render_contribution_page(active_tab=None, error=None):
-    payment_form = PaymentForm()
+def render_contribution_page(active_tab=None,payment_form=None, error=None):
 
+    if payment_form is None:
+        payment_form = PaymentForm()
     # API call to get user details
     try:
         user = get_user_from_api(current_user.id)
@@ -1536,14 +1513,14 @@ def render_contribution_page(active_tab=None, error=None):
 
     # Fetch blocks associated with the umbrella
     blocks = get_blocks_by_umbrella()
-    payment_form.block.choices = [(str(block['id']), block['name']) for block in blocks]
+    payment_form.block.choices =  [("", "--Choose a Block--")] + [(str(block['id']), block['name']) for block in blocks]
 
     members,banks = [], []
     try:
         members = get_members()
-        payment_form.member.choices = [(str(member['id']), member['full_name']) for member in members]
+        payment_form.member.choices =  [("", "--Choose a Member--")] + [(str(member['id']), member['full_name']) for member in members]
         banks = get_banks()
-        payment_form.bank.choices = [(str(bank['id']), bank['name']) for bank in banks]
+        payment_form.bank.choices =  [("", "--Choose a Bank--")] + [(str(bank['id']), bank['name']) for bank in banks]
     except Exception as e:
         print(f'payments error: {e}')
         flash(f'An error occurred. Please try again later.', 'danger')
@@ -1568,14 +1545,13 @@ def manage_contribution():
     payment_form = PaymentForm()
 
     # Handle form submission
-    if request.method == 'POST':
-        if active_tab == 'request_payment' and payment_form.validate_on_submit():
-            return handle_request_payment(payment_form)
-        elif active_tab == 'send_to_bank' and payment_form.validate_on_submit():
-            return handle_send_to_bank(payment_form)
+    if 'request_submit' in request.form:
+        return handle_request_payment(payment_form=payment_form)
+    if 'payment_submit' in request.form:
+        return handle_send_to_bank(payment_form=payment_form)
 
     # Render the contribution page
-    return render_contribution_page(active_tab=active_tab)
+    return render_contribution_page(payment_form=payment_form,active_tab=active_tab)
 
 
 def handle_send_to_bank(payment_form):
@@ -1590,18 +1566,15 @@ def handle_send_to_bank(payment_form):
 
     # Populate choices for the fields before validating the form
     blocks = get_blocks_by_umbrella()
-    payment_form.block.choices = [(str(block['id']), block['name']) for block in blocks]
+    payment_form.block.choices =  [("", "--Choose a Block--")] + [(str(block['id']), block['name']) for block in blocks]
     
     banks = get_banks()
-    payment_form.bank.choices = [(str(bank['id']), bank['name']) for bank in banks]
+    payment_form.bank.choices =  [("", "--Choose a Bank--")] + [(str(bank['id']), bank['name']) for bank in banks]
 
     members = get_members()
-    payment_form.member.choices = [(str(member['id']), member['full_name']) for member in members]
+    payment_form.member.choices =  [("", "--Choose a Member--")] + [(str(member['id']), member['full_name']) for member in members]
 
-    # Now validate the form
-    if not block_id or not bank_id or not acc_number:
-        flash('All fields are required to send payment to the bank.', 'danger')
-        return redirect(url_for('main.manage_contribution', active_tab='send_to_bank'))
+    
 
     if payment_form.validate_on_submit():
         # Fetch total contributions for the selected block (assume an API fetch)
@@ -1622,6 +1595,7 @@ def handle_send_to_bank(payment_form):
             'block_id': block_id,
             'bank_id': bank_id,
             'acc_number': acc_number,
+
         }
 
         # Make API call to transfer funds to the bank
@@ -1639,7 +1613,7 @@ def handle_send_to_bank(payment_form):
             flash('Error occurred while transferring funds. Please try again.', 'danger')
 
     # Redirect back to the 'Send to Bank' tab
-    return redirect(url_for('main.manage_contribution', active_tab='send_to_bank'))
+    return render_contribution_page(payment_form=payment_form, active_tab='send_to_bank')
 
 
 
@@ -1652,10 +1626,7 @@ def handle_request_payment(payment_form):
     member_id = payment_form.member.data
     amount = payment_form.amount.data
 
-    # Input validation
-    if not block_id or not member_id or not amount:
-        flash('Please fill in all the fields to request payment.', 'danger')
-        return redirect(url_for('main.manage_contribution', active_tab='request_payment'))
+
 
     # Prepare payload for the API request
     payload = {
@@ -1679,7 +1650,7 @@ def handle_request_payment(payment_form):
         flash('Error occurred while processing payment request. Please try again.', 'danger')
 
     # Redirect back to the 'Request Payment' tab
-    return redirect(url_for('main.manage_contribution', active_tab='request_payment'))
+    return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
 
 
 

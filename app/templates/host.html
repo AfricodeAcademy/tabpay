@@ -59,6 +59,7 @@
           <form
             method="POST"
             action="{{ url_for('main.host', active_tab='schedule_meeting') }}"
+            novalidate
           >
             {{ schedule_form.hidden_tag() }}
 
@@ -66,20 +67,43 @@
               <div class="col-md-6">
                 <div class="mb-3">
                   {{ schedule_form.block.label }} {{
-                  schedule_form.block(class="select") }}
+                  schedule_form.block(class="select") }} {% if
+                  schedule_form.block.errors %}
+                  <div class="text-danger">
+                    {% for error in schedule_form.block.errors %}
+                    <small>{{ error }}</small>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
                 </div>
               </div>
+
               <div class="col-md-6">
                 <div class="mb-3">
                   {{ schedule_form.zone.label }} {{
-                  schedule_form.zone(class="select") }}
+                  schedule_form.zone(class="select") }} {% if
+                  schedule_form.zone.errors %}
+                  <div class="text-danger">
+                    {% for error in schedule_form.zone.errors %}
+                    <small>{{ error }}</small>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
                 </div>
               </div>
             </div>
+
             <div class="row">
               <div class="col-md-6">
                 {{ schedule_form.member.label }} {{
-                schedule_form.member(class="select") }}
+                schedule_form.member(class="select") }} {% if
+                schedule_form.member.errors %}
+                <div class="text-danger">
+                  {% for error in schedule_form.member.errors %}
+                  <small>{{ error }}</small>
+                  {% endfor %}
+                </div>
+                {% endif %}
               </div>
               <style>
                 .input-with-icon {
@@ -106,6 +130,13 @@
                   {{ schedule_form.date(class="input", placeholder="YYYY-MM-DD
                   HH:MM:SS") }}
                 </div>
+                {% if schedule_form.member.errors %}
+                <div class="text-danger">
+                  {% for error in schedule_form.date.errors %}
+                  <small>{{ error }}</small>
+                  {% endfor %}
+                </div>
+                {% endif %}
               </div>
             </div>
 

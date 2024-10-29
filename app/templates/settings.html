@@ -1,131 +1,160 @@
-{% extends "base.html" %} 
-{% import 'flash.html' as flash %}
-{% block heading %}Community Umbrella settings{%
-  endblock %} {% block content %}
- 
-
-  {% macro render_field(field) %}
+{% extends "base.html" %} {% import 'flash.html' as flash %} {% block heading
+%}Community Umbrella settings{% endblock %} {% block content %} {% macro
+render_field(field) %}
 <div class="mb-3">
-  {{ field.label(class="form-label") }}
-  {% if field.errors %}
-    {{ field(class="form-control is-invalid") }}
-    <div class="invalid-feedback">
-      {% for error in field.errors %}
-        {{ error }}
-      {% endfor %}
-    </div>
-  {% else %}
-    {{ field(class="form-control") }}
-  {% endif %}
+  {{ field.label(class="form-label") }} {% if field.errors %} {{
+  field(class="form-control is-invalid") }}
+  <div class="invalid-feedback">
+    {% for error in field.errors %} {{ error }} {% endfor %}
+  </div>
+  {% else %} {{ field(class="form-control") }} {% endif %}
 </div>
 {% endmacro %}
-  
-  <!-- Dashboard Content -->
-  <div class="dashboard mt-2">
-    <div class="container">
-      <div class="dashboard-paragraph">
-        <p class="mb-4 fs-6">
-          Configure your user account with ease by managing your profile, setting
-          up your community umbrella, defining blocks under that umbrella,
-          establishing zones within each block, adding members to their respective
-          zones, inviting and managing committee members.
-        </p>
-      </div>
-  
-      <div class="dashboard-content">
-        <!-- Tab Navigation -->
-         
-  <ul class="nav nav-tabs p-3">
-    <li class="nav-item">
-        <a class="nav-link {% if active_tab == 'profile' %}active{% endif %}" href="{{ url_for('main.settings', active_tab='profile') }}">Profile</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link {% if active_tab == 'committee' %}active{% endif %}" href="{{ url_for('main.settings', active_tab='committee') }}">Add Committee</a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link {% if active_tab == 'umbrella' %}active{% endif %}" href="{{ url_for('main.settings', active_tab='umbrella') }}">Community Umbrella</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link {% if active_tab == 'block' %}active{% endif %}" href="{{ url_for('main.settings', active_tab='block') }}">Block Definition</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link {% if active_tab == 'zone' %}active{% endif %}" href="{{ url_for('main.settings', active_tab='zone') }}">Zone Definition</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link {% if active_tab == 'member' %}active{% endif %}" href="{{ url_for('main.settings', active_tab='member') }}">Add Members</a>
-    </li>
-  </ul>
-  
-  
-        <!-- Tab Panes -->
-        <div class="tab-content d-flex justify-content-center">
-            <!-- PROFILE -->
-            <div id="profile" class="tab-pane fade {% if active_tab == 'profile' %}show active{% endif %}">
 
-              <form method="POST" enctype="multipart/form-data" action="{{ url_for('main.settings', active_tab='profile') }}" novalidate>
-                {{ profile_form.hidden_tag() }}
-                
-                <div class="row p-2">
-                  <div class="col-md-4">
-                    <img class="rounded-circle ms-5" style="height: 170px; width: 170px;" 
-                        src="{{ url_for('static', filename='images/' + current_user.image_file) }}" alt="Profile_image"/>
+<!-- Dashboard Content -->
+<div class="dashboard mt-2">
+  <div class="container">
+    <div class="dashboard-paragraph">
+      <p class="mb-4 fs-6">
+        Configure your user account with ease by managing your profile, setting
+        up your community umbrella, defining blocks under that umbrella,
+        establishing zones within each block, adding members to their respective
+        zones, inviting and managing committee members.
+      </p>
+    </div>
 
-                        <div class="form-group">
-                          {{ profile_form.picture.label() }} 
-                          {{ profile_form.picture() }}
-                          {% if profile_form.picture.errors %}
-                            {% for error in profile_form.picture.errors %}
-                              <span class="text-danger">{{ error }}</span><br />
-                            {% endfor %}
-                          {% endif %}
-                        </div>
-                      </div>
+    <div class="dashboard-content">
+      <!-- Tab Navigation -->
 
-                      <div class="col-md-8">
-                        <div class="row mb-5 mt-2">
-                          <div class="col-md-6">
-                            <div class="mb-3">
-                              {{ render_field(profile_form.full_name) }}
-                            </div>
-                          </div>
-                          <div class="col-md-6">
-                            <div class="mb-3">
-                            {{render_field(profile_form.id_number)}}
-                            </div>
-                          </div>
-                        </div>
+      <ul class="nav nav-tabs p-3">
+        <li class="nav-item">
+          <a
+            class="nav-link {% if active_tab == 'profile' %}active{% endif %}"
+            href="{{ url_for('main.settings', active_tab='profile') }}"
+            >Profile</a
+          >
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link {% if active_tab == 'committee' %}active{% endif %}"
+            href="{{ url_for('main.settings', active_tab='committee') }}"
+            >Add Committee</a
+          >
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link {% if active_tab == 'umbrella' %}active{% endif %}"
+            href="{{ url_for('main.settings', active_tab='umbrella') }}"
+            >Community Umbrella</a
+          >
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link {% if active_tab == 'block' %}active{% endif %}"
+            href="{{ url_for('main.settings', active_tab='block') }}"
+            >Block Definition</a
+          >
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link {% if active_tab == 'zone' %}active{% endif %}"
+            href="{{ url_for('main.settings', active_tab='zone') }}"
+            >Zone Definition</a
+          >
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link {% if active_tab == 'member' %}active{% endif %}"
+            href="{{ url_for('main.settings', active_tab='member') }}"
+            >Add Members</a
+          >
+        </li>
+      </ul>
 
-                        <div class="row">
-                          <div class="col-md-6">
-                            <div class="mb-3">
-                            {{ render_field(profile_form.email)}}
-                            </div>
-                          </div>
+      <!-- Tab Panes -->
+      <div class="tab-content d-flex justify-content-center">
+        <!-- PROFILE -->
+        <div
+          id="profile"
+          class="tab-pane fade {% if active_tab == 'profile' %}show active{% endif %}"
+        >
+          <form
+            method="POST"
+            enctype="multipart/form-data"
+            action="{{ url_for('main.settings', active_tab='profile') }}"
+            novalidate
+          >
+            {{ profile_form.hidden_tag() }}
 
-                          <div class="col-md-6">
-                            <div class="mb-3">
-                            {{ render_field(profile_form.phone_number)}}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+            <div class="row p-2">
+              <div class="col-md-4">
+                <img
+                  class="rounded-circle ms-5"
+                  style="height: 170px; width: 170px"
+                  src="{{ url_for('static', filename='images/' + current_user.image_file) }}"
+                  alt="Profile_image"
+                />
 
-                    <button type="submit" name="profile_submit" class="submit-btn">
-                      {{ profile_form.submit.label.text }}
-                    </button>       
-
-                    {{ flash.render_flash_messages() }}
-
-                  </form>
+                <div class="form-group">
+                  {{ profile_form.picture.label() }} {{ profile_form.picture()
+                  }} {% if profile_form.picture.errors %} {% for error in
+                  profile_form.picture.errors %}
+                  <span class="text-danger">{{ error }}</span><br />
+                  {% endfor %} {% endif %}
                 </div>
-                <!-- END OF PROFILE -->
+              </div>
 
-              <!-- COMMITTEE TAB -->
-              <div id="committee" class="tab-pane fade {% if active_tab == 'committee' %}show active{% endif %}">
-                <form method="POST" action="{{ url_for('main.settings', active_tab='committee') }}" novalidate>
-                    {{ committee_form.hidden_tag() }}
-                    <!-- <div id="user-details" style="display:none;">
+              <div class="col-md-8">
+                <div class="row mb-5 mt-2">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      {{ render_field(profile_form.full_name) }}
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      {{render_field(profile_form.id_number)}}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      {{ render_field(profile_form.email)}}
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      {{ render_field(profile_form.phone_number)}}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" name="profile_submit" class="submit-btn">
+              {{ profile_form.submit.label.text }}
+            </button>
+
+            {{ flash.render_flash_messages() }}
+          </form>
+        </div>
+        <!-- END OF PROFILE -->
+
+        <!-- COMMITTEE TAB -->
+        <div
+          id="committee"
+          class="tab-pane fade {% if active_tab == 'committee' %}show active{% endif %}"
+        >
+          <form
+            method="POST"
+            action="{{ url_for('main.settings', active_tab='committee') }}"
+            novalidate
+          >
+            {{ committee_form.hidden_tag() }}
+            <!-- <div id="user-details" style="display:none;">
                         <div class="row mb-5 mt-2">
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -141,200 +170,215 @@
                             </div>
                         </div>
                     </div> -->
-                    <div class="col">
-                        <div class="row">
-                            <div class="mb-3">
-                                {{ render_field(committee_form.id_number) }}
-                            </div>
-                        </div>
-                        <div class="row">
-                          <div class="mb-3">
-                              {{ render_field(committee_form.block_id) }}
-                          </div>
-                      </div>
-                        <div class="row">
-                            <div class="mb-3">
-                                <label for="role_id">{{ committee_form.role_id.label }}</label>
-                                <select class="select" id="role_id" name="role_id">
-                                    <option value="" disabled selected>Please select a role</option>
-                                    {% for value, label in committee_form.role_id.choices %}
-                                        <option value="{{ value }}" {% if committee_form.role_id.data == value %} selected {% endif %}>
-                                            {{ label }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <button type="submit" name="committee_submit" class="submit-btn" style="min-width:45%;">
-                        {{ committee_form.submit.label.text }}
-                    </button>
-                    {{ flash.render_flash_messages() }}
-                </form>
-            </div>
-            
-              <!--/ COMMITTEE TAB -->
-                   
-          <!-- COMMUNITY UMBRELLA TAB -->
-          <div id="umbrella" class="tab-pane fade {% if active_tab == 'umbrella' %}show active{% endif %}">
-            <p class="p-3">
-              Establish your community's foundation by creating overarching
-              umbrellas that represent geographic areas, such as counties,
-              constituencies, or wards. For example, 'Bomet East' becomes a
-              top-level umbrella, under which you can create distinct blocks,
-              fostering collaboration and organization at the local level.
-            </p>
-            <form method="POST" action="{{url_for('main.settings',active_tab='umbrella')}}" novalidate>
-              {{ umbrella_form.hidden_tag() }}
-  
-              <div class="row p-2 d-flex justify-content-center">
-                <div class="col-md-4">
-                  <div class="mb-3">
-                  {{ render_field(umbrella_form.umbrella_name)}}
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="mb-3">
-                    {{ render_field(umbrella_form.location)}}
-                  </div>
+            <div class="col">
+              <div class="row">
+                <div class="mb-3">
+                  {{ render_field(committee_form.id_number) }}
                 </div>
               </div>
-              <button type="submit" name="umbrella_submit" class="submit-btn">
-                {{ umbrella_form.submit.label.text }}
+              <div class="row">
+                <div class="mb-3">
+                  {{ render_field(committee_form.block_id) }}
+                </div>
+              </div>
+              <div class="row">
+                <div class="mb-3">
+                  {{ render_field(committee_form.role_id) }}
+                </div>
+              </div>
+            </div>
+            <button
+              type="submit"
+              name="committee_submit"
+              class="submit-btn"
+              style="min-width: 45%"
+            >
+              {{ committee_form.submit.label.text }}
             </button>
-                
             {{ flash.render_flash_messages() }}
-  
-            </form>
-          </div>
-  
-          <!-- COMMUNITY UMBRELLA TAB -->
-  
-          <!-- BLOCK DEFINITION -->
-          <div id="block" class="tab-pane fade {% if active_tab == 'block' %}show active{% endif %}">
-            <p>
-              Organize your community's structure by defining distinct blocks
-              within each umbrella.
-            </p>
-            <form method="POST" action="{{url_for('main.settings',active_tab='block')}}" novalidate>
-              {{ block_form.hidden_tag() }}
-              <div class="row p-4">
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    {{ render_field(block_form.block_name) }}
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    {{render_field(block_form.parent_umbrella)}}
-                  </div>
-                </div>
-              </div>
-              <button type="submit" name="block_submit" class="submit-btn">
-                {{ block_form.submit.label.text }}
-            </button>
-  
-            {{ flash.render_flash_messages() }}
-  
-            </form>
-          </div>
-  
-          <!--/ BLOCK DEFINITION -->
-  
-          <!--ZONE DEFINITION -->
-          <div id="zone" class="tab-pane fade {% if active_tab == 'zone' %}show active{% endif %}">
-            <p>
-              Define zones within each block to make it easier when allocating
-              block event to zone members.
-            </p>
-            <form method="POST" action="{{url_for('main.settings',active_tab='zone')}}" novalidate>
-              {{ zone_form.hidden_tag() }}
-              <div class="row p-4">
-                <div class="col-md-6">
-                  <div class="mb-3">
-                   {{render_field(zone_form.zone_name)}}
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="mb-3">
-                   {{ render_field(zone_form.parent_block)}}
-                </div>
-              </div>
-              </div>
-              <button type="submit" name="zone_submit" class="submit-btn">
-                {{ zone_form.submit.label.text }}
-            </button>
-  
-            {{ flash.render_flash_messages() }}
-  
-            </form>
-          </div>
-  
-          <!--/ ZONE DEFINITION -->
-  
-      <!--ADD MEMBERS -->
-      <div id="member" class="tab-pane fade {% if active_tab == 'member' %}show active{% endif %}">
-        <p class="text-center">
-          Each zone has distinct members, please add the different members of
-          the zone.
-        </p>
-        <form action="{{url_for('main.settings',active_tab='member')}}" method="POST" novalidate>
-          {{ member_form.hidden_tag() }}            
-          <div class="row">
-            <div class="col-md-6">
-              <div class="mb-3">
-               {{ render_field(member_form.full_name)}}
-            </div>
-            </div>
-            <div class="col-md-6">
-              <div class="mb-3">
-                {{ render_field(member_form.phone_number)}}
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-md-6">
-              <div class="mb-3">
-               {{ render_field(member_form.id_number)}}
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="mb-3">
-                {{ render_field(member_form.member_zone)}}
-            </div>
-          </div>
-          </div>
-          <div class="row">
-            <div class="col-md-6">
-              <div class="mb-3">
-                {{ render_field(member_form.bank_id)}}
-              </div>
-            </div>
-            <div class="col-md-6">
-              <div class="mb-3">
-                {{ render_field(member_form.acc_number)}}
-            </div>
-          </div>
-          </div>
-          <button type="submit" name="member_submit" class="submit-btn">
-            {{ member_form.submit.label.text }}
-        </button>
-  
-        {{ flash.render_flash_messages() }}
-        </form>
-      </div>
-  
-      <!--/ ADD MEMBERS -->
+          </form>
         </div>
+
+        <!--/ COMMITTEE TAB -->
+
+        <!-- COMMUNITY UMBRELLA TAB -->
+        <div
+          id="umbrella"
+          class="tab-pane fade {% if active_tab == 'umbrella' %}show active{% endif %}"
+        >
+          <p class="p-3">
+            Establish your community's foundation by creating overarching
+            umbrellas that represent geographic areas, such as counties,
+            constituencies, or wards. For example, 'Bomet East' becomes a
+            top-level umbrella, under which you can create distinct blocks,
+            fostering collaboration and organization at the local level.
+          </p>
+          <form
+            method="POST"
+            action="{{url_for('main.settings',active_tab='umbrella')}}"
+            novalidate
+          >
+            {{ umbrella_form.hidden_tag() }}
+
+            <div class="row p-2 d-flex justify-content-center">
+              <div class="col-md-4">
+                <div class="mb-3">
+                  {{ render_field(umbrella_form.umbrella_name)}}
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="mb-3">
+                  {{ render_field(umbrella_form.location)}}
+                </div>
+              </div>
+            </div>
+            <button type="submit" name="umbrella_submit" class="submit-btn">
+              {{ umbrella_form.submit.label.text }}
+            </button>
+
+            {{ flash.render_flash_messages() }}
+          </form>
+        </div>
+
+        <!-- COMMUNITY UMBRELLA TAB -->
+
+        <!-- BLOCK DEFINITION -->
+        <div
+          id="block"
+          class="tab-pane fade {% if active_tab == 'block' %}show active{% endif %}"
+        >
+          <p>
+            Organize your community's structure by defining distinct blocks
+            within each umbrella.
+          </p>
+          <form
+            method="POST"
+            action="{{url_for('main.settings',active_tab='block')}}"
+            novalidate
+          >
+            {{ block_form.hidden_tag() }}
+            <div class="row p-4">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  {{ render_field(block_form.block_name) }}
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  {{render_field(block_form.parent_umbrella)}}
+                </div>
+              </div>
+            </div>
+            <button type="submit" name="block_submit" class="submit-btn">
+              {{ block_form.submit.label.text }}
+            </button>
+
+            {{ flash.render_flash_messages() }}
+          </form>
+        </div>
+
+        <!--/ BLOCK DEFINITION -->
+
+        <!--ZONE DEFINITION -->
+        <div
+          id="zone"
+          class="tab-pane fade {% if active_tab == 'zone' %}show active{% endif %}"
+        >
+          <p>
+            Define zones within each block to make it easier when allocating
+            block event to zone members.
+          </p>
+          <form
+            method="POST"
+            action="{{url_for('main.settings',active_tab='zone')}}"
+            novalidate
+          >
+            {{ zone_form.hidden_tag() }}
+            <div class="row p-4">
+              <div class="col-md-6">
+                <div class="mb-3">{{render_field(zone_form.zone_name)}}</div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  {{ render_field(zone_form.parent_block)}}
+                </div>
+              </div>
+            </div>
+            <button type="submit" name="zone_submit" class="submit-btn">
+              {{ zone_form.submit.label.text }}
+            </button>
+
+            {{ flash.render_flash_messages() }}
+          </form>
+        </div>
+
+        <!--/ ZONE DEFINITION -->
+
+        <!--ADD MEMBERS -->
+        <div
+          id="member"
+          class="tab-pane fade {% if active_tab == 'member' %}show active{% endif %}"
+        >
+          <p class="text-center">
+            Each zone has distinct members, please add the different members of
+            the zone.
+          </p>
+          <form
+            action="{{url_for('main.settings',active_tab='member')}}"
+            method="POST"
+            novalidate
+          >
+            {{ member_form.hidden_tag() }}
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">{{ render_field(member_form.full_name)}}</div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  {{ render_field(member_form.phone_number)}}
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">{{ render_field(member_form.id_number)}}</div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  {{ render_field(member_form.member_zone)}}
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">{{ render_field(member_form.bank_id)}}</div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  {{ render_field(member_form.acc_number)}}
+                </div>
+              </div>
+            </div>
+            <button type="submit" name="member_submit" class="submit-btn">
+              {{ member_form.submit.label.text }}
+            </button>
+
+            {{ flash.render_flash_messages() }}
+          </form>
+        </div>
+
+        <!--/ ADD MEMBERS -->
       </div>
     </div>
   </div>
-  
-  <script>
-    function getCsrfToken() {
-      return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+</div>
+
+<script>
+  function getCsrfToken() {
+    return document
+      .querySelector('meta[name="csrf-token"]')
+      .getAttribute("content");
   }
- 
-  </script>
-  
-  {% endblock %}
+</script>
+
+{% endblock %}
