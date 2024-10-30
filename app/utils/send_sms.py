@@ -11,7 +11,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-class SendSMS():
+class SendSMS:
     def __init__(self):
         """Initialize Africa's Talking SMS service"""
         try:
@@ -31,7 +31,7 @@ class SendSMS():
             # Verify initialization by fetching account info
             try:
                 account_info = africastalking.Application.fetch_application_data()
-                logger.info(f"SMS service initialized successfully. Account info: {account_info}")
+                # logger.info(f"SMS service initialized successfully. Account info: {account_info}")
             except Exception as acc_error:
                 logger.warning(f"Initialized but couldn't fetch account info: {acc_error}")
             
@@ -48,8 +48,8 @@ class SendSMS():
                 raise ValueError("Message and recipients are required")
             
             # Log the incoming data
-            logger.debug(f"Sending message: '{message}'")
-            logger.debug(f"Original recipients: {recipients}")
+            # logger.debug(f"Sending message: '{message}'")
+            # logger.debug(f"Original recipients: {recipients}")
             
             # Validate phone numbers
             validated_recipients = []
@@ -57,16 +57,16 @@ class SendSMS():
                 try:
                     validated_number = self._validate_phone_number(number)
                     validated_recipients.append(validated_number)
-                    logger.debug(f"Validated {number} to {validated_number}")
+                    # logger.debug(f"Validated {number} to {validated_number}")
                 except ValueError as ve:
-                    logger.error(f"Validation failed for {number}: {str(ve)}")
+                    # logger.error(f"Validation failed for {number}: {str(ve)}")
                     raise
             
             if not validated_recipients:
                 raise ValueError("No valid recipients after validation")
             
-            logger.info(f"Sending message to recipients: {validated_recipients}")
-            logger.debug(f"Using sender ID: {sender_id or self.sender_id}")
+            # logger.info(f"Sending message to recipients: {validated_recipients}")
+            # logger.debug(f"Using sender ID: {sender_id or self.sender_id}")
             
             # Send the message
             try:
@@ -75,7 +75,7 @@ class SendSMS():
                     recipients=validated_recipients,
                     sender_id=sender_id or self.sender_id
                 )
-                logger.info(f"API Response: {response}")
+                # logger.info(f"API Response: {response}")
                 
                 # Verify the response
                 if response and 'SMSMessageData' in response:
@@ -87,11 +87,11 @@ class SendSMS():
                 return response
                 
             except Exception as send_error:
-                logger.error(f"Africa's Talking API error: {str(send_error)}")
+                # logger.error(f"Africa's Talking API error: {str(send_error)}")
                 raise
             
         except Exception as e:
-            logger.error(f"Failed to send message: {str(e)}")
+            # logger.error(f"Failed to send message: {str(e)}")
             raise
     
     def _validate_phone_number(self, phone_number: str) -> str:
@@ -99,11 +99,11 @@ class SendSMS():
         Validate and format phone number
         """
         try:
-            logger.debug(f"Validating phone number: {phone_number}")
+            # logger.debug(f"Validating phone number: {phone_number}")
             
             # Remove any spaces or special characters
             cleaned_number = ''.join(filter(str.isdigit, phone_number))
-            logger.debug(f"Cleaned number: {cleaned_number}")
+            # logger.debug(f"Cleaned number: {cleaned_number}")
             
             # Format the number
             if cleaned_number.startswith('254'):
@@ -113,7 +113,7 @@ class SendSMS():
             elif not cleaned_number.startswith('+'):
                 cleaned_number = '+254' + cleaned_number
             
-            logger.debug(f"Formatted number: {cleaned_number}")
+            # logger.debug(f"Formatted number: {cleaned_number}")
             
             # Basic validation
             if len(cleaned_number) < 12:  # +254 + 9 digits
@@ -122,7 +122,7 @@ class SendSMS():
             return cleaned_number
             
         except Exception as e:
-            logger.error(f"Phone number validation failed for {phone_number}: {str(e)}")
+            # logger.error(f"Phone number validation failed for {phone_number}: {str(e)}")
             raise ValueError(f"Invalid phone number: {phone_number}")
 
     def test_connection(self) -> bool:

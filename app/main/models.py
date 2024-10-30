@@ -50,7 +50,9 @@ class UserModel(db.Model, UserMixin):
     zone_id = db.Column(db.Integer, db.ForeignKey('zones.id'))
     confirmed_at = db.Column(db.DateTime)
      # Add composite unique constraint
-    __table_args__ = (db.UniqueConstraint('id_number', 'phone_number', 'zone_id', name='uq_user_id_phone_zone'),)
+    __table_args__ = (
+        db.UniqueConstraint('id_number', 'phone_number', 'acc_number', 'zone_id', name='uq_user_id_phone_acc_zone'),
+)
 
 
     # Relationships

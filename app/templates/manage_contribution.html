@@ -48,6 +48,7 @@
           <form
             method="POST"
             action="{{url_for('main.manage_contribution', active_tab='request_payment')}}"
+            novalidate
           >
             {{ payment_form.hidden_tag() }}
 
@@ -55,22 +56,45 @@
               <div class="col-md-6">
                 <div class="mb-3">
                   {{ payment_form.block.label }} {{
-                  payment_form.block(class="form-control") }}
+                  payment_form.block(class="form-control") }} {% if
+                  payment_form.block.errors %}
+                  <div class="text-danger">
+                    {% for error in payment_form.block.errors %}
+                    <small>{{ error }}</small>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
                   {{ payment_form.member.label }} {{
-                  payment_form.member(class="form-control") }}
+                  payment_form.member(class="form-control") }} {% if
+                  payment_form.member.errors %}
+                  <div class="text-danger">
+                    {% for error in payment_form.member.errors %}
+                    <small>{{ error }}</small>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
                 </div>
               </div>
             </div>
 
             <div class="mb-3">
               {{ payment_form.amount.label }} {{
-              payment_form.amount(class="form-control") }}
+              payment_form.amount(class="form-control") }} {% if
+              payment_form.amount.errors %}
+              <div class="text-danger">
+                {% for error in payment_form.amount.errors %}
+                <small>{{ error }}</small>
+                {% endfor %}
+              </div>
+              {% endif %}
             </div>
-            <button type="submit" class="submit-btn">SUBMIT</button>
+            <button type="submit" name="request_submit" class="submit-btn">
+              {{ payment_form.submit.label.text }}
+            </button>
             {{ flash.render_flash_messages() }}
           </form>
         </div>
@@ -87,6 +111,7 @@
           <form
             method="POST"
             action="{{url_for('main.manage_contribution',active_tab='send_to_bank')}}"
+            novalidate
           >
             {{ payment_form.hidden_tag() }}
 
@@ -94,13 +119,27 @@
               <div class="col-md-6">
                 <div class="mb-3">
                   {{ payment_form.block.label() }} {{
-                  payment_form.block(class="form-control") }}
+                  payment_form.block(class="form-control") }} {% if
+                  payment_form.block.errors %}
+                  <div class="text-danger">
+                    {% for error in payment_form.block.errors %}
+                    <small>{{ error }}</small>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
                   {{ payment_form.member.label() }} {{
-                  payment_form.member(class="form-control") }}
+                  payment_form.member(class="form-control") }} {% if
+                  payment_form.member.errors %}
+                  <div class="text-danger">
+                    {% for error in payment_form.member.errors %}
+                    <small>{{ error }}</small>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
                 </div>
               </div>
             </div>
@@ -108,7 +147,14 @@
               <div class="col-md-6">
                 <div class="mb-3">
                   {{ payment_form.amount.label() }} {{
-                  payment_form.amount(class="form-control") }}
+                  payment_form.amount(class="form-control") }} {% if
+                  payment_form.amount.errors %}
+                  <div class="text-danger">
+                    {% for error in payment_form.amount.errors %}
+                    <small>{{ error }}</small>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
                 </div>
               </div>
               <div class="col-md-6">
@@ -120,7 +166,16 @@
                       <div class="me-2">
                         {{ payment_form.bank.label(class="form-label") }}
                       </div>
-                      <div>{{ payment_form.bank(class="form-select") }}</div>
+                      <div>
+                        {{ payment_form.bank(class="form-select") }} {% if
+                        payment_form.bank.errors %}
+                        <div class="text-danger">
+                          {% for error in payment_form.bank.errors %}
+                          <small>{{ error }}</small>
+                          {% endfor %}
+                        </div>
+                        {% endif %}
+                      </div>
                     </div>
 
                     <div class="d-flex align-items-center ms-5">
@@ -128,7 +183,14 @@
                         {{ payment_form.acc_number.label(class="form-label") }}
                       </div>
                       <div>
-                        {{ payment_form.acc_number(class="form-control") }}
+                        {{ payment_form.acc_number(class="form-control") }} {%
+                        if payment_form.acc_number.errors %}
+                        <div class="text-danger">
+                          {% for error in payment_form.acc_number.errors %}
+                          <small>{{ error }}</small>
+                          {% endfor %}
+                        </div>
+                        {% endif %}
                       </div>
                     </div>
                   </div>

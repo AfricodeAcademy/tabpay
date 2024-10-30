@@ -6,7 +6,7 @@ from PIL import Image
 from flask import current_app
 import logging
 import os
-from .send_sms import SendSMS # SMS service
+# from .send_sms import SendSMS # SMS service
 # import africastalking
 
 
@@ -16,17 +16,17 @@ mail = Mail()
 
 # SMS service
 # Initialize SMS service as None first
-sms = None
+# sms = None
 
-def init_sms(app):
-    """Initialize SMS service with application config"""
-    global sms
-    try:
-        sms = SendSMS()
-        return sms
-    except Exception as e:
-        app.logger.error(f"Failed to initialize SMS service: {e}")
-        return None
+# def init_sms(app):
+#     """Initialize SMS service with application config"""
+#     global sms
+#     try:
+#         sms = SendSMS()
+#         return sms
+#     except Exception as e:
+#         app.logger.error(f"Failed to initialize SMS service: {e}")
+#         return None
     # SMS service - ENDS********
 
 # Function to save the profile picture

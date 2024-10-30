@@ -75,10 +75,13 @@ block content %}
                   </select>
                 </div>
                 <div class="col-md-3 tt-contributed">
-                  {% set total_contributed = block_contributions.values()|sum %}
-
-                  Total Contributed:
+                  {% if block_contributions %}
+                  {% set total_contributed = block_contributions.values() | sum %}
                   <span style="color: rgb(14, 169, 14)">Kes {{ total_contributed }}</span>
+                  {% else %}
+                  <span style="color: rgb(14, 169, 14)">Kes 0.00</span>
+              {% endif %}
+              
                 </div>
               </div>
             </div>
@@ -107,13 +110,17 @@ block content %}
                 </tr>
               </thead>
               <tbody>
-                {% for block, amount in block_contributions.items() %}
-                <tr>
-                  <td>{{ block }}</td>
-                  <td>Kes {{ amount }}</td>
-                </tr>
-                {% endfor %}
+                {% if block_contributions is mapping %}
+                    {% for block, amount in block_contributions.items() %}
+                        <tr><td>{{ block }}</td><td>Kes {{ amount }}</td></tr>
+              
+                    {% endfor %} 
+                    {% else %}
+                    <tr><td colspan="2">No contributions found</td></tr>            
+                {% endif %}
+            
               </tbody>
+              
             </table>
             </div>
             <!-- End Block Contribution -->

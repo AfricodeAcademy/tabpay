@@ -59,6 +59,7 @@
           <form
             method="POST"
             action="{{ url_for('main.host', active_tab='schedule_meeting') }}"
+            novalidate
           >
             {{ schedule_form.hidden_tag() }}
 
@@ -66,20 +67,43 @@
               <div class="col-md-6">
                 <div class="mb-3">
                   {{ schedule_form.block.label }} {{
-                  schedule_form.block(class="select") }}
+                  schedule_form.block(class="select") }} {% if
+                  schedule_form.block.errors %}
+                  <div class="text-danger">
+                    {% for error in schedule_form.block.errors %}
+                    <small>{{ error }}</small>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
                 </div>
               </div>
+
               <div class="col-md-6">
                 <div class="mb-3">
                   {{ schedule_form.zone.label }} {{
-                  schedule_form.zone(class="select") }}
+                  schedule_form.zone(class="select") }} {% if
+                  schedule_form.zone.errors %}
+                  <div class="text-danger">
+                    {% for error in schedule_form.zone.errors %}
+                    <small>{{ error }}</small>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
                 </div>
               </div>
             </div>
+
             <div class="row">
               <div class="col-md-6">
                 {{ schedule_form.member.label }} {{
-                schedule_form.member(class="select") }}
+                schedule_form.member(class="select") }} {% if
+                schedule_form.member.errors %}
+                <div class="text-danger">
+                  {% for error in schedule_form.member.errors %}
+                  <small>{{ error }}</small>
+                  {% endfor %}
+                </div>
+                {% endif %}
               </div>
               <style>
                 .input-with-icon {
@@ -106,6 +130,13 @@
                   {{ schedule_form.date(class="input", placeholder="YYYY-MM-DD
                   HH:MM:SS") }}
                 </div>
+                {% if schedule_form.member.errors %}
+                <div class="text-danger">
+                  {% for error in schedule_form.date.errors %}
+                  <small>{{ error }}</small>
+                  {% endfor %}
+                </div>
+                {% endif %}
               </div>
             </div>
 
@@ -124,19 +155,20 @@
           class="tab-pane fade {% if active_tab == 'upcoming_block' %}show active{% endif %}"
         >
           <h5 class="text-center mt-2 mb-1">Upcoming Block</h5>
-          <form
-            method="GET"
-            action="{{ url_for('main.host', active_tab='upcoming_block') }}"
-          >
-            <div class="row pb-2 pt-1">
-              <!-- Block Details Section -->
-              <div class="col-md-6 d-flex justify-content-center">
+
+          <div class="row pb-2 pt-1 ms-2">
+            <!-- Block Details Section -->
+            <div class="col-md-6">
+              <form
+                method="GET"
+                action="{{ url_for('main.host', active_tab='upcoming_block') }}"
+              >
                 <div class="card p-4">
-                  <h6 class="mb-5">Block Details</h6>
+                  <h6 class="mb-4">Block Details</h6>
                   <p><strong>Block Name:</strong> {{meeting_block}}</p>
                   <p><strong>Zone Name:</strong> {{meeting_zone}}</p>
                   <p><strong>The Host:</strong> {{host}}</p>
-                  <p><strong>When:</strong>{{when}}</p>
+                  <p><strong>When:</strong> {{when}}</p>
                   <p>
                     Wrong meeting details?
                     <a
@@ -163,10 +195,20 @@
                     </button>
                   </div>
                 </div>
-              </div>
+              </form>
+            </div>
 
-              <!-- Communicate & Send Payment Link Section -->
-              <div class="col-md-6 d-flex justify-content-center">
+            <!-- Communicate & Send Payment Link Section -->
+            <div class="col-md-6">
+              <form
+                method="POST"
+                action="{{ url_for('main.host', active_tab='upcoming_block') }}"
+              >
+                <input
+                  type="hidden"
+                  name="csrf_token"
+                  value="{{ csrf_token() }}"
+                />
                 <div class="card p-4">
                   <h6 class="no-wrap mb-5">Communicate & Send Payment Link</h6>
                   <label for="message">Message:</label>
@@ -175,23 +217,23 @@
                     class="form-control mt-4"
                     rows="6"
                     style="height: 150px"
+                    readonly
                   >
-Dear Member, 
-Upcoming block is hosted by {{meeting_zone}}  and the host is {{host}}. Make payment through this link: {{paymentlink}} or through the paybill : xxxxxx Account Number: Your Phone Number."
-  
-                      </textarea
+                  {{ message }}
+          </textarea
                   >
+                  <input type="hidden" name="message" value="{{ message }}" />
 
-                  <button class="submit-btn" onclick="sendMessage()">
+                  <button class="submit-btn" name="send_sms" type="submit">
                     SEND
                   </button>
+                  {{ flash.render_flash_messages() }}
                 </div>
-              </div>
+              </form>
             </div>
-          </form>
+          </div>
         </div>
-
-        <!--/ upcoming Block -->
+        <!--/ Upcoming Block -->
 
         <!-- Block Members -->
         <div
