@@ -1,4 +1,4 @@
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError,IntegrityError
 from datetime import datetime, timedelta
 from flask import Blueprint, jsonify, request
 from werkzeug.exceptions import HTTPException
@@ -220,6 +220,14 @@ class UsersResource(BaseResource):
             args = self.args.parse_args()
             logger.info(f"POST request received to create new user. Payload: {args}")
     
+            # Check for umbrella and generate initials for unique member identifier
+            umbrella = UmbrellaModel.query.get(args['umbrella_id'])
+            if not umbrella:
+                return {"message": "Umbrella does not exist."}, 400
+
+            # Generate unique member identifier based on umbrella initials
+            unique_id = UserModel.generate_member_identifier(umbrella)
+            
 
             # Create the new user
             new_user = UserModel(
@@ -228,7 +236,9 @@ class UsersResource(BaseResource):
                 phone_number=args['phone_number'],
                 zone_id=args['zone_id'],
                 bank_id=args['bank_id'],
-                acc_number=args['acc_number']
+                acc_number=args['acc_number'],
+                unique_id=unique_id,
+                umbrella_id=args['umbrella_id']
             )
                     
             db.session.add(new_user)
@@ -256,6 +266,12 @@ class UsersResource(BaseResource):
             logger.info(f"Successfully created user {new_user.id} with roles {[r.name for r in new_user.roles]},block memberships {[b.name for b in new_user.block_memberships]} and zone memberships {[z.name for z in new_user.zone_memberships]}")
 
             return marshal(new_user, self.fields), 201
+        
+        except IntegrityError as e:
+            db.session.rollback()
+            logger.error(f"Duplicate entry detected: {str(e)}")
+            return {"message": "A member with this ID number, phone number, or account number already exists in this zone."}, 400
+
 
         except Exception as e:
             db.session.rollback()
@@ -572,6 +588,33 @@ class UmbrellasResource(BaseResource):
             return marshal(items, self.fields), 200
         
         except Exception as e:
+            return self.handle_error(e)
+
+    def post(self):
+        try:
+            args = self.args.parse_args()
+            logger.info(f"POST request received to create new umbrella. Payload: {args}")
+
+            # Generate unique initials based on the umbrella name
+            initials = UmbrellaModel.generate_unique_initials(args['name'])
+
+            # Create the new umbrella
+            new_umbrella = UmbrellaModel(
+                name=args['name'],
+                location=args['location'],
+                created_by=args['created_by'],
+                initials=initials  # Set the generated initials here
+            )
+
+            db.session.add(new_umbrella)
+            db.session.commit()
+
+            logger.info(f"Successfully created umbrella {new_umbrella.id} with initials {initials}")
+            return marshal(new_umbrella, self.fields), 201
+        
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error creating new umbrella: {str(e)}. Rolling back changes.")
             return self.handle_error(e)
 
 class RolesResource(BaseResource):

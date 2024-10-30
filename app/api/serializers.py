@@ -7,7 +7,6 @@ def get_user_fields():
     block_fields = {
         "id": fields.Integer,
         "name": fields.String,
-        "parent_umbrella_id": fields.Integer,
     }
     
     role_fields = {
@@ -18,7 +17,6 @@ def get_user_fields():
     zone_fields = {
         "id": fields.Integer,
         "name": fields.String,
-        "parent_block_id": fields.Integer,
     }
 
     user_fields = {
@@ -29,11 +27,13 @@ def get_user_fields():
         "phone_number": fields.String,
         "active": fields.Boolean,
         "bank_id": fields.Integer,
+        "umbrella_id": fields.Integer,
         "acc_number": fields.String,
         "image_file": fields.String,
         "registered_at": fields.DateTime,
         "updated_at": fields.DateTime,
         "confirmed_at": fields.DateTime,
+        "unique_id": fields.String,
         "roles": fields.List(fields.Nested(role_fields)),
         "block_memberships": fields.List(fields.Nested(block_fields)),
         "zone_memberships": fields.List(fields.Nested(zone_fields)),  
@@ -140,6 +140,7 @@ user_args.add_argument('image_file', type=str)
 user_args.add_argument('role_id', type=int)
 user_args.add_argument('action', type=str)
 user_args.add_argument('block_id', type=int)  
+user_args.add_argument('umbrella_id', type=int)  
 
 
 
