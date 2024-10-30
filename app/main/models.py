@@ -121,6 +121,7 @@ class UmbrellaModel(db.Model):
             initials = name[:suffix].upper()
             suffix += 1
         return initials
+    
 
 class BlockModel(db.Model):
     __tablename__ = 'blocks'
