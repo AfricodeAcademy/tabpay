@@ -90,7 +90,7 @@ payment_fields = {
 bank_fields = {
     "id": fields.Integer,
     "name": fields.String,
-    "paybill_no": fields.Integer
+    "paybill_no": fields.String
 }
 
 
