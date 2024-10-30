@@ -49,12 +49,14 @@ class UserModel(db.Model, UserMixin):
     fs_uniquifier = db.Column(db.String(64), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
     zone_id = db.Column(db.Integer, db.ForeignKey('zones.id'))
     confirmed_at = db.Column(db.DateTime)
+    unique_id = db.Column(db.String(10), unique=True)
+    umbrella_id = db.Column(db.Integer, db.ForeignKey('umbrellas.id')) 
      # Add composite unique constraint
     __table_args__ = (
         db.UniqueConstraint('id_number', 'phone_number', 'acc_number', 'zone_id', name='uq_user_id_phone_acc_zone'),
-)
+    )
 
-
+    
     # Relationships
     roles = db.relationship('RoleModel', secondary=roles_users, backref=db.backref('users', lazy=True))
     messages = db.relationship('CommunicationModel', backref='author', lazy=True)
@@ -66,6 +68,28 @@ class UserModel(db.Model, UserMixin):
 
     def __repr__(self):
         return f"<User {self.full_name}>"
+    
+    @staticmethod
+    def generate_member_identifier(umbrella):
+        # Get the umbrella initials
+        initials = umbrella.initials
+        if not initials:
+            raise ValueError("Umbrella initials cannot be None.")
+
+        # Query existing identifiers for the umbrella and find the maximum number
+        last_identifier = db.session.query(UserModel).filter(
+            UserModel.umbrella_id == umbrella.id,
+            UserModel.unique_id.like(f"{initials}%")
+        ).order_by(UserModel.unique_id.desc()).first()
+
+        # Extract the last number and increment by 1, or start with '001' if none exist
+        if last_identifier:
+            last_number = int(last_identifier.unique_id[-3:])
+            new_number = f"{last_number + 1:03}"
+        else:
+            new_number = "001"
+
+        return f"{initials}{new_number}"
 
 class WebAuth(db.Model):
     __tablename__ = 'webauth'
@@ -80,9 +104,24 @@ class UmbrellaModel(db.Model):
     location = db.Column(db.String(255), nullable=False, unique = True)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     blocks = db.relationship('BlockModel', backref='parent_umbrella', lazy=True)
+    initials = db.Column(db.String(10), unique=True)
 
     def __repr__(self):
         return f"<Umbrella {self.name}>"
+    
+    @staticmethod
+    def generate_unique_initials(name):
+        # Start with the first two characters of the name
+        initials = name[:2].upper()
+        existing_initials = {umbrella.initials for umbrella in UmbrellaModel.query.all()}
+
+        # Add letters until initials are unique
+        suffix = 2
+        while initials in existing_initials:
+            initials = name[:suffix].upper()
+            suffix += 1
+        return initials
+    
 
 class BlockModel(db.Model):
     __tablename__ = 'blocks'
