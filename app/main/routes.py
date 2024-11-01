@@ -255,22 +255,6 @@ def get_user_by_id_number(id_number):
     except Exception as e:
         current_app.logger.error(f"Error fetching user by id_number: {e}")
         return None
-
-@main.route('/get_user_by_id_number/<int:id_number>', methods=['GET'])
-def get_user(id_number):
-    current_app.logger.debug(f"Received GET request for user with ID: {id_number}")
-    user = get_user_by_id_number(id_number)  # Reuse your existing function
-    if user:
-        current_app.logger.debug(f"User found: {user}")
-        return jsonify({
-            'full_name': user['full_name'],
-            'phone_number': user['phone_number'],
-            'roles': user.get('roles', [])
-        }), 200
-    current_app.logger.debug("User not found")
-    return jsonify({'error': 'User not found'}), 404
-
-
     
 
 def handle_committee_addition(committee_form):
@@ -1012,6 +996,13 @@ def send_sms_notifications():
         # Retrieve message from the form data
         message = request.form.get('message')
         print(f"Message: {message}") 
+        
+        # Check if any required meeting details are missing
+        if message and "None" in message:
+            flash('Incomplete meeting details!', 'danger')
+            return redirect(url_for('main.host', active_tab='upcoming_block'))
+
+
         
         recipients = get_member_phone_numbers()
         print(f"Recipients: {recipients}") 
