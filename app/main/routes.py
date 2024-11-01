@@ -734,6 +734,7 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
         paybill_no = meeting_details['paybill_no']
     else:
         meeting_block = meeting_zone = host = when = paybill_no = acc_number = None
+        flash('No upcoming meetings found.','warning')
     
     message = f"""
 Dear Member,
@@ -915,12 +916,13 @@ def handle_schedule_creation(schedule_form):
     return render_host_page(schedule_form=schedule_form,active_tab='schedule_meeting')
 
 
+
 def get_upcoming_meeting_details():
     today = datetime.now()
     week_start = today.replace(hour=0, minute=0, second=0, microsecond=0)
     week_end = (week_start + timedelta(days=6)).replace(hour=23, minute=59, second=59)
 
-    organizer_id = current_user.id  
+    organizer_id = current_user.id
 
     try:
         logging.info(f"Fetching upcoming meetings for organizer_id={organizer_id}, start={week_start}, end={week_end}")
@@ -939,48 +941,37 @@ def get_upcoming_meeting_details():
             meeting_data = response.json()
             logging.info(f"API response received: {meeting_data}")
 
-            if isinstance(meeting_data, list) and len(meeting_data) > 0:
-                first_meeting = meeting_data[0]
-                block_name = first_meeting.get('meeting_block', 'Unknown Block')
-                zone_name = first_meeting.get('meeting_zone', 'Unknown Zone')
-                host_name = first_meeting.get('host', 'Unknown Host')
-                meeting_date = first_meeting.get('when', 'Unknown Date')
-                meeting_id = first_meeting.get('meeting_id', 'Unknown meeting ID')
-                paybill_no = first_meeting.get('paybill_no', 'Unknown Paybill')
-                acc_number = first_meeting.get('acc_number', 'Unknown Account')
-                
+            # Extract the first meeting if data is a list, or use it directly if it's a dict
+            first_meeting = meeting_data[0] if isinstance(meeting_data, list) and len(meeting_data) > 0 else meeting_data
 
-                logging.info(f"Extracted meeting details: Block - {block_name}, Zone - {zone_name}, Host - {host_name}, When - {meeting_date}")
-                return {
-                    'meeting_block': block_name,
-                    'meeting_zone': zone_name,
-                    'host': host_name,
-                    'when': meeting_date,
-                    'meeting_id': meeting_id,
-                    'paybill_no': paybill_no,
-                    'acc_number': acc_number
-                 
+            if first_meeting:
+                # Parse meeting date and check if it has expired
+                meeting_date_str = first_meeting.get('when', 'Unknown Date')
+                try:
+                    meeting_date = datetime.strptime(meeting_date_str, '%a, %d %b %Y %H:%M:%S')
+                except ValueError:
+                    logging.error("Invalid meeting date format received from API.")
+                    return None
+
+                if meeting_date < datetime.now():
+                    logging.info("Meeting has expired; setting upcoming meeting details to None.")
+                    return None
+
+                # Extract details
+                meeting_details = {
+                    'meeting_block': first_meeting.get('meeting_block', 'Unknown Block'),
+                    'meeting_zone': first_meeting.get('meeting_zone', 'Unknown Zone'),
+                    'host': first_meeting.get('host', 'Unknown Host'),
+                    'when': meeting_date_str,
+                    'meeting_id': first_meeting.get('meeting_id', 'Unknown meeting ID'),
+                    'paybill_no': first_meeting.get('paybill_no', 'Unknown Paybill'),
+                    'acc_number': first_meeting.get('acc_number', 'Unknown Account')
                 }
-            elif isinstance(meeting_data, dict):
-                block_name = meeting_data.get('meeting_block', 'Unknown Block')
-                zone_name = meeting_data.get('meeting_zone', 'Unknown Zone')
-                host_name = meeting_data.get('host', 'Unknown Host')
-                meeting_date = meeting_data.get('when', 'Unknown Date')
-                meeting_id = meeting_data.get('meeting_id', 'Unknown meeting ID')
-                paybill_no = meeting_data.get('paybill_no', 'Unknown Paybill')
-                acc_number = meeting_data.get('acc_number', 'Unknown Account')
-                
-                return {
-                    'meeting_block': block_name,
-                    'meeting_zone': zone_name,
-                    'host': host_name,
-                    'when': meeting_date,
-                    'meeting_id':meeting_id,
-                    'paybill_no': paybill_no,
-                    'acc_number': acc_number
-                }
+
+                logging.info(f"Extracted meeting details: {meeting_details}")
+                return meeting_details
             else:
-                logging.warning("No upcoming meetings found or unexpected response format.")
+                logging.warning("No upcoming meetings found.")
                 return None
         else:
             logging.error(f"Failed to fetch data from API. Status Code: {response.status_code}")
@@ -989,7 +980,6 @@ def get_upcoming_meeting_details():
     except requests.exceptions.RequestException as e:
         logging.error(f"An error occurred while fetching data from the API: {e}")
         return None
-
 
 def send_sms_notifications():
     try:
