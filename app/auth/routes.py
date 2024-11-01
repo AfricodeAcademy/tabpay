@@ -12,7 +12,7 @@
 # from app.auth.forms import ExtendedConfirmRegisterForm
 
 # @auth.route('/register', methods=['GET', 'POST'])
-# @roles_required('SuperUseristrator')  
+# @roles_required('Administrator')  
 # def register_user():
 #     form = ExtendedConfirmRegisterForm()
 
