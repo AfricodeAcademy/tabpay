@@ -908,9 +908,7 @@ def handle_schedule_creation(schedule_form):
                 flash('Meeting scheduling failed. Please try again later.', 'danger')
         except Exception as e:
             print(f"Meeting scheduling error: {e}")
-            flash('Error creating meeting. Please try again later.', 'danger')
-
- 
+            flash('Error creating meeting. Please try again later.', 'danger') 
 
     return render_host_page(schedule_form=schedule_form,active_tab='schedule_meeting')
 
