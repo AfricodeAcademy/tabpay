@@ -11,7 +11,7 @@ class AddMemberForm(FlaskForm):
     phone_number = StringField('Phone Number', validators=[DataRequired(message="Phone Number is required"), Length(min=10, max=10, message="Phone number must be exactly 10 digits.")], render_kw={'placeholder': 'e.g 0700000000'})
     member_zone = SelectField('Member Zone', choices=[("", "Choose a Zone")], validators=[DataRequired(message="Zone is required")])
     bank_id = SelectField('Select Bank', choices=[("", "Choose a Bank")], validators=[DataRequired(message="Bank is required")])
-    acc_number = IntegerField('Bank Account Number', validators=[DataRequired(message="Account Number is required")], render_kw={'placeholder': 'xxxxxx'})
+    acc_number = StringField('Bank Account Number', validators=[DataRequired(message="Account Number is required")], render_kw={'placeholder': 'xxxxxx'})
     submit = SubmitField('ADD MEMBER')
 
 class ProfileForm(FlaskForm):
@@ -60,7 +60,7 @@ class PaymentForm(FlaskForm):
     member = SelectField('Select Block member', choices=[("", "Choose a Member")], validators=[DataRequired(message="Member field is required .")])
     amount = IntegerField('Amount to Send', validators=[DataRequired(message="Amount field is required.")])
     bank = SelectField('Bank:', choices=[("", "Choose a Bank")], validators=[DataRequired(message="Bank field is required")])
-    acc_number = IntegerField('A/C:', validators=[DataRequired(message="Account number is required.")], render_kw={'placeholder': 'xxxxxx'})
+    acc_number = StringField('A/C:', validators=[DataRequired(message="Account number is required.")], render_kw={'placeholder': 'xxxxxx'})
     submit = SubmitField('SEND PAYMENT')
 class ScheduleForm(FlaskForm):
     block = SelectField(

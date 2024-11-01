@@ -183,8 +183,8 @@ class MeetingModel(db.Model):
 class BankModel(db.Model):
     __tablename__ = 'banks'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(80), nullable=False)
-    paybill_no = db.Column(db.Integer, nullable=False)
+    name = db.Column(db.String(80), nullable=False,unique=True)
+    paybill_no = db.Column(db.String(80), nullable=False,unique=True)
     total_transactions = db.relationship('PaymentModel', backref='bank', lazy=True)
     users = db.relationship('UserModel', backref='bank', lazy=True)
 

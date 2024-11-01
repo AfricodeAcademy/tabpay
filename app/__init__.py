@@ -1,5 +1,6 @@
 from flask import Flask
 from .utils import db, mail, security # SMS service
+from .utils.initial_banks import import_initial_banks
 from .main.models import UserModel, RoleModel
 from flask_security import SQLAlchemyUserDatastore
 from flask_security.utils import hash_password
@@ -66,5 +67,7 @@ def create_app(config_name):
                                         phone_number='0796533555', roles=[user_datastore.find_role('Administrator')])
             db.session.commit()
             print('SuperUser created successfully')
+    import_initial_banks(app)
+    
     
     return app
