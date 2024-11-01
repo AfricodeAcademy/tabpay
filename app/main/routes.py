@@ -127,7 +127,7 @@ def render_settings_page(active_tab=None,umbrella_form=None,block_form=None,comm
 
 # Single route to handle all settings form submissions
 @main.route('/settings', methods=['GET', 'POST'])
-@roles_accepted('Admin', 'SuperUser')
+@roles_accepted('SuperUser', 'Administrator')
 @login_required
 def settings():
     umbrella_form = UmbrellaForm()
@@ -255,22 +255,6 @@ def get_user_by_id_number(id_number):
     except Exception as e:
         current_app.logger.error(f"Error fetching user by id_number: {e}")
         return None
-
-@main.route('/get_user_by_id_number/<int:id_number>', methods=['GET'])
-def get_user(id_number):
-    current_app.logger.debug(f"Received GET request for user with ID: {id_number}")
-    user = get_user_by_id_number(id_number)  # Reuse your existing function
-    if user:
-        current_app.logger.debug(f"User found: {user}")
-        return jsonify({
-            'full_name': user['full_name'],
-            'phone_number': user['phone_number'],
-            'roles': user.get('roles', [])
-        }), 200
-    current_app.logger.debug("User not found")
-    return jsonify({'error': 'User not found'}), 404
-
-
     
 
 def handle_committee_addition(committee_form):
@@ -709,7 +693,7 @@ def create_zone(payload):
 
 
 @main.route('/statistics', methods=['GET'])
-@roles_accepted('Admin', 'SuperUser', 'Chairman', 'Secretary','Treasurer')
+@roles_accepted('SuperUser', 'Administrator', 'Chairman', 'Secretary','Treasurer')
 @login_required
 def statistics():
     
@@ -729,7 +713,6 @@ def statistics():
 
 # Helper function to render the host page with forms
 def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=None):
-    logging.info("Rendering host page...")
 
     if schedule_form is None:
         schedule_form = ScheduleForm()
@@ -750,6 +733,7 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
         paybill_no = meeting_details['paybill_no']
     else:
         meeting_block = meeting_zone = host = when = paybill_no = acc_number = None
+        flash('No upcoming meetings found.','warning')
     
     message = f"""
 Dear Member,
@@ -821,7 +805,7 @@ Upcoming block is hosted by {meeting_zone} and the host is {host}. Paybill: {pay
 
 # Single route to handle all host form submissions
 @main.route('/host', methods=['GET', 'POST'])
-@roles_accepted('Admin', 'SuperUser')
+@roles_accepted('SuperUser', 'Administrator')
 @login_required
 def host():
     schedule_form = ScheduleForm()
@@ -924,11 +908,10 @@ def handle_schedule_creation(schedule_form):
                 flash('Meeting scheduling failed. Please try again later.', 'danger')
         except Exception as e:
             print(f"Meeting scheduling error: {e}")
-            flash('Error creating meeting. Please try again later.', 'danger')
-
- 
+            flash('Error creating meeting. Please try again later.', 'danger') 
 
     return render_host_page(schedule_form=schedule_form,active_tab='schedule_meeting')
+
 
 
 def get_upcoming_meeting_details():
@@ -936,7 +919,7 @@ def get_upcoming_meeting_details():
     week_start = today.replace(hour=0, minute=0, second=0, microsecond=0)
     week_end = (week_start + timedelta(days=6)).replace(hour=23, minute=59, second=59)
 
-    organizer_id = current_user.id  
+    organizer_id = current_user.id
 
     try:
         logging.info(f"Fetching upcoming meetings for organizer_id={organizer_id}, start={week_start}, end={week_end}")
@@ -955,48 +938,37 @@ def get_upcoming_meeting_details():
             meeting_data = response.json()
             logging.info(f"API response received: {meeting_data}")
 
-            if isinstance(meeting_data, list) and len(meeting_data) > 0:
-                first_meeting = meeting_data[0]
-                block_name = first_meeting.get('meeting_block', 'Unknown Block')
-                zone_name = first_meeting.get('meeting_zone', 'Unknown Zone')
-                host_name = first_meeting.get('host', 'Unknown Host')
-                meeting_date = first_meeting.get('when', 'Unknown Date')
-                meeting_id = first_meeting.get('meeting_id', 'Unknown meeting ID')
-                paybill_no = first_meeting.get('paybill_no', 'Unknown Paybill')
-                acc_number = first_meeting.get('acc_number', 'Unknown Account')
-                
+            # Extract the first meeting if data is a list, or use it directly if it's a dict
+            first_meeting = meeting_data[0] if isinstance(meeting_data, list) and len(meeting_data) > 0 else meeting_data
 
-                logging.info(f"Extracted meeting details: Block - {block_name}, Zone - {zone_name}, Host - {host_name}, When - {meeting_date}")
-                return {
-                    'meeting_block': block_name,
-                    'meeting_zone': zone_name,
-                    'host': host_name,
-                    'when': meeting_date,
-                    'meeting_id': meeting_id,
-                    'paybill_no': paybill_no,
-                    'acc_number': acc_number
-                 
+            if first_meeting:
+                # Parse meeting date and check if it has expired
+                meeting_date_str = first_meeting.get('when', 'Unknown Date')
+                try:
+                    meeting_date = datetime.strptime(meeting_date_str, '%a, %d %b %Y %H:%M:%S')
+                except ValueError:
+                    logging.error("Invalid meeting date format received from API.")
+                    return None
+
+                if meeting_date < datetime.now():
+                    logging.info("Meeting has expired; setting upcoming meeting details to None.")
+                    return None
+
+                # Extract details
+                meeting_details = {
+                    'meeting_block': first_meeting.get('meeting_block', 'Unknown Block'),
+                    'meeting_zone': first_meeting.get('meeting_zone', 'Unknown Zone'),
+                    'host': first_meeting.get('host', 'Unknown Host'),
+                    'when': meeting_date_str,
+                    'meeting_id': first_meeting.get('meeting_id', 'Unknown meeting ID'),
+                    'paybill_no': first_meeting.get('paybill_no', 'Unknown Paybill'),
+                    'acc_number': first_meeting.get('acc_number', 'Unknown Account')
                 }
-            elif isinstance(meeting_data, dict):
-                block_name = meeting_data.get('meeting_block', 'Unknown Block')
-                zone_name = meeting_data.get('meeting_zone', 'Unknown Zone')
-                host_name = meeting_data.get('host', 'Unknown Host')
-                meeting_date = meeting_data.get('when', 'Unknown Date')
-                meeting_id = meeting_data.get('meeting_id', 'Unknown meeting ID')
-                paybill_no = meeting_data.get('paybill_no', 'Unknown Paybill')
-                acc_number = meeting_data.get('acc_number', 'Unknown Account')
-                
-                return {
-                    'meeting_block': block_name,
-                    'meeting_zone': zone_name,
-                    'host': host_name,
-                    'when': meeting_date,
-                    'meeting_id':meeting_id,
-                    'paybill_no': paybill_no,
-                    'acc_number': acc_number
-                }
+
+                logging.info(f"Extracted meeting details: {meeting_details}")
+                return meeting_details
             else:
-                logging.warning("No upcoming meetings found or unexpected response format.")
+                logging.warning("No upcoming meetings found.")
                 return None
         else:
             logging.error(f"Failed to fetch data from API. Status Code: {response.status_code}")
@@ -1006,12 +978,18 @@ def get_upcoming_meeting_details():
         logging.error(f"An error occurred while fetching data from the API: {e}")
         return None
 
-
 def send_sms_notifications():
     try:
         # Retrieve message from the form data
         message = request.form.get('message')
         print(f"Message: {message}") 
+        
+        # Check if any required meeting details are missing
+        if message and "None" in message:
+            flash('Incomplete meeting details!', 'danger')
+            return redirect(url_for('main.host', active_tab='upcoming_block'))
+
+
         
         recipients = get_member_phone_numbers()
         print(f"Recipients: {recipients}") 
@@ -1230,7 +1208,7 @@ def render_committee_page(active_tab=None, error=None):
 
 # Single route to handle committee-related actions
 @main.route('/committee', methods=['GET', 'POST'])
-@roles_accepted('Admin', 'SuperUser')
+@roles_accepted('SuperUser', 'Administrator')
 @login_required
 def committee():    
     if 'remove_role_submit' in request.form:
@@ -1352,7 +1330,7 @@ def render_reports_page(active_tab=None, error=None, host_id=None, member_id=Non
 
 
 @main.route('/block_reports', methods=['GET', 'POST'])
-@roles_accepted('Admin', 'SuperUser')
+@roles_accepted('SuperUser', 'Administrator')
 @login_required
 def block_reports():
     host_id = request.args.get('host')
@@ -1548,7 +1526,7 @@ def render_contribution_page(active_tab=None,payment_form=None, error=None):
 
 
 @main.route('/manage_contribution', methods=['GET', 'POST'])
-@roles_accepted('Admin', 'SuperUser')
+@roles_accepted('SuperUser', 'Administrator')
 @login_required
 def manage_contribution():
     # Get active tab

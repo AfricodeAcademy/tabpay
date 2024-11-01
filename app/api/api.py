@@ -623,7 +623,6 @@ class RolesResource(BaseResource):
     args = role_args
 
 
-
 class MeetingsResource(BaseResource):
     model = MeetingModel
     fields = meeting_fields
@@ -633,12 +632,14 @@ class MeetingsResource(BaseResource):
         try:
             logging.info(f"Incoming request received: {request.url}")
 
-            # Fetch meeting by ID if 'id' is provided
             if id:
                 logging.info(f"Fetching meeting with ID: {id}")
-
                 meeting = self.model.query.get_or_404(id)
+                if meeting.date < datetime.now():
+                    logging.info("The meeting date has passed; setting meeting to None.")
+                    return {'message': 'No upcoming meeting available'}, 404
                 return marshal(meeting, self.fields), 200
+
 
             # Get 'organizer_id', 'start', and 'end' query parameters
             organizer_id = request.args.get('organizer_id')
@@ -840,7 +841,7 @@ class ZonesResource(BaseResource):
 
 
 # API routes
-api.add_resource(UsersResource, '/users/', '/users/<int:id>', '/users/<int:id>/roles/')
+api.add_resource(UsersResource, '/users/', '/users/<int:id>')
 api.add_resource(CommunicationsResource, '/communications/', '/communications/<int:id>')
 api.add_resource(BanksResource, '/banks/', '/banks/<int:id>')
 api.add_resource(PaymentsResource, '/payments/', '/payments/<int:id>')
