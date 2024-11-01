@@ -840,7 +840,7 @@ class ZonesResource(BaseResource):
 
 
 # API routes
-api.add_resource(UsersResource, '/users/', '/users/<int:id>', '/users/<int:id>/roles/')
+api.add_resource(UsersResource, '/users/', '/users/<int:id>')
 api.add_resource(CommunicationsResource, '/communications/', '/communications/<int:id>')
 api.add_resource(BanksResource, '/banks/', '/banks/<int:id>')
 api.add_resource(PaymentsResource, '/payments/', '/payments/<int:id>')
