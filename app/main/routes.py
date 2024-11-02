@@ -1022,7 +1022,9 @@ def send_sms_notifications():
             return redirect(url_for('main.host', active_tab='upcoming_block'))
 
     except Exception as e:
+        flash("An unexpected error occurred!", "danger")
         current_app.logger.error(f"Failed to send notifications: {e}")
+        return redirect(url_for('main.host', active_tab='upcoming_block'))
    
 def get_member_phone_numbers():
     try:
