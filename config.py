@@ -36,6 +36,8 @@ class Config:
 
      # Flask-Admin config
     FLASK_ADMIN_SWATCH = 'cerulean'
+    FLASK_ADMIN_FLUID_LAYOUT = True 
+    SECURITY_URL_PREFIX = '/auth'
 
 
 class DevelopmentConfig(Config):
