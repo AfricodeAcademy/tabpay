@@ -58,8 +58,9 @@ def create_app(config_name):
     
     with app.app_context():
         db.create_all()
-        
+
         # Create roles
+<<<<<<< HEAD
         user_datastore.find_or_create_role(name='SuperUser', description='System Manager')
         user_datastore.find_or_create_role(name='Administrator', description='Account Owner and Umbrella creator')
         user_datastore.find_or_create_role(name='Chairman', description='Block chairman')
@@ -88,8 +89,44 @@ def create_app(config_name):
                 is_approved=True
             )
 
+=======
+        roles = [
+            ('SuperUser', 'System Administrator'),
+            ('Administrator', 'Account Owner and Umbrella creator'),
+            ('Chairman', 'Block chairman'),
+            ('Secretary', 'Block secretary'),
+            ('Member', 'Regular member'),
+            ('Treasurer', 'Block Treasurer')
+        ]
+        
+        for role_name, description in roles:
+            user_datastore.find_or_create_role(name=role_name, description=description)
+        
+        # Create Admin user (your existing code.)
+        if not user_datastore.find_user(email='biikate48@gmail.com'):
+            hashed_password = hash_password('123456')
+            user_datastore.create_user(
+                email='biikate48@gmail.com',
+                password=hashed_password,
+                id_number=42635058,
+                full_name='Benard Ronoh',
+                phone_number='0708665444',
+                roles=[user_datastore.find_role('Administrator')]
+            )
+
+        # Create SuperUser
+        if not user_datastore.find_user(email='chatelobenna@gmail.com'):
+            hashed_password = hash_password('123456')
+            user_datastore.create_user(email='chatelobenna@gmail.com', password=hashed_password,
+                                       id_number=42635058, full_name='Enock Bett', 
+                                       phone_number='0729057932',
+                                       roles=[user_datastore.find_role('SuperUser')],
+                                       is_approved=True),
+            
+                                        
+>>>>>>> 2f07c12ef03e8370ce2bbb4219f4fe3c1ef0269b
             db.session.commit()
-            print('SuperUser created successfully')
+            print(f'SuperUser created successfully {user_datastore.find_user(is_approved=True)}')
             
     import_initial_banks(app)
     return app

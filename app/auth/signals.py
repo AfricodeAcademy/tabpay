@@ -1,5 +1,5 @@
 from flask_security import user_registered
-from flask import current_app
+from flask import current_app #Fix for "RuntimeError: Working outside of application context."
 from .. import db
 
 def init_signals(app):

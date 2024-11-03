@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # from flask import Blueprint, render_template, redirect, url_for,request
 # from flask_security import login_required, logout_user, roles_required
 # from flask_security.utils import hash_password
@@ -98,6 +99,11 @@ from flask import render_template, redirect, url_for
 from flask_login import current_user
 from . import auth
 >>>>>>> admin-management
+=======
+from flask import render_template, redirect, url_for
+from flask_login import current_user
+from . import auth
+>>>>>>> 2f07c12ef03e8370ce2bbb4219f4fe3c1ef0269b
 
 @auth.route('/pending-approval')
 def pending_approval():
