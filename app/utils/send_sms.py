@@ -31,8 +31,9 @@ class SendSMS:
             # Verify initialization by fetching account info
             try:
                 account_info = africastalking.Application.fetch_application_data()
-                # logger.info(f"SMS service initialized successfully. Account info: {account_info}")
+                logger.info(f"SMS service initialized successfully. Account info: {account_info}")
             except Exception as acc_error:
+                print("Error sending message, couldn't connect with the server!")
                 logger.warning(f"Initialized but couldn't fetch account info: {acc_error}")
             
         except Exception as e:
