@@ -60,8 +60,8 @@ def create_app(config_name):
         db.create_all()
         
         # Create roles
-        user_datastore.find_or_create_role(name='Admin', description='System Administrator')
-        user_datastore.find_or_create_role(name='SuperUser', description='Account Owner and Umbrella creator')
+        user_datastore.find_or_create_role(name='SuperUser', description='System Manager')
+        user_datastore.find_or_create_role(name='Administrator', description='Account Owner and Umbrella creator')
         user_datastore.find_or_create_role(name='Chairman', description='Block chairman')
         user_datastore.find_or_create_role(name='Secretary', description='Block secretary')
         user_datastore.find_or_create_role(name='Member', description='Regular member')
@@ -76,24 +76,15 @@ def create_app(config_name):
                 id_number=42635058,
                 full_name='Benard Ronoh',
                 phone_number='0708665444',
-                roles=[user_datastore.find_role('Admin')]
+                roles=[user_datastore.find_role('Administrator')]
             )
-            db.session.commit()
-            print('Admin created successfully')
 
-        # Create SuperUser (your existing code)
-        if not user_datastore.find_user(email='chatelobenna@gmail.com'):
+        # Create SuperUser
+        if not user_datastore.find_user(email='enockbett427@gmail.com'):
             hashed_password = hash_password('123456')
-            SuperUser_role = user_datastore.find_role('Admin')
-            user_datastore.create_user(
-                email='chatelobenna@gmail.com',
-                password=hashed_password,
-                id_number=987654321,
-                full_name='Chatelo ben',
-                phone_number='0796533555',
-                roles=[SuperUser_role],
-                is_approved=True
-            )
+            user_datastore.create_user(email='enockbett427@gmail.com', password=hashed_password,
+                                       id_number=42635058, full_name='Enock Bett', phone_number='0729057932',
+                                       roles=[user_datastore.find_role('SuperUser')])
             db.session.commit()
             print('SuperUser created successfully')
             

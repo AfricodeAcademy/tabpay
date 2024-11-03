@@ -115,8 +115,8 @@
           ><i class="bi bi-bar-chart-fill"></i> Reports</a
         >
         <div class="sidebar-bottom">
-          {% if current_user.has_role('SuperUser') or
-          current_user.has_role('Admin') %}
+          {% if current_user.has_role('Administrator') or
+          current_user.has_role('SuperUser') %}
           <a
             href="{{ url_for('main.committee') }}"
             class="{% if request.endpoint == 'main.committee' %}active{% endif %}"
@@ -172,8 +172,8 @@
               >
             </div>
             <div class="sidebar-bottom">
-              {% if current_user.has_role('SuperUser') or
-              current_user.has_role('Admin') %}
+              {% if current_user.has_role('Administrator') or
+              current_user.has_role('SuperUser') %}
               <a
                 href="{{ url_for('main.committee') }}"
                 class="{% if request.endpoint == 'main.committee' %}active{% endif %}"
