@@ -4,6 +4,7 @@ import uuid
 from ..utils import db
 from flask_security import UserMixin, RoleMixin
 import uuid
+from datetime import datetime, timezone
 
 # Association tables
 member_blocks = db.Table('member_blocks',
@@ -50,7 +51,26 @@ class UserModel(db.Model, UserMixin):
     zone_id = db.Column(db.Integer, db.ForeignKey('zones.id'))
     confirmed_at = db.Column(db.DateTime)
     unique_id = db.Column(db.String(10), unique=True)
-    umbrella_id = db.Column(db.Integer, db.ForeignKey('umbrellas.id')) 
+    umbrella_id = db.Column(db.Integer, db.ForeignKey('umbrellas.id'))
+
+    is_approved = db.Column(db.Boolean(), default=False)  # New field
+    approval_date = db.Column(db.DateTime())  # New field
+    approved_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    approved_by = db.relationship('UserModel', remote_side=[id],
+                                backref='approved_users')
+    
+    def approve(self, approved_by):
+        self.is_approved = True
+        self.approval_date = datetime.now(timezone.utc)
+        self.approved_by_id = approved_by.id
+        db.session.commit()
+    
+    def unapprove(self):
+        self.is_approved = False
+        self.approval_date = None
+        self.approved_by_id = None
+        db.session.commit()
+
      # Add composite unique constraint
     __table_args__ = (
         db.UniqueConstraint('id_number', 'phone_number', 'acc_number', 'zone_id', name='uq_user_id_phone_acc_zone'),
