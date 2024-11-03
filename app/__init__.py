@@ -68,10 +68,10 @@ def create_app(config_name):
         user_datastore.find_or_create_role(name='Treasurer', description='Block Treasurer')
         
         # Create Admin user (your existing code.)
-        if not user_datastore.find_user(email='your_mail@gmail.com'):
+        if not user_datastore.find_user(email='biikate48@gmail.com'):
             hashed_password = hash_password('123456')
             user_datastore.create_user(
-                email='your_mail@gmail.com',
+                email='biikate48@gmail.com',
                 password=hashed_password,
                 id_number=42635058,
                 full_name='Benard Ronoh',
@@ -82,14 +82,14 @@ def create_app(config_name):
             print('Admin created successfully')
 
         # Create SuperUser (your existing code)
-        if not user_datastore.find_user(email='system_admin_main@gmail.com'):
+        if not user_datastore.find_user(email='chatelobenna@gmail.com'):
             hashed_password = hash_password('123456')
             SuperUser_role = user_datastore.find_role('Admin')
             user_datastore.create_user(
-                email='system_admin_main@gmail.com',
+                email='chatelobenna@gmail.com',
                 password=hashed_password,
                 id_number=987654321,
-                full_name='Captain',
+                full_name='Chatelo ben',
                 phone_number='0796533555',
                 roles=[SuperUser_role],
                 is_approved=True
