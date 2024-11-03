@@ -67,7 +67,7 @@ def create_app(config_name):
         user_datastore.find_or_create_role(name='Member', description='Regular member')
         user_datastore.find_or_create_role(name='Treasurer', description='Block Treasurer')
         
-        # Create Admin user (your existing code)
+        # Create Admin user (your existing code.)
         if not user_datastore.find_user(email='your_mail@gmail.com'):
             hashed_password = hash_password('123456')
             user_datastore.create_user(
