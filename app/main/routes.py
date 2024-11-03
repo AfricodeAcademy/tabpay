@@ -1,13 +1,15 @@
 import requests
 from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify
-from flask_security import login_required, current_user, roles_accepted
+from flask_security import login_required, current_user, roles_accepted, user_registered
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm,PaymentForm
 import logging
 import os
-from ..utils import save_picture
+from ..utils import save_picture, db
 from flask import current_app
 from datetime import datetime,timedelta
 from ..utils.send_sms import SendSMS
+from app.auth.decorators import approval_required
+from functools import wraps
 
 
 main = Blueprint('main', __name__)
@@ -127,7 +129,12 @@ def render_settings_page(active_tab=None,umbrella_form=None,block_form=None,comm
 
 # Single route to handle all settings form submissions
 @main.route('/settings', methods=['GET', 'POST'])
+<<<<<<< HEAD
 @roles_accepted('SuperUser', 'Administrator')
+=======
+@roles_accepted('Admin', 'SuperUser')
+@approval_required
+>>>>>>> admin-management
 @login_required
 def settings():
     umbrella_form = UmbrellaForm()
@@ -693,7 +700,12 @@ def create_zone(payload):
 
 
 @main.route('/statistics', methods=['GET'])
+<<<<<<< HEAD
 @roles_accepted('SuperUser', 'Administrator', 'Chairman', 'Secretary','Treasurer')
+=======
+@approval_required
+@roles_accepted('Admin', 'SuperUser', 'Chairman', 'Secretary','Treasurer')
+>>>>>>> admin-management
 @login_required
 def statistics():
     
@@ -805,7 +817,12 @@ Upcoming block is hosted by {meeting_zone} and the host is {host}. Paybill: {pay
 
 # Single route to handle all host form submissions
 @main.route('/host', methods=['GET', 'POST'])
+<<<<<<< HEAD
 @roles_accepted('SuperUser', 'Administrator')
+=======
+@approval_required
+@roles_accepted('Admin', 'SuperUser')
+>>>>>>> admin-management
 @login_required
 def host():
     schedule_form = ScheduleForm()
@@ -1210,7 +1227,12 @@ def render_committee_page(active_tab=None, error=None):
 
 # Single route to handle committee-related actions
 @main.route('/committee', methods=['GET', 'POST'])
+<<<<<<< HEAD
 @roles_accepted('SuperUser', 'Administrator')
+=======
+@approval_required
+@roles_accepted('Admin', 'SuperUser')
+>>>>>>> admin-management
 @login_required
 def committee():    
     if 'remove_role_submit' in request.form:
@@ -1332,7 +1354,12 @@ def render_reports_page(active_tab=None, error=None, host_id=None, member_id=Non
 
 
 @main.route('/block_reports', methods=['GET', 'POST'])
+<<<<<<< HEAD
 @roles_accepted('SuperUser', 'Administrator')
+=======
+@roles_accepted('Admin', 'SuperUser')
+@approval_required
+>>>>>>> admin-management
 @login_required
 def block_reports():
     host_id = request.args.get('host')
@@ -1528,7 +1555,12 @@ def render_contribution_page(active_tab=None,payment_form=None, error=None):
 
 
 @main.route('/manage_contribution', methods=['GET', 'POST'])
+<<<<<<< HEAD
 @roles_accepted('SuperUser', 'Administrator')
+=======
+@roles_accepted('Admin', 'SuperUser')
+@approval_required
+>>>>>>> admin-management
 @login_required
 def manage_contribution():
     # Get active tab
@@ -1642,6 +1674,3 @@ def handle_request_payment(payment_form):
 
     # Redirect back to the 'Request Payment' tab
     return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
-
-
-
