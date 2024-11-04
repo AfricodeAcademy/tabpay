@@ -60,36 +60,6 @@ def create_app(config_name):
         db.create_all()
 
         # Create roles
-<<<<<<< HEAD
-        user_datastore.find_or_create_role(name='SuperUser', description='System Manager')
-        user_datastore.find_or_create_role(name='Administrator', description='Account Owner and Umbrella creator')
-        user_datastore.find_or_create_role(name='Chairman', description='Block chairman')
-        user_datastore.find_or_create_role(name='Secretary', description='Block secretary')
-        user_datastore.find_or_create_role(name='Member', description='Regular member')
-        user_datastore.find_or_create_role(name='Treasurer', description='Block Treasurer')
-
-        # Create Administrator
-        if not user_datastore.find_user(email='captainbett77@gmail.com'):
-            hashed_password = hash_password('123456')
-            user_datastore.create_user(email='captainbett77@gmail.com', password=hashed_password,
-                                       id_number=987654321, full_name='Captain',
-                                        phone_number='0796533555', roles=[user_datastore.find_role('Administrator')])
-
-        # Create SuperUser (your existing code)
-        if not user_datastore.find_user(email='chatelobenna@gmail.com'):
-            hashed_password = hash_password('123456')
-            SuperUser_role = user_datastore.find_role('Admin')
-            user_datastore.create_user(
-                email='chatelobenna@gmail.com',
-                password=hashed_password,
-                id_number=987654321,
-                full_name='Chatelo ben',
-                phone_number='0796533555',
-                roles=[SuperUser_role],
-                is_approved=True
-            )
-
-=======
         roles = [
             ('SuperUser', 'System Administrator'),
             ('Administrator', 'Account Owner and Umbrella creator'),
@@ -122,9 +92,6 @@ def create_app(config_name):
                                        phone_number='0729057932',
                                        roles=[user_datastore.find_role('SuperUser')],
                                        is_approved=True),
-            
-                                        
->>>>>>> 2f07c12ef03e8370ce2bbb4219f4fe3c1ef0269b
             db.session.commit()
             print(f'SuperUser created successfully {user_datastore.find_user(is_approved=True)}')
             
