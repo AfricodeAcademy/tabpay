@@ -1,5 +1,6 @@
 import os
 import secrets 
+from datetime import timedelta
 
 class Config:
     SECRET_KEY =  secrets.token_hex(16)
@@ -13,6 +14,11 @@ class Config:
     SECURITY_POST_REGISTER_VIEW = '/login'
     SECURITY_CONFIRMABLE = True
     SECURITY_RECOVERABLE = True
+
+    SESSION_COOKIE_SECURE = True  # For HTTPS
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    PERMANENT_SESSION_LIFETIME = timedelta(minutes=30)
 
 
     # Cookie settings
@@ -38,6 +44,14 @@ class Config:
     FLASK_ADMIN_SWATCH = 'cerulean'
     FLASK_ADMIN_FLUID_LAYOUT = True 
     SECURITY_URL_PREFIX = '/auth'
+
+    WTF_CSRF_ENABLED = True
+    WTF_CSRF_TIME_LIMIT= 3600  
+    WTF_CSRF_SECRET_KEY= SECRET_KEY
+    WTF_CSRF_CHECK_DEFAULT = False
+
+    ADMIN_NAME = 'TabPay Admin',
+    ADMIN_TEMPLATE_MODE = 'bootstrap4',
 
 
 class DevelopmentConfig(Config):
