@@ -15,22 +15,13 @@ user_datastore = SQLAlchemyUserDatastore(db, UserModel, RoleModel)
 
 def create_app(config_name):
     app = Flask(__name__, template_folder='templates')
-    csrf = CSRFProtect(app)
+    # csrf = CSRFProtect(app)
     
     # Use the config dictionary to load the appropriate config class
-    app.config.from_object(config[config_name])
+    app.config.from_object(config[config_name])    
     
-    # Add Flask-Admin specific configurations
-    app.config['FLASK_ADMIN_SWATCH'] = 'cerulean'
-    app.config['FLASK_ADMIN_FLUID_LAYOUT'] = True 
-    app.config['SECURITY_URL_PREFIX'] = '/auth'
-
-    app.config['SESSION_COOKIE_SECURE'] = True  # For HTTPS
-    app.config['SESSION_COOKIE_HTTPONLY'] = True
-    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
-    
-    
+    # Initialize CSRF protection
+    csrf = CSRFProtect()
     csrf.init_app(app)
     
     # Initialize extensions
@@ -38,6 +29,7 @@ def create_app(config_name):
     mail.init_app(app)
     
     security.init_app(app, user_datastore,
+                      template_folder="templates/security",
                      confirm_register_form=ExtendedConfirmRegisterForm,
                      register_form=ExtendedRegisterForm,
                      login_form=ExtendedLoginForm)
@@ -79,10 +71,10 @@ def create_app(config_name):
             user_datastore.find_or_create_role(name=role_name, description=description)
         
         # Create Admin user (your existing code.)
-        if not user_datastore.find_user(email='your_mail@gmail.com'):
+        if not user_datastore.find_user(email='biikate48@gmail.com'):
             hashed_password = hash_password('123456')
             user_datastore.create_user(
-                email='your_mail@gmail.com',
+                email='biikate48@gmail.com',
                 password=hashed_password,
                 id_number=42635058,
                 full_name='Benard Ronoh',
@@ -91,13 +83,13 @@ def create_app(config_name):
             )
 
         # Create SuperUser
-        if not user_datastore.find_user(email='admin_mail@gmail.com'):
+        if not user_datastore.find_user(email='chatelobenna@gmail.com'):
             hashed_password = hash_password('123456')
-            user_datastore.create_user(email='admin_mail@gmail.com', password=hashed_password,
+            user_datastore.create_user(email='chatelobenna@gmail.com', password=hashed_password,
                                        id_number=42635058, full_name='Enock Bett', 
                                        phone_number='0729057932',
                                        roles=[user_datastore.find_role('SuperUser')],
-                                       is_approved=True),
+                                       is_approved=True)
             db.session.commit()
             print(f'SuperUser created successfully {user_datastore.find_user(is_approved=True)}')
             

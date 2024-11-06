@@ -2,16 +2,10 @@ from flask import Flask
 from .base import CustomAdmin
 from .views import UserAdminView, RoleAdminView
 
-admin = CustomAdmin(name='TabPay Admin')
+admin = CustomAdmin(name='TabPay Dashboard', template_mode='bootstrap4', base_template='admin/base.html') 
 
 def init_admin(app: Flask, db):
     from app.main.models import UserModel, RoleModel
-    
-    # Configure CSRF protection
-    app.config['WTF_CSRF_ENABLED'] = True
-    app.config['WTF_CSRF_TIME_LIMIT'] = 3600
-    app.config['WTF_CSRF_SECRET_KEY'] = app.config['SECRET_KEY']
-    app.config['WTF_CSRF_CHECK_DEFAULT'] = False
     
     # Initialize Admin
     admin.init_app(app)
