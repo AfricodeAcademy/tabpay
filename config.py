@@ -3,7 +3,7 @@ import secrets
 from datetime import timedelta
 
 class Config:
-    SECRET_KEY = secrets.token_hex(16)
+    SECRET_KEY = "c9a03a29e2984006a7b231ca6784e122"
     # SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:postgres@localhost:5432/tabpay'
     SQLALCHEMY_DATABASE_URI = 'sqlite:///tabpay.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -18,8 +18,14 @@ class Config:
     SECURITY_POST_REGISTER_VIEW = '/login'
     SECURITY_URL_PREFIX = '/auth'
     SECURITY_TEMPLATE_PATH = "templates/security"
+    SECURITY_CSRF_ENABLE = True
     SECURITY_CSRF_PROTECT_MECHANISMS = ['session', 'basic']
     SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = True
+    SECURITY_CHANGE_EMAIL = True
+
+    #add these for better security
+    SECURITY_CSRF_COOKIE = {'httponly': True, 'samesite': 'Lax', 'secure': True}
+    SECURITY_CSRF_COOKIE_NAME = 'XSRF-TOKEN'
 
     # Session settings
     SESSION_COOKIE_SECURE = True  # For HTTPS
@@ -42,7 +48,7 @@ class Config:
     MAIL_USE_TLS = True
     MAIL_DEFAULT_SENDER = 'enockbett427@gmail.com'
 
-    SECURITY_CHANGE_EMAIL = True
+    # Configuration for Africastalking API
     AT_USERNAME='africode'
     AT_API_KEY='atsk_26b6fd63c4ab81592df201a60a3b3c3b221234128dc34046355f0cd9198e1a7afc6e724a'
     AT_SENDER_ID='Africode'

@@ -1,6 +1,7 @@
 from .base import SecureModelView
 from flask_security import current_user
-from flask import flash, redirect, url_for, abort
+from flask import flash, redirect, url_for, abort, request, current_app
+from flask_wtf.csrf import validate_csrf
 from flask_admin.actions import action
 
 class UserAdminView(SecureModelView):
@@ -17,6 +18,21 @@ class UserAdminView(SecureModelView):
     @action('approve', 'Approve Users', 'Are you sure you want to approve the selected users?')
     def action_approve(self, ids):
         try:
+
+            # Log the request data
+            current_app.logger.debug(f'Request method: {request.method}')
+            current_app.logger.debug(f'Request form data: {request.form}')
+            current_app.logger.debug(f'Request headers: {request.headers}')
+            # Retrieve the CSRF token from the form data
+            csrf_token = request.form.get('csrf_token')
+            current_app.logger.debug(f'CSRF Token from form: {csrf_token}')
+            if csrf_token:
+                validate_csrf(csrf_token)
+                current_app.logger.debug('CSRF token validation successful')
+            else:
+                current_app.logger.debug('CSRF token is missing')
+                flash('CSRF token missing', 'error')
+                return redirect(url_for('.index_view'))
             query = self.model.query.filter(self.model.id.in_(ids))
             count = 0
             for user in query.all():

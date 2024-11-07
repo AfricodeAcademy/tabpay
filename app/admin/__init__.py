@@ -2,9 +2,10 @@ from flask import Flask
 from .base import CustomAdmin
 from .views import UserAdminView, RoleAdminView
 
-admin = CustomAdmin(name='TabPay Dashboard', template_mode='bootstrap4', base_template='admin/base.html') 
+
 
 def init_admin(app: Flask, db):
+    admin = CustomAdmin(name='TabPay Dashboard', template_mode='bootstrap4', base_template='admin/my_base.html') 
     from app.main.models import UserModel, RoleModel
     
     # Initialize Admin

@@ -1,9 +1,10 @@
-from flask_admin import Admin, AdminIndexView
+from flask_admin import Admin, AdminIndexView, expose
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.form import SecureForm
 from flask_security import current_user
 from flask import redirect, url_for, request, abort, flash, current_app, session
 from flask_wtf.csrf import generate_csrf, validate_csrf
+from functools import wraps
 
 class SecureBaseView(AdminIndexView):
     def is_accessible(self):
@@ -18,14 +19,10 @@ class SecureBaseView(AdminIndexView):
                 abort(403)
             return redirect(url_for('security.login', next=request.url))
         
-    def get_extra_args(self):
-        args = super().get_extra_args()
-        # Generate a fresh CSRF token and ensure it's in the session
-        token = generate_csrf()
-        if 'csrf_token' not in session:
-            session['csrf_token'] = token
-        args['csrf_token'] = token
-        return args
+    def render(self, template, **kwargs):
+        # Ensure CSRF token is available in all admin templates
+        kwargs['csrf_token'] = generate_csrf()
+        return super().render(template, **kwargs)
 
 class SecureModelView(ModelView):
     form_base_class = SecureForm
@@ -42,75 +39,71 @@ class SecureModelView(ModelView):
                 abort(403)
             return redirect(url_for('security.login', next=request.url))
 
-    def get_extra_args(self):
-        args = super().get_extra_args()
-        # Generate a fresh CSRF token and ensure it's in the session
-        token = generate_csrf()
-        if 'csrf_token' not in session:
-            session['csrf_token'] = token
-        args['csrf_token'] = token
-        return args
-    
-    def is_action_allowed(self, name):
-        # Skip CSRF validation for GET requests
-        if request.method == 'GET':
-            return super().is_action_allowed(name)
-            
-        # Get the token from either form data or headers
-        csrf_token = request.form.get('csrf_token')
-        if not csrf_token:
-            csrf_token = request.headers.get('X-CSRFToken')
-            
-        if not csrf_token:
-            error_msg = 'CSRF token missing. Token not found in form data or X-CSRFToken header.'
-            current_app.logger.error(error_msg)
-            flash(error_msg, 'error')
+    def render(self, template, **kwargs):
+        # Ensure CSRF token is available in all admin templates
+        kwargs['csrf_token'] = generate_csrf()
+        return super().render(template, **kwargs)
+
+    def validate_form(self, form):
+        if request.method == 'POST':
+            token = request.form.get('csrf_token')
+            current_app.logger.debug(f'CSRF token from form: {token}')
+            if token:
+                try:
+                    current_app.logger.debug('Validating CSRF token...')
+                    validate_csrf(token)
+                    current_app.logger.debug('CSRF token validation successful')
+                    flash('CSRF Validation passed', 'info')
+                except Exception as e:
+                    current_app.logger.error(f'CSRF Validation failed: {str(e)}')
+                    flash(f'CSRF Validation failed. csrf_token in form:{token} ', 'error')
+                    return False
+            else:
+                current_app.logger.debug('CSRF token is missing')
+                flash('CSRF token is missing', 'error')
             return False
-            
-        try:
-            # Ensure session is initialized
-            if 'csrf_token' not in session:
-                session['csrf_token'] = generate_csrf()
-                
-            # Use Flask-WTF's validate_csrf function
-            validate_csrf(csrf_token)
-            return super().is_action_allowed(name)
-        except Exception as e:
-            error_details = f"CSRF validation failed: {str(e)}. "
-            error_details += f"Request method: {request.method}. "
-            error_details += f"Token length: {len(csrf_token)}. "
-            error_details += f"Session exists: {bool(session)}. "
-            if session:
-                error_details += f"Session csrf_token exists: {'csrf_token' in session}. "
-            
-            current_app.logger.error(error_details)
-            flash(error_details, 'error')
-            return False
+        return super().validate_form(form)
 
     def create_form(self, obj=None):
         form = super().create_form(obj)
-        form.csrf_token.data = generate_csrf()
+        if hasattr(form, 'csrf_token'):
+            form.csrf_token.data = generate_csrf()
         return form
 
     def edit_form(self, obj=None):
         form = super().edit_form(obj)
-        form.csrf_token.data = generate_csrf()
+        if hasattr(form, 'csrf_token'):
+            form.csrf_token.data = generate_csrf()
         return form
 
-    def get_create_form(self):
-        form = super().get_create_form()
-        return form
-
-    def get_edit_form(self):
-        form = super().get_edit_form()
-        return form
-
-    def get_action_form(self):
-        form = super().get_action_form()
-        return form
+    def create_blueprint(self, admin):
+        blueprint = super().create_blueprint(admin)
+        
+        # Wrap all POST endpoints with CSRF validation
+        for endpoint, view_func in blueprint.view_functions.items():
+            if endpoint.endswith('_post'):
+                blueprint.view_functions[endpoint] = self._wrap_with_csrf(view_func)
+                
+        return blueprint
+    
+    def _wrap_with_csrf(self, f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if request.method == 'POST':
+                token = request.form.get('csrf_token')
+                if not token:
+                    token = request.headers.get('X-CSRFToken')
+                if not token:
+                    abort(400, description='CSRF token missing')
+                try:
+                    validate_csrf(token)
+                except:
+                    abort(400, description='CSRF validation failed')
+            return f(*args, **kwargs)
+        return decorated_function
 
 class CustomAdmin(Admin):
     def __init__(self, *args, **kwargs):
         kwargs['template_mode'] = 'bootstrap4'
         kwargs['index_view'] = SecureBaseView()
-        super(CustomAdmin, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)

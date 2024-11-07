@@ -1,6 +1,7 @@
-from flask import Flask
+from flask import Flask, request, session
 from .utils import db, mail, security
 from .utils.initial_banks import import_initial_banks
+# from .utils.csrf_handlers import init_csrf_handlers
 from .main.models import UserModel, RoleModel
 from flask_security import SQLAlchemyUserDatastore
 from flask_security.utils import hash_password
@@ -13,12 +14,18 @@ from datetime import timedelta
 # Setup Flask-Security
 user_datastore = SQLAlchemyUserDatastore(db, UserModel, RoleModel)
 
+def init_debug_csrf(app):
+    @app.before_request
+    def debug_csrf():
+        if request.method == "POST":
+            app.logger.debug(f"CSRF Token in form: {request.form.get('csrf_token')}")
+            app.logger.debug(f"CSRF Token in session: {session.get('csrf_token')}")
+            app.logger.debug(f"Request headers: {dict(request.headers)}")
+
 def create_app(config_name):
     app = Flask(__name__, template_folder='templates')
-    # csrf = CSRFProtect(app)
-    
     # Use the config dictionary to load the appropriate config class
-    app.config.from_object(config[config_name])    
+    app.config.from_object(config[config_name])
     
     # Initialize CSRF protection
     csrf = CSRFProtect()
@@ -52,6 +59,7 @@ def create_app(config_name):
     from app.api.api import api_bp
     csrf.exempt(api_bp)
     app.register_blueprint(api_bp, url_prefix='/api/v1')
+    # init_csrf_handlers(app)
     
     
     with app.app_context():
@@ -94,4 +102,7 @@ def create_app(config_name):
             print(f'SuperUser created successfully {user_datastore.find_user(is_approved=True)}')
             
     import_initial_banks(app)
+     # Initialize debug CSRF if in debug mode
+    if app.config['DEBUG']:
+        init_debug_csrf(app)
     return app

@@ -1,0 +1,5 @@
+{% extends 'admin/base.html' %} {% block head_tail %} {{ super() }}
+<meta name="csrf-token" content="{{ csrf_token }}" />
+{% endblock %} {% block body %}
+<p>CSRF token: {{ csrf_token }}</p>
+{{ super() }} {% endblock %}
