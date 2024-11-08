@@ -27,7 +27,6 @@ class SecureBaseView(AdminIndexView):
     def render(self, template, **kwargs):
         # Use existing token from session or generate a new one
         kwargs['csrf_token'] = session.get('csrf_token', generate_csrf())
-        current_app.logger.debug(f'CSRF token: {kwargs["csrf_token"]}')
         return super().render(template, **kwargs)
 
 
@@ -49,37 +48,29 @@ class SecureModelView(ModelView):
     def render(self, template, **kwargs):
         # Use existing token from session or generate a new one
         kwargs['csrf_token'] = session.get('csrf_token', generate_csrf())
-        current_app.logger.debug(f'CSRF in SecureModelView class: {kwargs["csrf_token"]}')
         return super().render(template, **kwargs)
 
     def validate_form(self, form):
         if request.method == 'POST':
             token = request.form.get('csrf_token')
-            current_app.logger.debug(f'CSRF token from form: {token}')
             if token:
                 try:
-                    current_app.logger.debug('Validating CSRF token...')
                     validate_csrf(token)
-                    current_app.logger.debug('CSRF token validation successful')
                     flash('CSRF Validation passed', 'info')
                 except Exception as e:
-                    current_app.logger.error(f'CSRF Validation failed: {str(e)}')
                     flash(f'CSRF Validation failed. csrf_token in form:{token} ', 'error')
                     return False
             else:
-                current_app.logger.debug('CSRF token is missing')
                 flash('CSRF token is missing', 'error')
             return False
         return super().validate_form(form)
 
     def create_form(self, obj=None):
         form = super().create_form(obj)
-        current_app.logger.debug(f"Create form CSRF token: {form.csrf_token.current_token}")
         return form
 
     def edit_form(self, obj=None):
         form = super().edit_form(obj)
-        current_app.logger.debug(f"Edit form CSRF token: {form.csrf_token.current_token}")
         return form
 
     def create_blueprint(self, admin):
@@ -99,13 +90,10 @@ class SecureModelView(ModelView):
                 token = request.form.get('csrf_token')
                 if not token:
                     token = request.headers.get('X-CSRFToken')
-                current_app.logger.debug(f'CSRF token in request: {token}')
-                current_app.logger.debug(f'CSRF token in session: {session.get("csrf_token")}')
                 if not token:
                     abort(400, description='CSRF token missing')
                 try:
                     validate_csrf(token)
-                    current_app.logger.debug('CSRF validation successful')
                 except Exception as e:
                     current_app.logger.error(f'CSRF validation failed: {str(e)}')
                     abort(400, description='CSRF validation failed')

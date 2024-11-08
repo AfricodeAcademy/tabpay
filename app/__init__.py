@@ -13,13 +13,6 @@ from datetime import timedelta
 # Setup Flask-Security
 user_datastore = SQLAlchemyUserDatastore(db, UserModel, RoleModel)
 
-def init_debug_csrf(app):
-    @app.before_request
-    def debug_csrf():
-        if request.method == "POST":
-            app.logger.debug(f"CSRF Token in form: {request.form.get('csrf_token')}")
-            app.logger.debug(f"CSRF Token in session: {session.get('csrf_token')}")
-            app.logger.debug(f"Request headers: {dict(request.headers)}")
 
 def create_app(config_name):
     app = Flask(__name__, template_folder='templates')
@@ -101,6 +94,4 @@ def create_app(config_name):
             
     import_initial_banks(app)
      # Initialize debug CSRF if in debug mode
-    if app.config['DEBUG']:
-        init_debug_csrf(app)
     return app

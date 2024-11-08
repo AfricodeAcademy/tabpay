@@ -3,6 +3,7 @@ from flask_security import current_user
 from flask import flash, redirect, url_for, abort, request, current_app
 from flask_wtf.csrf import validate_csrf
 from flask_admin.actions import action
+import traceback
 
 class UserAdminView(SecureModelView):
     column_exclude_list = ['password']
@@ -18,32 +19,31 @@ class UserAdminView(SecureModelView):
     @action('approve', 'Approve Users', 'Are you sure you want to approve the selected users?')
     def action_approve(self, ids):
         try:
-
-            # Log the request data
-            current_app.logger.debug(f'Request method: {request.method}')
-            current_app.logger.debug(f'Request form data: {request.form}')
-            current_app.logger.debug(f'Request headers: {request.headers}')
             # Retrieve the CSRF token from the form data
             csrf_token = request.form.get('csrf_token')
-            current_app.logger.debug(f'CSRF Token from form: {csrf_token}')
             if csrf_token:
                 validate_csrf(csrf_token)
-                current_app.logger.debug('CSRF token validation successful')
+
             else:
-                current_app.logger.debug('CSRF token is missing')
                 flash('CSRF token missing', 'error')
                 return redirect(url_for('.index_view'))
+            current_app.logger.debug(f"Attempting to approve users with ids: {ids}")
             query = self.model.query.filter(self.model.id.in_(ids))
             count = 0
             for user in query.all():
+                current_app.logger.debug(f"Processing user {user.id}: current approval status = {user.is_approved}")
                 if not user.is_approved:
                     user.approve(current_user)
                     count += 1
-            
+                    current_app.logger.debug(f"User {user.id} approved")
+            current_app.extensions['sqlalchemy'].db.session.commit()
+            current_app.logger.debug(f"Approved {count} users")
             flash(f'{count} users were successfully approved.')
             return redirect(url_for('.index_view'))
             
         except Exception as ex:
+            current_app.logger.error(f"Error in action_approve: {str(ex)}")
+            current_app.logger.error(traceback.format_exc())
             flash(f'Failed to approve users. {str(ex)}', 'error')
             return redirect(url_for('.index_view'))
     
