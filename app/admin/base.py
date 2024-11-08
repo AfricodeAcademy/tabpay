@@ -1,10 +1,15 @@
 from flask_admin import Admin, AdminIndexView, expose
 from flask_admin.contrib.sqla import ModelView
-from flask_admin.form import SecureForm
+from flask_wtf import FlaskForm
 from flask_security import current_user
 from flask import redirect, url_for, request, abort, flash, current_app, session
 from flask_wtf.csrf import generate_csrf, validate_csrf
 from functools import wraps
+
+
+class SecureForm(FlaskForm):
+    class Meta:
+        csrf = True 
 
 class SecureBaseView(AdminIndexView):
     def is_accessible(self):
@@ -18,11 +23,13 @@ class SecureBaseView(AdminIndexView):
             if current_user.is_authenticated:
                 abort(403)
             return redirect(url_for('security.login', next=request.url))
-        
+ 
     def render(self, template, **kwargs):
-        # Ensure CSRF token is available in all admin templates
-        kwargs['csrf_token'] = generate_csrf()
+        # Use existing token from session or generate a new one
+        kwargs['csrf_token'] = session.get('csrf_token', generate_csrf())
+        current_app.logger.debug(f'CSRF token: {kwargs["csrf_token"]}')
         return super().render(template, **kwargs)
+
 
 class SecureModelView(ModelView):
     form_base_class = SecureForm
@@ -40,8 +47,9 @@ class SecureModelView(ModelView):
             return redirect(url_for('security.login', next=request.url))
 
     def render(self, template, **kwargs):
-        # Ensure CSRF token is available in all admin templates
-        kwargs['csrf_token'] = generate_csrf()
+        # Use existing token from session or generate a new one
+        kwargs['csrf_token'] = session.get('csrf_token', generate_csrf())
+        current_app.logger.debug(f'CSRF in SecureModelView class: {kwargs["csrf_token"]}')
         return super().render(template, **kwargs)
 
     def validate_form(self, form):
@@ -66,14 +74,12 @@ class SecureModelView(ModelView):
 
     def create_form(self, obj=None):
         form = super().create_form(obj)
-        if hasattr(form, 'csrf_token'):
-            form.csrf_token.data = generate_csrf()
+        current_app.logger.debug(f"Create form CSRF token: {form.csrf_token.current_token}")
         return form
 
     def edit_form(self, obj=None):
         form = super().edit_form(obj)
-        if hasattr(form, 'csrf_token'):
-            form.csrf_token.data = generate_csrf()
+        current_app.logger.debug(f"Edit form CSRF token: {form.csrf_token.current_token}")
         return form
 
     def create_blueprint(self, admin):
@@ -93,14 +99,20 @@ class SecureModelView(ModelView):
                 token = request.form.get('csrf_token')
                 if not token:
                     token = request.headers.get('X-CSRFToken')
+                current_app.logger.debug(f'CSRF token in request: {token}')
+                current_app.logger.debug(f'CSRF token in session: {session.get("csrf_token")}')
                 if not token:
                     abort(400, description='CSRF token missing')
                 try:
                     validate_csrf(token)
-                except:
+                    current_app.logger.debug('CSRF validation successful')
+                except Exception as e:
+                    current_app.logger.error(f'CSRF validation failed: {str(e)}')
                     abort(400, description='CSRF validation failed')
             return f(*args, **kwargs)
         return decorated_function
+
+
 
 class CustomAdmin(Admin):
     def __init__(self, *args, **kwargs):

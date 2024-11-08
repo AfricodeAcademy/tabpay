@@ -1,7 +1,6 @@
 from flask import Flask, request, session
 from .utils import db, mail, security
 from .utils.initial_banks import import_initial_banks
-# from .utils.csrf_handlers import init_csrf_handlers
 from .main.models import UserModel, RoleModel
 from flask_security import SQLAlchemyUserDatastore
 from flask_security.utils import hash_password
@@ -59,7 +58,6 @@ def create_app(config_name):
     from app.api.api import api_bp
     csrf.exempt(api_bp)
     app.register_blueprint(api_bp, url_prefix='/api/v1')
-    # init_csrf_handlers(app)
     
     
     with app.app_context():
