@@ -1,4 +1,5 @@
 from ..utils import db
+from flask import current_app
 from flask_security import UserMixin, RoleMixin, SQLAlchemyUserDatastore
 import uuid
 from ..utils import db
@@ -60,11 +61,14 @@ class UserModel(db.Model, UserMixin):
                                 backref='approved_users')
     
     def approve(self, approved_by):
+        current_app.logger.debug(f"Approving user {self.id}")
         self.is_approved = True
         self.approval_date = datetime.now(timezone.utc)
         self.approved_by_id = approved_by.id
+        current_app.logger.debug(f"User {self.id} approved by {approved_by.id}")
         db.session.commit()
-    
+        current_app.logger.debug(f"Approval for user {self.id} committed to database")
+
     def unapprove(self):
         self.is_approved = False
         self.approval_date = None

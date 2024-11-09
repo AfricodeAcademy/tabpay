@@ -28,6 +28,9 @@ def get_user_fields():
         "active": fields.Boolean,
         "bank_id": fields.Integer,
         "umbrella_id": fields.Integer,
+         "is_approved": fields.Boolean,
+        "approval_date": fields.DateTime,
+        "approved_by_id": fields.Integer,
         "acc_number": fields.String,
         "image_file": fields.String,
         "registered_at": fields.DateTime,
@@ -140,7 +143,11 @@ user_args.add_argument('image_file', type=str)
 user_args.add_argument('role_id', type=int)
 user_args.add_argument('action', type=str)
 user_args.add_argument('block_id', type=int)  
-user_args.add_argument('umbrella_id', type=int)  
+user_args.add_argument('umbrella_id', type=int)
+user_args.add_argument('is_approved', type=bool)
+user_args.add_argument('approval_date', type=str) # Assuming approval_date is a string in the format 'YYYY-MM-DD'
+user_args.add_argument('approved_by_id', type=int)
+
 
 
 

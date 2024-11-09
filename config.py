@@ -15,7 +15,7 @@ class Config:
     SECURITY_RECOVERABLE = True
     SECURITY_POST_LOGIN_VIEW = '/statistics'
     SECURITY_POST_LOGOUT_VIEW = '/'
-    SECURITY_POST_REGISTER_VIEW = '/login'
+    SECURITY_POST_REGISTER_VIEW = '/auth/login'
     SECURITY_URL_PREFIX = '/auth'
     SECURITY_TEMPLATE_PATH = "templates/security"
     SECURITY_CSRF_ENABLE = True

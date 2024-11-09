@@ -9,14 +9,24 @@ from functools import wraps
 
 class SecureForm(FlaskForm):
     class Meta:
-        csrf = True 
+        csrf = True
 
 class SecureBaseView(AdminIndexView):
     def is_accessible(self):
-        return (current_user.is_active and 
-                current_user.is_authenticated and 
-                (current_user.has_role('SuperUser') or 
-                 current_user.has_role('Administrator')))
+        is_active = current_user.is_active
+        is_authenticated = current_user.is_authenticated
+        is_superuser = current_user.has_role('SuperUser')
+        
+
+        current_app.logger.debug(f"Checking access for user {current_user.id if current_user.is_authenticated else 'Anonymous'}")
+        current_app.logger.debug(f"Is active: {is_active}")
+        current_app.logger.debug(f"Is authenticated: {is_authenticated}")
+        current_app.logger.debug(f"Is superuser: {is_superuser}")
+        
+        result = (is_active and is_authenticated and (is_superuser))
+        current_app.logger.debug(f"Access granted: {result}")
+        
+        return result
     
     def _handle_view(self, name, **kwargs):
         if not self.is_accessible():
@@ -34,10 +44,9 @@ class SecureModelView(ModelView):
     form_base_class = SecureForm
     
     def is_accessible(self):
-        return (current_user.is_active and 
-                current_user.is_authenticated and 
-                (current_user.has_role('SuperUser') or 
-                 current_user.has_role('Administrator')))
+        return (current_user.is_active and
+                current_user.is_authenticated and
+                (current_user.has_role('SuperUser')))
 
     def _handle_view(self, name, **kwargs):
         if not self.is_accessible():
@@ -56,7 +65,7 @@ class SecureModelView(ModelView):
             if token:
                 try:
                     validate_csrf(token)
-                    flash('CSRF Validation passed', 'info')
+                    # flash('CSRF Validation passed', 'info')
                 except Exception as e:
                     flash(f'CSRF Validation failed. csrf_token in form:{token} ', 'error')
                     return False

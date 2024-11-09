@@ -80,3 +80,4 @@ pip-log.txt
 *~
 app/main/.archived/routes.py
 backup_
+no_push/*

@@ -9,6 +9,15 @@ from app.auth.forms import ExtendedConfirmRegisterForm, ExtendedLoginForm, Exten
 from flask_wtf.csrf import CSRFProtect
 from .admin import init_admin
 from datetime import timedelta
+import logging
+
+
+# Configure logging - removes unnecessary logs 
+logging.basicConfig(level=logging.WARNING)
+werkzeug_logger = logging.getLogger('werkzeug')
+werkzeug_logger.setLevel(logging.WARNING)
+# Configure logging for the Passlib logger
+logging.getLogger('passlib').setLevel(logging.WARNING)
 
 # Setup Flask-Security
 user_datastore = SQLAlchemyUserDatastore(db, UserModel, RoleModel)

@@ -9,8 +9,6 @@ def init_admin(app: Flask, db):
     
     from app.main.models import UserModel, RoleModel
     
-    # # Initialize Admin
-    # admin.init_app(app)
     
     # Add views
     admin.add_view(UserAdminView(UserModel, db.session, name='Users'))
