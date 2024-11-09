@@ -12,11 +12,20 @@ from datetime import timedelta
 import logging
 
 
-# Configure logging - removes unnecessary logs 
-logging.basicConfig(level=logging.WARNING)
-werkzeug_logger = logging.getLogger('werkzeug')
-werkzeug_logger.setLevel(logging.WARNING)
-# Configure logging for the Passlib logger
+def configure_logging():
+    # Configure root logger
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    
+    # Configure specific loggers
+    werkzeug_logger = logging.getLogger('werkzeug')
+    werkzeug_logger.setLevel(logging.INFO)
+    
+    app_logger = logging.getLogger('app')
+    app_logger.setLevel(logging.DEBUG)
+
 logging.getLogger('passlib').setLevel(logging.WARNING)
 
 # Setup Flask-Security
@@ -24,6 +33,10 @@ user_datastore = SQLAlchemyUserDatastore(db, UserModel, RoleModel)
 
 
 def create_app(config_name):
+    # Configure logging
+    configure_logging()
+    
+    # Create Flask application
     app = Flask(__name__, template_folder='templates')
     # Use the config dictionary to load the appropriate config class
     app.config.from_object(config[config_name])

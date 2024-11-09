@@ -38,6 +38,10 @@ class SecureBaseView(AdminIndexView):
         # Use existing token from session or generate a new one
         kwargs['csrf_token'] = session.get('csrf_token', generate_csrf())
         return super().render(template, **kwargs)
+    
+    def is_action_allowed(self, name):
+        current_app.logger.debug(f"Checking if action {name} is allowed")
+        return True
 
 
 class SecureModelView(ModelView):

@@ -4,8 +4,10 @@ from flask import flash, redirect, url_for, abort, request, current_app
 from flask_wtf.csrf import validate_csrf
 from flask_admin.actions import action
 import traceback
+from flask_admin import expose
 
 class UserAdminView(SecureModelView):
+    list_template = 'admin/model/mylist.html'
     column_exclude_list = ['password']
     column_searchable_list = ['email', 'full_name', 'phone_number', 'id_number']
     column_filters = ['active', 'roles', 'is_approved']
@@ -14,9 +16,12 @@ class UserAdminView(SecureModelView):
     can_create = True
     can_edit = True
     can_delete = False
+    action_disallowed_list = []  # Make sure no actions are disallowed
+    can_export = True  # Enable export functionality
+    can_view_details = True  # Enable detail view
     
     column_list = ['email', 'full_name', 'active', 'is_approved', 'approval_date', 'approved_by']
-    
+ 
     @property
     def can_approve(self):
         if not current_user.is_authenticated:
@@ -36,52 +41,63 @@ class UserAdminView(SecureModelView):
         
         # Default to False if none of the above conditions are met
         return False
+    
+    def handle_action(self, action, ids):
+        logger = current_app.logger
+        logger.debug(f"handle_action called with action: {action}, ids: {ids}")
+
+        try:
+            # Validate CSRF token
+            csrf_token = request.form.get('csrf_token')
+            if not csrf_token:
+                flash('CSRF token missing', 'error')
+                return redirect(url_for('.index_view'))
+
+            try:
+                validate_csrf(csrf_token)
+            except Exception as csrf_ex:
+                flash('CSRF validation failed', 'error')
+                return redirect(url_for('.index_view'))
+
+            # Handle specific actions
+            if action == 'approve':
+                return self.action_approve(ids)
+            elif action == 'unapprove':
+                return self.action_unapprove(ids)
+            
+            return super().handle_action(action, ids)
+
+        except Exception as e:
+            logger.error(f"Error in handle_action: {str(e)}")
+            logger.error(traceback.format_exc())
+            flash(f'Action failed: {str(e)}', 'error')
+            return redirect(url_for('.index_view'))
+
 
     @action('approve', 'Approve Users', 'Are you sure you want to approve the selected users?')
     def action_approve(self, ids):
+        logger = current_app.logger
         try:
-            current_app.logger.debug(f"action_approve called with ids: {ids}")
-            # Retrieve the CSRF token from the form data
-            csrf_token = request.form.get('csrf_token')
-            current_app.logger.debug(f"CSRF token retrieved: {csrf_token}")
-
-            if csrf_token:
-                try:
-                    validate_csrf(csrf_token)
-                    current_app.logger.debug("CSRF token validated successfully")
-                except Exception as csrf_ex:
-                    current_app.logger.error(f"CSRF validation failed: {str(csrf_ex)}")
-                    flash('CSRF token validation failed', 'error')
-                    return redirect(url_for('.index_view'))
-
-            else:
-                current_app.logger.error(f"CSRF validation failed: {str(csrf_ex)}")
-                flash('CSRF token missing', 'error')
-                return redirect(url_for('.index_view'))
-            current_app.logger.debug(f"Attempting to approve users with ids: {ids}")
+            logger.debug(f"Attempting to approve users with ids: {ids}")
             query = self.model.query.filter(self.model.id.in_(ids))
             count = 0
+            
             for user in query.all():
-                current_app.logger.debug(f"Processing user {user.id}: current approval status = {user.is_approved}")
                 if not user.is_approved:
                     user.approve(current_user)
                     count += 1
-                    current_app.logger.debug(f"User {user.id} approved")
-                else:
-                    current_app.logger.debug(f"User {user.id} already approved, skipping")
+                    logger.debug(f"User {user.id} approved")
                     
-            current_app.logger.debug("Committing changes to database")    
-            current_app.extensions['sqlalchemy'].db.session.commit()
-            current_app.logger.debug(f"Approved {count} users")
+            self.session.commit()
             flash(f'{count} users were successfully approved.')
-            return redirect(url_for('.index_view'))
             
         except Exception as ex:
-            current_app.logger.error(f"Error in action_approve: {str(ex)}")
-            current_app.logger.error(traceback.format_exc())
-            flash(f'Failed to approve users. {str(ex)}', 'error')
-            return redirect(url_for('.index_view'))
-    
+            logger.error(f"Error in action_approve: {str(ex)}")
+            logger.error(traceback.format_exc())
+            flash(f'Failed to approve users: {str(ex)}', 'error')
+            
+        return redirect(url_for('.index_view'))
+
     @action('unapprove', 'Unapprove Users', 'Are you sure you want to unapprove the selected users?')
     def action_unapprove(self, ids):
         try:
@@ -92,13 +108,14 @@ class UserAdminView(SecureModelView):
                     user.unapprove()
                     count += 1
             
+            self.session.commit()
             flash(f'{count} users were successfully unapproved.')
-            return redirect(url_for('.index_view'))
             
         except Exception as ex:
-            flash(f'Failed to unapprove users. {str(ex)}', 'error')
-            return redirect(url_for('.index_view'))
-    
+            flash(f'Failed to unapprove users: {str(ex)}', 'error')
+            
+        return redirect(url_for('.index_view'))
+
     def on_model_change(self, form, model, is_created):
         if not current_user.has_role('SuperUser'):
             if 'SuperUser' in [role.name for role in model.roles]:
