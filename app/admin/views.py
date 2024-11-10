@@ -126,7 +126,8 @@ class RoleAdminView(SecureModelView):
     can_create = False
     can_delete = False
     can_edit = True
-    def action_view(self, **kwargs):
+    @expose('/action/', methods=['POST'])
+    def action_view(self):
         csrf_token = request.form.get('csrf_token')
         if not csrf_token:
             flash('CSRF token missing', 'error')
@@ -137,4 +138,5 @@ class RoleAdminView(SecureModelView):
         except Exception as csrf_ex:
             flash('CSRF validation failed', 'error')
             return redirect(url_for('.index_view'))
-        return self.handle_action(kwargs.get('action'), kwargs.get('ids'))
+
+        return self.handle_action()
