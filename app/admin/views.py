@@ -16,50 +16,48 @@ class UserAdminView(SecureModelView):
     can_create = True
     can_edit = True
     can_delete = False
-    action_disallowed_list = []  # Make sure no actions are disallowed
-    can_export = True  # Enable export functionality
-    can_view_details = True  # Enable detail view
-    
+    action_disallowed_list = []
+    can_export = True
+    can_view_details = True
     column_list = ['email', 'full_name', 'active', 'is_approved', 'approval_date', 'approved_by']
+
+    @expose('/action/', methods=['POST'])
+    def action_view(self):
+        csrf_token = request.form.get('csrf_token')
+        if not csrf_token:
+            flash('CSRF token missing', 'error')
+            return redirect(url_for('.index_view'))
+
+        try:
+            validate_csrf(csrf_token)
+        except Exception as csrf_ex:
+            flash('CSRF validation failed', 'error')
+            return redirect(url_for('.index_view'))
+
+        return self.handle_action()
  
     @property
     def can_approve(self):
         if not current_user.is_authenticated:
             return False
-        
-        # Check if the user has a specific role that allows approval
         if current_user.has_role('SuperUser') or current_user.has_role('Approver'):
             return True
-        
-        # Check if the user has a specific permission
         if hasattr(current_user, 'has_permission'):
             return current_user.has_permission('approve_users')
-        
-        # If you're using a simple boolean flag on the user model
         if hasattr(current_user, 'can_approve_users'):
             return current_user.can_approve_users
-        
-        # Default to False if none of the above conditions are met
         return False
     
-    def handle_action(self, action, ids):
+    def handle_action(self):
         logger = current_app.logger
-        logger.debug(f"handle_action called with action: {action}, ids: {ids}")
+        logger.debug("handle_action called")
 
         try:
-            # Validate CSRF token
-            csrf_token = request.form.get('csrf_token')
-            if not csrf_token:
-                flash('CSRF token missing', 'error')
-                return redirect(url_for('.index_view'))
+            action = request.form.get('action')
+            ids = request.form.getlist('rowid')
+            
+            logger.debug(f"Action: {action}, IDs: {ids}")
 
-            try:
-                validate_csrf(csrf_token)
-            except Exception as csrf_ex:
-                flash('CSRF validation failed', 'error')
-                return redirect(url_for('.index_view'))
-
-            # Handle specific actions
             if action == 'approve':
                 return self.action_approve(ids)
             elif action == 'unapprove':
@@ -128,3 +126,15 @@ class RoleAdminView(SecureModelView):
     can_create = False
     can_delete = False
     can_edit = True
+    def action_view(self, **kwargs):
+        csrf_token = request.form.get('csrf_token')
+        if not csrf_token:
+            flash('CSRF token missing', 'error')
+            return redirect(url_for('.index_view'))
+
+        try:
+            validate_csrf(csrf_token)
+        except Exception as csrf_ex:
+            flash('CSRF validation failed', 'error')
+            return redirect(url_for('.index_view'))
+        return self.handle_action(kwargs.get('action'), kwargs.get('ids'))

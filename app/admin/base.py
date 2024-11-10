@@ -16,8 +16,6 @@ class SecureBaseView(AdminIndexView):
         is_active = current_user.is_active
         is_authenticated = current_user.is_authenticated
         is_superuser = current_user.has_role('SuperUser')
-        
-
         current_app.logger.debug(f"Checking access for user {current_user.id if current_user.is_authenticated else 'Anonymous'}")
         current_app.logger.debug(f"Is active: {is_active}")
         current_app.logger.debug(f"Is authenticated: {is_authenticated}")

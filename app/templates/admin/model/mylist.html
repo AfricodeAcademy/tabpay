@@ -7,14 +7,14 @@
   >
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
     {{ super() }}
-    <div class="form-group">
+    <!-- <div class="form-group">
       <select name="action" class="form-control">
         {% for action in actions %}
         <option value="{{ action[0] }}">{{ action[1] }}</option>
         {% endfor %}
       </select>
       <input type="submit" value="Execute" class="btn btn-primary" />
-    </div>
+    </div> -->
   </form>
 </div>
 {% endblock %}
