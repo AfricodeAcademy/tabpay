@@ -73,6 +73,8 @@ def create_app(config_name):
     from app.api.api import api_bp
     csrf.exempt(api_bp)
     app.register_blueprint(api_bp, url_prefix='/api/v1')
+    from app.errors.handlers import errors as errors_blueprint
+    app.register_blueprint(errors_blueprint)
     
     
     with app.app_context():
