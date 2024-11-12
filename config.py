@@ -54,7 +54,7 @@ class Config:
     AT_SENDER_ID='Africode'
 
     # Flask-Admin settings
-    FLASK_ADMIN_SWATCH = 'cerulean'
+    FLASK_ADMIN_SWATCH = 'cyborg'
     FLASK_ADMIN_FLUID_LAYOUT = True
     ADMIN_NAME = 'TabPay Admin'
     ADMIN_TEMPLATE_MODE = 'bootstrap4'

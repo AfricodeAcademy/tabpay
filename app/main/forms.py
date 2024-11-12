@@ -85,7 +85,7 @@ class ScheduleForm(FlaskForm):
     )
     submit = SubmitField('SCHEDULE MEETING')
 
-    def validate_date(self, field):
-        if field.data < datetime.now():
+    def validate_date(self, date):
+        if date.data < datetime.now():
             raise ValidationError('The meeting date and time cannot be in the past.')
 

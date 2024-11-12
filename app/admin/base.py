@@ -1,4 +1,4 @@
-from flask_admin import Admin, AdminIndexView, expose
+from flask_admin import Admin, AdminIndexView
 from flask_admin.contrib.sqla import ModelView
 from flask_wtf import FlaskForm
 from flask_security import current_user
