@@ -29,6 +29,7 @@ TabPay {% endblock %} {% block content %}
           action="{{ url_for_security('send_confirmation') }}"
           method="post"
           name="send_confirmation_form"
+          novalidate
         >
           {{ send_confirmation_form.hidden_tag() }}
 
