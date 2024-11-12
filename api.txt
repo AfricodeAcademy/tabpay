@@ -2,17 +2,17 @@ Primary URL: app.tabpay.africa
 
 
 
-System Administrator:
+System Manager:
 
-/system-administrators: Retrieve a list of all system administrators.
+/users/?role=SuperUser: Retrieve a list of all SuperUsers.
 
-GET /system-administrators/{id}: Retrieve a specific system administrator by ID.
+GET /users/{id}: Retrieve a specific SuperUser by ID.
 
-POST /system-administrators: Create a new system administrator.
+POST /users: Create a new SuperUser.
 
-PUT /system-administrators/{id}: Update an existing system administrator.
+PATCH /users/{id}: Update an existing SuperUser.
 
-DELETE /system-administrators/{id}: Delete a system administrator.
+DELETE /users/{id}: Delete a SuperUser.
 
 
 
@@ -24,7 +24,7 @@ GET /account-owners/{id}: Retrieve a specific account owner by ID.
 
 POST /account-owners: Create a new account owner.
 
-PUT /account-owners/{id}: Update an existing account owner.
+PATCH /account-owners/{id}: Update an existing account owner.
 
 DELETE /account-owners/{id}: Delete an account owner.
 
@@ -38,7 +38,7 @@ GET /umbrellas/{id}: Retrieve a specific umbrella by ID.
 
 POST /umbrellas: Create a new umbrella.
 
-PUT /umbrellas/{id}: Update an existing umbrella.
+PATCH /umbrellas/{id}: Update an existing umbrella.
 
 DELETE /umbrellas/{id}: Delete an umbrella.
 
@@ -54,7 +54,7 @@ GET /blocks/{id}: Retrieve a specific block by ID.
 
 POST /blocks: Create a new block.
 
-PUT /blocks/{id}: Update an existing block.
+PATCH /blocks/{id}: Update an existing block.
 
 DELETE /blocks/{id}: Delete a block.
 
@@ -70,7 +70,7 @@ GET /committee-members/{id}: Retrieve a specific committee member by ID.
 
 POST /committee-members: Create a new committee member.
 
-PUT /committee-members/{id}: Update an existing committee member.
+PATCH /committee-members/{id}: Update an existing committee member.
 
 DELETE /committee-members/{id}: Delete a committee member.
 
@@ -86,7 +86,7 @@ GET /zones/{id}: Retrieve a specific zone by ID.
 
 POST /zones: Create a new zone.
 
-PUT /zones/{id}: Update an existing zone.
+PATCH /zones/{id}: Update an existing zone.
 
 DELETE /zones/{id}: Delete a zone.
 
@@ -102,7 +102,7 @@ GET /members/{id}: Retrieve a specific member by ID.
 
 POST /members: Create a new member.
 
-PUT /members/{id}: Update an existing member.
+PATCH /members/{id}: Update an existing member.
 
 DELETE /members/{id}: Delete a member.
 
@@ -118,7 +118,7 @@ GET /block-events/{id}: Retrieve a specific block event by ID.
 
 POST /block-events: Create a new block event.
 
-PUT /block-events/{id}: Update an existing block event.
+PATCH /block-events/{id}: Update an existing block event.
 
 DELETE /block-events/{id}: Delete a block event.
 
@@ -134,7 +134,7 @@ GET /payments/{id}: Retrieve a specific payment by ID.
 
 POST /payments: Create a new payment.
 
-PUT /payments/{id}: Update an existing payment.
+PATCH /payments/{id}: Update an existing payment.
 
 DELETE /payments/{id}: Delete a payment.
 
@@ -147,7 +147,7 @@ GET /Communication/{id}: Retrieve a specific communication by ID.
 
 POST /Communication: Create a new communication.
 
-PUT /Communication/{id}: Update an existing communication.
+PATCH /Communication/{id}: Update an existing communication.
 
 DELETE /Communication/{id}: Delete a communication.
 

@@ -1,6 +1,7 @@
 from sqlalchemy.exc import SQLAlchemyError,IntegrityError
 from datetime import datetime, timedelta
 from flask import Blueprint, jsonify, request
+from flask_security import current_user
 from werkzeug.exceptions import HTTPException
 from flask_restful import Api, Resource, marshal_with, marshal, abort
 from ..main.models import UserModel, CommunicationModel, \
@@ -28,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 def handle_error(self, e):
     db.session.rollback()
-    
+
     if isinstance(e, SQLAlchemyError):
         logging.error(f"Database error: {str(e)}", exc_info=True)
         error_message = {"success": False, "message": "Database error occurred", "details": str(e)}
@@ -41,9 +42,9 @@ def handle_error(self, e):
         logging.error(f"Unexpected error: {str(e)}", exc_info=True)
         error_message = {"success": False, "message": "Unexpected error occurred", "details": str(e)}
         status_code = 500
-    
+
     return jsonify(error_message), status_code
-    
+
 
 def marshal_with_fields(fields):
     def decorator(func):
@@ -106,7 +107,7 @@ class BaseResource(Resource):
 
     def handle_error(self, e):
         db.session.rollback()
-        
+
         if isinstance(e, SQLAlchemyError):
             error_message = {"success": False, "message": "Database error occurred", "details": str(e)}
             abort(500, message=error_message)
@@ -134,7 +135,7 @@ class UsersResource(BaseResource):
 
                 if user.zone_id:
                     user.zone_name = ZoneModel.query.filter_by(id=user.zone_id).first().name if user.zone_id else None
-                    
+
                 if user.bank_id:
                     user.bank_name = BankModel.query.filter_by(id=user.bank_id).first().name if user.bank_id else None
 
@@ -143,13 +144,13 @@ class UsersResource(BaseResource):
                     return {"message": "User not found"}, 404
                 return marshal(user, self.fields), 200
 
-              
+
 
             # Check for query parameters: role, id_number, umbrella_id, and zone_id
             role_name = request.args.get('role')
             id_number = request.args.get('id_number')
             umbrella_id = request.args.get('umbrella_id')
-            zone_id = request.args.get('zone_id') 
+            zone_id = request.args.get('zone_id')
 
             # Fetch user by id_number if provided
             if id_number:
@@ -172,7 +173,7 @@ class UsersResource(BaseResource):
                 )
                 if zone_id:
                     query = query.filter(UserModel.zone_id == zone_id)
-            
+
                 return marshal(users, self.fields), 200
 
             # Fetch users by role and umbrella if both are provided
@@ -187,7 +188,7 @@ class UsersResource(BaseResource):
                     .all()
                 )
                 return marshal(users, self.fields), 200
-            
+
 
 
             # Fetch users by role if role_name is provided (without umbrella)
@@ -219,7 +220,7 @@ class UsersResource(BaseResource):
         try:
             args = self.args.parse_args()
             logger.info(f"POST request received to create new user. Payload: {args}")
-    
+
             # Check for umbrella and generate initials for unique member identifier
             umbrella = UmbrellaModel.query.get(args['umbrella_id'])
             if not umbrella:
@@ -227,7 +228,7 @@ class UsersResource(BaseResource):
 
             # Generate unique member identifier based on umbrella initials
             unique_id = UserModel.generate_member_identifier(umbrella)
-            
+
 
             # Create the new user
             new_user = UserModel(
@@ -240,7 +241,7 @@ class UsersResource(BaseResource):
                 unique_id=unique_id,
                 umbrella_id=args['umbrella_id']
             )
-                    
+
             db.session.add(new_user)
                    # Assign the role if role_id is provided
             if 'role_id' in args and args['role_id'] is not None:
@@ -253,20 +254,20 @@ class UsersResource(BaseResource):
                 zone = ZoneModel.query.get(zone_id)
                 if zone:
                     new_user.zone_memberships.append(zone)
-                          
+
 
             # Fetch the block associated with the selected zone
             zone = ZoneModel.query.get(args['zone_id'])
             if zone and zone.parent_block_id:
-                block = BlockModel.query.get(zone.parent_block_id)  
+                block = BlockModel.query.get(zone.parent_block_id)
                 if block:
-                    new_user.block_memberships.append(block)  
+                    new_user.block_memberships.append(block)
 
             db.session.commit()
             logger.info(f"Successfully created user {new_user.id} with roles {[r.name for r in new_user.roles]},block memberships {[b.name for b in new_user.block_memberships]} and zone memberships {[z.name for z in new_user.zone_memberships]}")
 
             return marshal(new_user, self.fields), 201
-        
+
         except IntegrityError as e:
             db.session.rollback()
             logger.error(f"Duplicate entry detected: {str(e)}")
@@ -278,13 +279,30 @@ class UsersResource(BaseResource):
             logger.error(f"Error creating new user: {str(e)}. Rolling back changes.")
             return self.handle_error(e)
  
-        
+
     def patch(self, id):
         try:
             args = self.args.parse_args() if 'multipart/form-data' not in request.content_type else {}
-            
+
             user = UserModel.query.get_or_404(id)
             updated = False
+
+            # Handle approval
+            if 'is_approved' in args and args['is_approved'] is not None:
+                if args['is_approved'] and not user.is_approved:
+                    user.approve(current_user)  # Assuming current_user is the approver
+                elif not args['is_approved'] and user.is_approved:
+                    user.unapprove()
+            
+            # Update other fields
+            for key, value in args.items():
+                if value is not None and key not in ['is_approved', 'approval_date', 'approved_by_id']:
+                    setattr(user, key, value)
+            
+            db.session.commit()
+            return marshal(user, self.fields), 200
+        except Exception as e:
+            return self.handle_error(e)
 
             if 'multipart/form-data' in request.content_type:
                 logger.info("Handling multipart form data for profile update")
@@ -334,9 +352,9 @@ class UsersResource(BaseResource):
                     else:
                         logger.info(f"User {user.id} is already a member of zone {zone.id}.")
                 else:
-                    logger.warning(f"Zone {zone_id} not found.")               
-            
-            
+                    logger.warning(f"Zone {zone_id} not found.")
+
+
 
             role_id = args.get('role_id')
             action = args.get('action')
@@ -451,10 +469,10 @@ class PaymentsResource(BaseResource):
         if id:
             # Fetch a specific payment by ID
             return super().get(id)
-        
+
         # Check if a meeting_id query parameter is provided
         meeting_id = request.args.get('meeting_id', None)
-        
+
         if meeting_id:
             try:
                 logger.info(f"Fetching payments for meeting ID: {meeting_id}")
@@ -468,7 +486,7 @@ class PaymentsResource(BaseResource):
                     .all()
 
                 logger.info(f"Payments fetched for meeting ID {meeting_id}: {payments}")
-                                    
+
                 payment_data = []
                 for payment in payments:
                     logger.debug(f"Processing payment: ID {payment.id}, Payer {payment.payer.full_name}, Block {payment.block.name}")
@@ -495,20 +513,20 @@ class PaymentsResource(BaseResource):
             # Handle other queries for fetching all payments or specific payment by ID
             return super().get()
 
-        
+
     def post(self):
         args = self.args.parse_args()
-        
+
         # Check if the meeting exists
         meeting = MeetingModel.query.get(args['meeting_id'])
         if not meeting:
             return {'message': 'Meeting not found.'}, 404
-        
+
         # Check if the block exists
         block = BlockModel.query.get(args['block_id'])
         if not block:
             return {'message': 'Block not found.'}, 404
-        
+
         # Create a new payment
         new_payment = PaymentModel(
             mpesa_id=args['mpesa_id'],
@@ -525,8 +543,8 @@ class PaymentsResource(BaseResource):
 
         db.session.add(new_payment)
         db.session.commit()
-        
-        
+
+
         return marshal(new_payment,self.fields), 201
 
 
@@ -559,7 +577,7 @@ class BlocksResource(BaseResource):
 
         except Exception as e:
             return self.handle_error(e)
-        
+
 class UmbrellasResource(BaseResource):
     model = UmbrellaModel
     fields = umbrella_fields
@@ -574,7 +592,7 @@ class UmbrellasResource(BaseResource):
                 # If an umbrella ID is provided, return that specific umbrella
                 item = self.model.query.get_or_404(id)
                 return marshal(item, self.fields), 200
-            
+
             # Check for 'created_by' parameter in the request
             created_by = request.args.get('created_by')
             query = self.model.query
@@ -586,7 +604,7 @@ class UmbrellasResource(BaseResource):
             # Get all matching umbrellas
             items = query.all()
             return marshal(items, self.fields), 200
-        
+
         except Exception as e:
             return self.handle_error(e)
 
@@ -611,7 +629,7 @@ class UmbrellasResource(BaseResource):
 
             logger.info(f"Successfully created umbrella {new_umbrella.id} with initials {initials}")
             return marshal(new_umbrella, self.fields), 201
-        
+
         except Exception as e:
             db.session.rollback()
             logger.error(f"Error creating new umbrella: {str(e)}. Rolling back changes.")
@@ -623,7 +641,6 @@ class RolesResource(BaseResource):
     args = role_args
 
 
-
 class MeetingsResource(BaseResource):
     model = MeetingModel
     fields = meeting_fields
@@ -633,12 +650,14 @@ class MeetingsResource(BaseResource):
         try:
             logging.info(f"Incoming request received: {request.url}")
 
-            # Fetch meeting by ID if 'id' is provided
             if id:
                 logging.info(f"Fetching meeting with ID: {id}")
-
                 meeting = self.model.query.get_or_404(id)
+                if meeting.date < datetime.now():
+                    logging.info("The meeting date has passed; setting meeting to None.")
+                    return {'message': 'No upcoming meeting available'}, 404
                 return marshal(meeting, self.fields), 200
+
 
             # Get 'organizer_id', 'start', and 'end' query parameters
             organizer_id = request.args.get('organizer_id')
@@ -732,7 +751,7 @@ class MeetingsResource(BaseResource):
                                                      MeetingModel.date <= end_date).all()
 
                 if meetings:
-                  
+
                     meeting_details = []
                     for meeting in meetings:
                         host = meeting.host
@@ -820,7 +839,7 @@ class ZonesResource(BaseResource):
         try:
             if id:
                 return super().get(id)
-            
+
             parent_block_id = request.args.get('parent_block_id')
             logging.debug(f"Parent block ID from query params: {parent_block_id}")
 
@@ -840,7 +859,7 @@ class ZonesResource(BaseResource):
 
 
 # API routes
-api.add_resource(UsersResource, '/users/', '/users/<int:id>', '/users/<int:id>/roles/')
+api.add_resource(UsersResource, '/users/', '/users/<int:id>')
 api.add_resource(CommunicationsResource, '/communications/', '/communications/<int:id>')
 api.add_resource(BanksResource, '/banks/', '/banks/<int:id>')
 api.add_resource(PaymentsResource, '/payments/', '/payments/<int:id>')
@@ -849,5 +868,6 @@ api.add_resource(UmbrellasResource, '/umbrellas/', '/umbrellas/<int:id>')
 api.add_resource(ZonesResource, '/zones/', '/zones/<int:id>')
 api.add_resource(MeetingsResource, '/meetings/', '/meetings/<int:id>')
 api.add_resource(RolesResource, '/roles/','/roles/<int:id>')
+
 
 

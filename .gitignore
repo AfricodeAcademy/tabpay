@@ -79,3 +79,5 @@ pip-log.txt
 *.swp
 *~
 app/main/.archived/routes.py
+backup_
+no_push/*

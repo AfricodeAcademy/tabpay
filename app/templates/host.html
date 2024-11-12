@@ -131,7 +131,7 @@
                   {{ schedule_form.date(class="input", placeholder="YYYY-MM-DD
                   HH:MM:SS") }}
                 </div>
-                {% if schedule_form.member.errors %}
+                {% if schedule_form.date.errors %}
                 <div class="text-danger">
                   {% for error in schedule_form.date.errors %}
                   <small>{{ error }}</small>
