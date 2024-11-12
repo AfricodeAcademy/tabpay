@@ -191,34 +191,56 @@
 
         <div class="col-lg-10">
           <div class="header-profile-body mt-3">
-            <div class="row d-flex justifprofiley-content-between">
+            <div class="row d-flex justify-content-between">
               <div class="col-md-6 d-flex align-items-center">
                 <h1 class="dashboard-h1 ms-2">
                   {% block heading %}{% endblock %}
                 </h1>
               </div>
-              <div class="col-md-4 col-sm-12">
-                <!-- Profile section with search -->
-                <div class="profile-area d-flex align-items-center">
-                  <!-- Search Icon -->
-                  <i class="bi bi-search me-2" id="toggleSearch" style="cursor: pointer;"></i>
+              <div class="col-md-4 d-none d-lg-block">
+                <!-- Profile section -->
+                <div class="profile-area">
+                  <a href="{{ url_for('main.search') }}"><i
+                    class="bi bi-search me-2"
+                    id="toggleSearch"
+                    style="cursor: pointer"
+                  ></i></a>
                   <!-- Search Form -->
-                  <div id="searchFormContainer" class="d-flex align-items-center">
-                    <form action="{{ url_for('main.search') }}" method="get" class="d-flex align-items-center" onsubmit="clearSearchForm()">
-                      <input type="text" name="query" class="form-control me-2" placeholder="Search..." aria-label="Search" style="width: 250px;" required>
+                  <div
+                    id="searchFormContainer"
+                    class="d-flex align-items-center"
+                  >
+                    <form
+                      action="{{ url_for('main.search') }}"
+                      method="get"
+                      class="d-flex align-items-center"
+                      onsubmit="clearSearchForm()"
+                    >
+                      <input
+                        type="text"
+                        name="query"
+                        class="form-control me-2"
+                        placeholder="Search..."
+                        aria-label="Search"
+                        style="width: 250px"
+                        required
+                      />
                       <select name="searchType" class="form-select" required>
-                        <option value="" disabled selected>Select a category</option>
+                        <option value="" disabled selected>
+                          Select a category
+                        </option>
                         <option value="members">Members</option>
                         <option value="payments">Payments</option>
                         <option value="blocks">Blocks</option>
                         <option value="zones">Zones</option>
-                    </select>
-                    
-                      
-                      <button type="submit" class="btn btn-primary">Search</button>
+                      </select>
+
+                      <button type="submit" class="btn btn-primary">
+                        Search
+                      </button>
                     </form>
                   </div>
-                  <!-- Other elements (bell, profile picture, dropdown) -->
+
                   <i class="bi bi-bell"></i>
                   {% if current_user.is_authenticated %}
                   <a href="{{url_for('main.settings')}}">
@@ -233,20 +255,40 @@
                   />
                   {% endif %}
 
-                   
                   <span>{{current_user.full_name}}</span>
-                  <div class="dropdown mb-3">
-                    <i class="bi bi-chevron-down" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false"></i>
-                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                      <li><a class="dropdown-item" href="{{ url_for('security.logout') }}">Logout</a></li>
-                      <li><a class="dropdown-item" href="{{ url_for('main.settings') }}">Settings</a></li>
+                  <div
+                    class="dropdown mb-3"
+                    style="border: none; position: relative"
+                  >
+                    <i
+                      class="bi bi-chevron-down"
+                      id="dropdownMenuButton"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                    >
+                      <!-- Icon and details that trigger the dropdown -->
+                    </i>
+                    <ul
+                      class="dropdown-menu"
+                      aria-labelledby="dropdownMenuButton"
+                    >
+                      <li>
+                        <span class="dropdown-item text-success"
+                          >{{current_user.email}}</span
+                        >
+                      </li>
+                      <li>
+                        <a
+                          class="dropdown-item text-danger"
+                          href="{{ url_for_security('logout') }}"
+                        >
+                          <i class="bi bi-box-arrow-right"></i> Log Out
+                        </a>
+                      </li>
                     </ul>
                   </div>
                 </div>
               </div>
-              
-              
-            </div>
           </div>
           <!-- Main Content -->
           {% block content %}{% endblock %}

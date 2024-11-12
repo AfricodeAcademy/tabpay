@@ -1651,15 +1651,14 @@ def handle_request_payment(payment_form):
 
     # Redirect back to the 'Request Payment' tab
     return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
-@main.route('/search')
+@main.route('/search',methods=['GET', 'POST'])
 def search():
     query = request.args.get('query')
-    search_type = request.args.get('searchType')  # Get search type from the request
-
+    search_type = request.args.get('searchType') 
     # Check if search_type is provided
-    if not search_type:
-        flash("Please select a category to search.", "warning")
-        return redirect(url_for('your_search_page'))  # Replace 'your_search_page' with the route for your search page
+    # if not search_type:
+    #     flash("Please select a category to search.", "warning")
+    #     return redirect(url_for('main.search')) 
 
     results = {
         'members': [],
