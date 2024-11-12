@@ -205,42 +205,7 @@
                     id="toggleSearch"
                     style="cursor: pointer"
                   ></i></a>
-                  <!-- Search Form -->
-                  <div
-                    id="searchFormContainer"
-                    class="d-flex align-items-center"
-                  >
-                    <form
-                      action="{{ url_for('main.search') }}"
-                      method="get"
-                      class="d-flex align-items-center"
-                      onsubmit="clearSearchForm()"
-                    >
-                      <input
-                        type="text"
-                        name="query"
-                        class="form-control me-2"
-                        placeholder="Search..."
-                        aria-label="Search"
-                        style="width: 250px"
-                        required
-                      />
-                      <select name="searchType" class="form-select" required>
-                        <option value="" disabled selected>
-                          Select a category
-                        </option>
-                        <option value="members">Members</option>
-                        <option value="payments">Payments</option>
-                        <option value="blocks">Blocks</option>
-                        <option value="zones">Zones</option>
-                      </select>
-
-                      <button type="submit" class="btn btn-primary">
-                        Search
-                      </button>
-                    </form>
-                  </div>
-
+                  
                   <i class="bi bi-bell"></i>
                   {% if current_user.is_authenticated %}
                   <a href="{{url_for('main.settings')}}">
