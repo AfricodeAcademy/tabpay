@@ -106,9 +106,9 @@ def create_app(config_name):
             )
 
         # Create SuperUser
-        if not user_datastore.find_user(email='chatelobenna@gmail.com'):
+        if not user_datastore.find_user(email='enockbett427@gmail.com'):
             hashed_password = hash_password('123456')
-            user_datastore.create_user(email='chatelobenna@gmail.com', password=hashed_password,
+            user_datastore.create_user(email='enockbett427@gmail.com', password=hashed_password,
                                        id_number=42635058, full_name='Enock Bett', 
                                        phone_number='0729057932',
                                        roles=[user_datastore.find_role('SuperUser')],
