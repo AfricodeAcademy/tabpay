@@ -1,4 +1,4 @@
-from flask import Flask,after_this_request
+from flask import Flask
 from .utils import db, mail, security
 from .utils.initial_banks import import_initial_banks
 from .main.models import UserModel, RoleModel
@@ -68,15 +68,6 @@ def create_app(config_name):
     from app.auth.signals import init_signals
     init_signals(app)
 
-    # from app.auth.signals import custom_login_response
-    # @security.login_context_processor
-    # def login_redirect_processor():
-    #     @after_this_request
-    #     def apply_redirect(response):
-    #         # Call custom login response here
-    #         return custom_login_response()
-    #     return {}
-        
     # Initialize Flask-RESTful API
     from app.api.api import api_bp
     csrf.exempt(api_bp)

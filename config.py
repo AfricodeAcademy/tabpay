@@ -22,6 +22,7 @@ class Config:
     SECURITY_CSRF_PROTECT_MECHANISMS = ['session', 'basic']
     SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = True
     SECURITY_CHANGE_EMAIL = True
+    
 
     #add these for better security
     SECURITY_CSRF_COOKIE = {'httponly': True, 'samesite': 'Lax', 'secure': True}
