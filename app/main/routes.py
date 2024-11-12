@@ -8,6 +8,7 @@ from ..utils import save_picture, db
 from flask import current_app
 from datetime import datetime,timedelta
 from ..utils.send_sms import SendSMS
+from app.main.models import UserModel, BlockModel, PaymentModel, ZoneModel
 from app.auth.decorators import approval_required
 from functools import wraps
 
@@ -1650,3 +1651,52 @@ def handle_request_payment(payment_form):
 
     # Redirect back to the 'Request Payment' tab
     return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
+@main.route('/search',methods=['GET', 'POST'])
+def search():
+    query = request.args.get('query')
+    search_type = request.args.get('searchType') 
+    # Check if search_type is provided
+    # if not search_type:
+    #     flash("Please select a category to search.", "warning")
+    #     return redirect(url_for('main.search')) 
+
+    results = {
+        'members': [],
+        'payments': [],
+        'blocks': [],
+        'zones': []
+    }
+
+    if query:
+        # Search based on the selected search type
+        if search_type == 'members':
+            members = UserModel.query.filter(
+                (UserModel.full_name.ilike(f"%{query}%")) |
+                (UserModel.email.ilike(f"%{query}%")) |
+                (UserModel.id_number.ilike(f"%{query}%")) |
+                (UserModel.phone_number.ilike(f"%{query}%"))
+            ).all()
+            results['members'] = members
+
+        elif search_type == 'payments':
+            payments = PaymentModel.query.filter(
+                (PaymentModel.mpesa_id.ilike(f"%{query}%")) |
+                (PaymentModel.account_number.ilike(f"%{query}%")) |
+                (PaymentModel.source_phone_number.ilike(f"%{query}%")) |
+                (PaymentModel.amount.ilike(f"%{query}%"))
+            ).all()
+            results['payments'] = payments
+
+        elif search_type == 'blocks':
+            blocks = BlockModel.query.filter(
+                BlockModel.name.ilike(f"%{query}%")
+            ).all()
+            results['blocks'] = blocks
+
+        elif search_type == 'zones':
+            zones = ZoneModel.query.filter(
+                ZoneModel.name.ilike(f"%{query}%")
+            ).all()
+            results['zones'] = zones
+
+    return render_template('search_results.html', query=query, search_type=search_type, results=results)

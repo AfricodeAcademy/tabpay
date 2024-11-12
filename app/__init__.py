@@ -113,7 +113,6 @@ def create_app(config_name):
                 roles=[user_datastore.find_role('SuperUser')],
             is_approved=True)
 
-
             db.session.commit()
             print(f'SuperUser created successfully {user_datastore.find_user(is_approved=True)}')
             
