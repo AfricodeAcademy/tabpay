@@ -1,5 +1,10 @@
-{% extends "base.html" %} {% block heading %} Welcome back, {{
-current_user.full_name }}{% endblock %} {% block content %}
+{% extends "base.html" %} {% block heading %}
+<div class="header-container d-flex align-items-center justify-content-between">
+  <!-- Welcome Message -->
+  <div class="welcome-message mt-5">
+      Welcome back, {{ current_user.full_name }}
+  </div>
+{% endblock %} {% block content %}
 <main class="temp-5-body">
   <!-- Dashboard Content -->
   <div class="dashboard">
