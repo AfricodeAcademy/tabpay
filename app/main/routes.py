@@ -1535,6 +1535,7 @@ def render_contribution_page(active_tab=None,payment_form=None, error=None):
                            error=error)
 
 
+
 @main.route('/manage_contribution', methods=['GET', 'POST'])
 @approval_required
 @roles_accepted('SuperUser', 'Administrator')
