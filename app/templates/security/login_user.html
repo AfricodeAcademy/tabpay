@@ -18,7 +18,7 @@ prop_next %} {% block title %}Login | TabPay {% endblock %} {% block content %}
         <div class="container mt-3" id="flash-container">
           {% for category, message in messages %}
           <div
-            class="alert alert-{{ category }} alert-dismissible fade show "
+            class="alert alert-{{ category }} alert-dismissible fade show bg-warning "
             role="alert"
           >
             {{ message }}
@@ -30,6 +30,7 @@ prop_next %} {% block title %}Login | TabPay {% endblock %} {% block content %}
           action="{{ url_for_security('login') }}{{ prop_next() }}"
           method="post"
           name="login_user_form"
+          novalidate
         >
           {{ login_user_form.hidden_tag() }} {{
           render_form_errors(login_user_form) }}

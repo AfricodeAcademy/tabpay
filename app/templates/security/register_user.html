@@ -40,12 +40,13 @@ render_field_with_errors, render_field, render_form_errors, render_field_errors
           action="{{ url_for('security.register') }}"
           method="post"
           name="form"
+          novalidate
         >
           {{ register_user_form.hidden_tag() }} {{
           render_form_errors(register_user_form) }}
           <div class="form-section">
             <div>
-              {{ render_field_with_errors(register_user_form.name,
+              {{ render_field_with_errors(register_user_form.full_name,
               class="input") }}
             </div>
             <div>
@@ -56,7 +57,10 @@ render_field_with_errors, render_field, render_form_errors, render_field_errors
               {{ render_field_with_errors(register_user_form.password,
               class="input") }}
             </div>
-
+            <div>
+              {{ render_field_with_errors(register_user_form.id_number,
+              class="input") }}
+            </div>
             <div>
               <div class="d-flex justify-content-center">
                 {{ render_field_errors(register_user_form.csrf_token) }} {{

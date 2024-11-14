@@ -4,6 +4,7 @@ from . import auth
 
 @auth.route('/pending-approval')
 def pending_approval():
-    if current_user.is_approved:
+    if current_user.is_authenticated and current_user.is_approved:
         return redirect(url_for('main.statistics'))
     return render_template('pending_approval.html')
+
