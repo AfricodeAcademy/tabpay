@@ -6,6 +6,9 @@ from ..utils import db
 from flask_security import UserMixin, RoleMixin
 import uuid
 from datetime import datetime, timezone
+import string
+import random
+from sqlalchemy import event
 
 # Association tables
 member_blocks = db.Table('member_blocks',
@@ -75,7 +78,7 @@ class UserModel(db.Model, UserMixin):
         self.approved_by_id = None
         db.session.commit()
 
-     # Add composite unique constraint
+     # composite unique constraint
     __table_args__ = (
         db.UniqueConstraint('id_number', 'phone_number', 'acc_number', 'zone_id', name='uq_user_id_phone_acc_zone'),
     )
@@ -190,9 +193,11 @@ class ZoneModel(db.Model):
         return f"<Zone {self.name}>"
 
 
+
 class MeetingModel(db.Model):
     __tablename__ = 'meetings'
     id = db.Column(db.Integer, primary_key=True)
+    unique_id = db.Column(db.String(16), unique=True, nullable=False, index=True)
     host_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     block_id = db.Column(db.Integer, db.ForeignKey('blocks.id'), nullable=False)
     zone_id = db.Column(db.Integer, db.ForeignKey('zones.id'), nullable=False)
@@ -200,9 +205,22 @@ class MeetingModel(db.Model):
     date = db.Column(db.DateTime, nullable=False)
     payments = db.relationship('PaymentModel', backref='meeting', lazy=True)  
 
-
     def __repr__(self):
-        return f"<Meeting {self.id} on {self.date}>"
+        return f"<Meeting {self.unique_id} on {self.date}>"
+
+def generate_unique_meeting_id(length=10):
+    """Generates a unique alphanumeric ID for a meeting."""
+    characters = string.ascii_uppercase + string.digits
+    while True:
+        unique_id = ''.join(random.choices(characters, k=length))
+        if not MeetingModel.query.filter_by(unique_id=unique_id).first():
+            return unique_id
+
+@event.listens_for(MeetingModel, 'before_insert')
+def receive_before_insert(mapper, connection, target):
+    """Assign a unique_id before inserting a new MeetingModel record."""
+    if not target.unique_id:
+        target.unique_id = generate_unique_meeting_id()
 
 class BankModel(db.Model):
     __tablename__ = 'banks'
