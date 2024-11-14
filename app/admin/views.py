@@ -23,7 +23,7 @@ class UserAdminView(SecureModelView):
     create_modal = True
     can_view_details = True
     column_details_list = ('full_name', 'email','phone_number', 'id_number','is_approved', 'approval_date', 'approved_by','roles')
-    column_list = ['email', 'full_name', 'active', 'is_approved', 'approval_date', 'approved_by']
+    column_list = ['email', 'full_name', 'phone_number', 'id_number', 'roles', 'active', 'is_approved', 'approval_date', 'approved_by']
 
     @expose('/action/', methods=['POST'])
     def action_view(self):

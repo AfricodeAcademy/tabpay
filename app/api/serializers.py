@@ -119,6 +119,7 @@ role_fields = {
 
 meeting_fields = {
     "id": fields.Integer,
+    "unique_id": fields.String,
     "block_id": fields.Integer,
     "zone_id": fields.Integer,
     "host_id": fields.Integer,
@@ -145,7 +146,7 @@ user_args.add_argument('action', type=str)
 user_args.add_argument('block_id', type=int)  
 user_args.add_argument('umbrella_id', type=int)
 user_args.add_argument('is_approved', type=bool)
-user_args.add_argument('approval_date', type=str) # Assuming approval_date is a string in the format 'YYYY-MM-DD'
+user_args.add_argument('approval_date', type=str) 
 user_args.add_argument('approved_by_id', type=int)
 
 

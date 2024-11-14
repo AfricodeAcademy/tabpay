@@ -100,7 +100,7 @@ def create_app(config_name):
                 password=hashed_password,
                 id_number=42635058,
                 full_name='Enock Bett',
-                phone_number='0798354820',
+                phone_number='0105405050',
                 roles=[user_datastore.find_role('SuperUser')],
             is_approved=True)
 
