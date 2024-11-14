@@ -1243,7 +1243,7 @@ def remove_committee_role(user_id, active_tab):
         return redirect(url_for('main.committee', active_tab=active_tab))
 
     except requests.exceptions.RequestException as e:
-        flash(f"Error removing committee role: {str(e)}", 'danger')
+        flash(f"Error removing committee role!", 'danger')
         logger.error(f"Request failed: {str(e)}")
         return redirect(url_for('main.committee', active_tab=active_tab))
 
