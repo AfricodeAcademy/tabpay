@@ -1,6 +1,5 @@
 {% extends "base.html" %} {% import 'flash.html' as flash %} {% block heading%}
-Community Umbrella settings
-{% endblock %} {% block content %} {% macro
+Community Umbrella settings {% endblock %} {% block content %} {% macro
 render_field(field) %}
 <div class="mb-3">
   {{ field.label(class="form-label") }} {% if field.errors %} {{
@@ -171,23 +170,19 @@ render_field(field) %}
                             </div>
                         </div>
                     </div> -->
-            <div class="col">
-              <div class="row">
+            <div class="row">
+              <div class="col-md-6">
                 <div class="mb-3">
                   {{ render_field(committee_form.id_number) }}
                 </div>
               </div>
-              <div class="row">
+              <div class="col-md-6">
                 <div class="mb-3">
                   {{ render_field(committee_form.block_id) }}
                 </div>
               </div>
-              <div class="row">
-                <div class="mb-3">
-                  {{ render_field(committee_form.role_id) }}
-                </div>
-              </div>
             </div>
+            <div class="mb-3">{{ render_field(committee_form.role_id) }}</div>
             <button
               type="submit"
               name="committee_submit"
