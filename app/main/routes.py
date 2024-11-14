@@ -565,7 +565,11 @@ def handle_member_creation(member_form):
             'id_number': member_form.id_number.data,
             'phone_number': member_form.phone_number.data,
             'zone_id': member_form.member_zone.data,
+
             'bank_id': member_form.bank_id.data,
+
+            'bank': member_form.bank.data,
+
             'acc_number': member_form.acc_number.data,
             'role_id': 5  # Automatically assign "Member" role
         }
@@ -1533,6 +1537,7 @@ def render_contribution_page(active_tab=None,payment_form=None, error=None):
                            active_tab=active_tab, 
                            banks=banks, 
                            error=error)
+
 
 
 @main.route('/manage_contribution', methods=['GET', 'POST'])

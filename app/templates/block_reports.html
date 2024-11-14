@@ -67,13 +67,15 @@ block content %}
                   </select>
                 </div>
 
-                <div class="col-md-3">
-                  <select id="date" name="date">
-                    <option>Week 1</option>
-                    <option>Week 2</option>
-                    <option>Week 3</option>
+                 <div class="col-md-3">
+                  <select id="host" name="host">
+                    <option value="all_hosts">All Hosts</option>
+                    {% for host in hostss %}
+                    <option value="{{ host.name }}">{{ host.name }}</option>
+                    {% endfor %}
                   </select>
                 </div>
+
                 <div class="col-md-3 tt-contributed">
                   {% if block_contributions %}
                   {% set total_contributed = block_contributions.values() | sum %}
@@ -152,6 +154,7 @@ block content %}
               <div class="col-md-3">
                 <select id="host" name="host" onchange="filterContributions()">
                   <option value="">-- Select Host --</option>
+                  <option value="all_hosts">All Hosts</option> <!-- Shows all members who have hosted -->
                   {% for host in hosts %}
                   <option value="{{ host.id }}">{{ host.full_name }}</option>
                   {% endfor %}
@@ -160,16 +163,11 @@ block content %}
 
               <!-- Filter by Member -->
               <div class="col-md-3">
-                <select
-                  id="member"
-                  name="member"
-                  onchange="filterContributions()"
-                >
+                <select id="member" name="member" onchange="filterContributions()">
                   <option value="">-- Select Member --</option>
+                  <option value="all_members">All Members</option>
                   {% for member in members %}
-                  <option value="{{ member.id }}">
-                    {{ member.full_name }}
-                  </option>
+                  <option value="{{ member.id }}">{{ member.full_name }}</option>
                   {% endfor %}
                 </select>
               </div>
