@@ -299,10 +299,6 @@ class UsersResource(BaseResource):
                 if value is not None and key not in ['is_approved', 'approval_date', 'approved_by_id']:
                     setattr(user, key, value)
             
-            db.session.commit()
-            return marshal(user, self.fields), 200
-        except Exception as e:
-            return self.handle_error(e)
 
             if 'multipart/form-data' in request.content_type:
                 logger.info("Handling multipart form data for profile update")

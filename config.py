@@ -3,8 +3,8 @@ import secrets
 from datetime import timedelta
 
 class Config:
-    SECRET_KEY = "c9a03a29e2984006a7b231ca6784e122"
-    # SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:postgres@localhost:5432/tabpay'
+    SECRET_KEY = secrets.token_hex(32)
+    SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:postgres@localhost:5432/tabpay'
     SQLALCHEMY_DATABASE_URI = 'sqlite:///tabpay.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECURITY_PASSWORD_SALT = '201343284857125688191020663358661879047'
@@ -22,6 +22,7 @@ class Config:
     SECURITY_CSRF_PROTECT_MECHANISMS = ['session', 'basic']
     SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = True
     SECURITY_CHANGE_EMAIL = True
+    
 
     #add these for better security
     SECURITY_CSRF_COOKIE = {'httponly': True, 'samesite': 'Lax', 'secure': True}

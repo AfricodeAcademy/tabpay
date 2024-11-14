@@ -130,9 +130,9 @@ def render_settings_page(active_tab=None,umbrella_form=None,block_form=None,comm
 
 # Single route to handle all settings form submissions
 @main.route('/settings', methods=['GET', 'POST'])
+@login_required
 @approval_required
 @roles_accepted('SuperUser', 'Administrator')
-@login_required
 def settings():
     umbrella_form = UmbrellaForm()
     block_form = BlockForm()
@@ -697,9 +697,9 @@ def create_zone(payload):
 
 
 @main.route('/statistics', methods=['GET'])
+@login_required
 @approval_required
 @roles_accepted('SuperUser', 'Administrator', 'Chairman', 'Secretary','Treasurer')
-@login_required
 def statistics():
     
     umbrella_id = get_umbrella_by_user(current_user.id)
@@ -801,6 +801,7 @@ Upcoming block is hosted by {meeting_zone} and the host is {host}. Paybill: {pay
     return render_template('host.html', title='Host | Dashboard',
                            update_form=update_form,
                            user=current_user,
+                             meeting_id=meeting_details.get('meeting_id',''),
                            schedule_form=schedule_form,
                            blocks=blocks,message=message,
                            zones=zones,acc_number=acc_number,paybill_no=paybill_no,
@@ -810,9 +811,9 @@ Upcoming block is hosted by {meeting_zone} and the host is {host}. Paybill: {pay
 
 # Single route to handle all host form submissions
 @main.route('/host', methods=['GET', 'POST'])
+@login_required
 @approval_required
 @roles_accepted('SuperUser', 'Administrator')
-@login_required
 def host():
     schedule_form = ScheduleForm()
     update_form = EditMemberForm()
@@ -832,7 +833,44 @@ def host():
     # Default GET request rendering the host page
     return render_host_page(schedule_form=schedule_form,update_form=update_form,active_tab=request.args.get('active_tab', 'schedule_meeting'))
 
+def edit_meeting_details(meeting_id):
+    schedule_form = ScheduleForm()
 
+    if schedule_form.validate_on_submit():
+        # Collect only the form data fields that are provided
+        update_data = {}
+        if schedule_form.block.data:
+            update_data['block_id'] = schedule_form.block.data
+        if schedule_form.zone.data:
+            update_data['zone_id'] = schedule_form.zone.data
+        if schedule_form.host.data:
+            update_data['host'] = schedule_form.host.data
+        if schedule_form.when.data:
+            update_data['when'] = schedule_form.when.data
+
+        # Call the API to update the meeting with partial data
+        success = update_meeting_api(meeting_id, update_data)
+
+        if success:
+            flash("Meeting details updated successfully.", "success")
+        else:
+            flash("Failed to update meeting details.", "danger")
+    else:
+        flash("Invalid form data.", "danger")
+
+    return redirect(url_for('main.host', active_tab='upcoming_block'))
+
+
+def update_meeting_api(meeting_id, update_data):
+    try:
+        response = requests.patch(
+            f"{current_app.config['API_BASE_URL']}/api/v1/meetings/{meeting_id}",
+            json=update_data
+        )
+        return response.status_code == 200
+    except Exception as e:
+        logging.error(f"Failed to update meeting: {e}")
+        return False
 
 # Handle schedule creation
 def handle_schedule_creation(schedule_form):
@@ -983,7 +1021,7 @@ def get_upcoming_meeting_details():
     except requests.exceptions.RequestException as e:
         logging.error(f"An error occurred while fetching data from the API: {e}")
         return None
-
+    
 def send_sms_notifications():
     try:
         # Retrieve message from the form data
@@ -1216,9 +1254,9 @@ def render_committee_page(active_tab=None, error=None):
 
 # Single route to handle committee-related actions
 @main.route('/committee', methods=['GET', 'POST'])
+@login_required
 @approval_required
 @roles_accepted('SuperUser', 'Administrator')
-@login_required
 def committee():    
     if 'remove_role_submit' in request.form:
         user_id = request.args.get('user_id')  
@@ -1243,7 +1281,7 @@ def remove_committee_role(user_id, active_tab):
         return redirect(url_for('main.committee', active_tab=active_tab))
 
     except requests.exceptions.RequestException as e:
-        flash(f"Error removing committee role: {str(e)}", 'danger')
+        flash(f"Error removing committee role!", 'danger')
         logger.error(f"Request failed: {str(e)}")
         return redirect(url_for('main.committee', active_tab=active_tab))
 
@@ -1339,9 +1377,9 @@ def render_reports_page(active_tab=None, error=None, host_id=None, member_id=Non
 
 
 @main.route('/block_reports', methods=['GET', 'POST'])
+@login_required
 @approval_required
 @roles_accepted('SuperUser', 'Administrator')
-@login_required
 def block_reports():
     host_id = request.args.get('host')
     member_id = request.args.get('member')
@@ -1535,10 +1573,11 @@ def render_contribution_page(active_tab=None,payment_form=None, error=None):
                            error=error)
 
 
+
 @main.route('/manage_contribution', methods=['GET', 'POST'])
+@login_required
 @approval_required
 @roles_accepted('SuperUser', 'Administrator')
-@login_required
 def manage_contribution():
     # Get active tab
     active_tab = request.args.get('active_tab', 'request_payment')
