@@ -57,6 +57,7 @@
 <div
 id="searchFormContainer"
 class="d-flex align-items-center"
+style="display: flex; justify-content: center; align-items: center;"
 >
 <form
   action="{{ url_for('main.search') }}"
@@ -88,30 +89,37 @@ class="d-flex align-items-center"
   </button>
 </form>
 </div>
-        <h1 class="mb-4">Search Results for: "{{ query }}"</h1>
-
-        <!-- Display selected search type -->
-        <h4>Search Type: {{ search_type if search_type != 'all' else 'All' }}</h4>
-
-        <!-- Rest of your content remains unchanged -->
         <!-- Member Search Results -->
         {% if search_type == 'members' or search_type == 'all' %}
-            <h2 class="mt-4">Members</h2>
-            {% if results.members %}
-                <ul class="list-group">
+        <h2 class="mt-4">Members</h2>
+        {% if results.members %}
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Full Names</th>
+                        <th>Phone Number</th>
+                        <th>ID Number</th>
+                        <th>Bank</th>
+                        <th>A/C Number</th>
+                    </tr>
+                </thead>
+                <tbody>
                     {% for member in results.members %}
-                        <li class="list-group-item">
-                            <strong>{{ member.full_name }}</strong> <br>
-                            Email: {{ member.email }} <br>
-                            ID Number: {{ member.id_number }}
-                        </li>
+                        <tr>
+                            <td>{{ member.full_name }}</td>
+                            <td>{{ member.phone_number }}</td>
+                            <td>{{ member.id_number }}</td>
+                            <td>{{ member.bank }}</td>
+                            <td>{{ member.acc_number }}</td>
+                        </tr>
                     {% endfor %}
-                </ul>
-            {% else %}
-                <p class="text-muted">No members found.</p>
-            {% endif %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="text-muted">No members found.</p>
         {% endif %}
-
+    {% endif %}
+    
         <!-- Payment Search Results -->
         {% if search_type == 'payments' or search_type == 'all' %}
             <h2 class="mt-4">Payments</h2>
@@ -130,22 +138,24 @@ class="d-flex align-items-center"
             {% endif %}
         {% endif %}
 
-        <!-- Block Search Results -->
-        {% if search_type == 'blocks' or search_type == 'all' %}
-            <h2 class="mt-4">Blocks</h2>
-            {% if results.blocks %}
-                <ul class="list-group">
-                    {% for block in results.blocks %}
-                        <li class="list-group-item">
-                            Block Name: {{ block.name }} <br>
-                            Parent Umbrella ID: {{ block.parent_umbrella_id }}
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p class="text-muted">No blocks found.</p>
-            {% endif %}
-        {% endif %}
+        
+                <!-- Block Search Results -->
+{% if search_type == 'blocks' or search_type == 'all' %}
+<h2 class="mt-4">Blocks</h2>
+{% if results.blocks %}
+    <ul class="list-group">
+        {% for block in results.blocks %}
+            <li class="list-group-item">
+                <strong>Block Name:</strong> 
+                <a href="{{ url_for('main.host', active_tab='upcoming_block') }}">{{ block.name }}</a><br>
+                <strong>Parent Umbrella:</strong> {{ block.parent_umbrella_id }}
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p class="text-muted">No blocks found.</p>
+{% endif %}
+{% endif %}
 
         <!-- Zone Search Results -->
         {% if search_type == 'zones' or search_type == 'all' %}
@@ -163,9 +173,12 @@ class="d-flex align-items-center"
                 <p class="text-muted">No zones found.</p>
             {% endif %}
         {% endif %}
+        <div style="display: grid; place-items: center;">
+            <button class="btn btn-primary" onclick="goBack()">Back</button>
+        </div>
     </div>
-    <button onclick="goBack()">Back</button>
-
+    
+    
 <script>
 function goBack() {
     window.history.back();

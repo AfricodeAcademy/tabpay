@@ -1674,7 +1674,9 @@ def search():
                 (UserModel.full_name.ilike(f"%{query}%")) |
                 (UserModel.email.ilike(f"%{query}%")) |
                 (UserModel.id_number.ilike(f"%{query}%")) |
-                (UserModel.phone_number.ilike(f"%{query}%"))
+                (UserModel.phone_number.ilike(f"%{query}%")) | 
+                (UserModel.bank_id.ilike(f"%{query}%")) |
+                (UserModel.acc_number.ilike(f"%{query}%"))
             ).all()
             results['members'] = members
 
@@ -1700,3 +1702,11 @@ def search():
             results['zones'] = zones
 
     return render_template('search_results.html', query=query, search_type=search_type, results=results)
+
+@main.route('/block/<int:block_id>')
+def view_block(block_id):
+    # Fetch block details by ID
+    block = BlockModel.query.get_or_404(block_id)
+
+    # Pass block details to the home page
+    return render_template('search_results.html', block=block)
