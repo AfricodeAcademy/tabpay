@@ -801,7 +801,7 @@ Upcoming block is hosted by {meeting_zone} and the host is {host}. Paybill: {pay
     return render_template('host.html', title='Host | Dashboard',
                            update_form=update_form,
                            user=current_user,
-                             meeting_id=meeting_details.get('meeting_id',''),
+                            meeting_id=(meeting_details or {}).get('meeting_id', ''),
                            schedule_form=schedule_form,
                            blocks=blocks,message=message,
                            zones=zones,acc_number=acc_number,paybill_no=paybill_no,
