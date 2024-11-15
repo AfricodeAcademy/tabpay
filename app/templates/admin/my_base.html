@@ -44,4 +44,10 @@
 </script>
 {% endblock %} {% block body %}
 <p>CSRF token: {{ csrf_token }}</p>
-{{ super() }} {% endblock %}
+{% block menu_links %} {{ super() }}
+<div class="ms-auto">
+  <button class="btn btn-sm btn-secondary text-white me-2">
+    <a class="nav-link" href="{{ url_for('security.logout') }}">Logout</a>
+  </button>
+</div>
+{% endblock %} {{ super() }} {% endblock %}
