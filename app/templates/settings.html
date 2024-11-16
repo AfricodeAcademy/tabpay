@@ -87,7 +87,7 @@ render_field(field) %}
             {{ profile_form.hidden_tag() }}
 
             <div class="row p-2">
-              <div class="col-md-4">
+              <div class="col-md-6">
                 <img
                   class="rounded-circle ms-5"
                   style="height: 170px; width: 170px"
@@ -104,32 +104,17 @@ render_field(field) %}
                 </div>
               </div>
 
-              <div class="col-md-8">
-                <div class="row mb-5 mt-2">
-                  <div class="col-md-6">
-                    <div class="mb-3">
-                      {{ render_field(profile_form.full_name) }}
-                    </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="mb-3">
-                      {{render_field(profile_form.id_number)}}
-                    </div>
+              <div
+                class="col-md-6 mt-6 d-flex justify-content-center flex-column"
+              >
+                <div>
+                  <div class="mb-3">
+                    {{ render_field(profile_form.full_name) }}
                   </div>
                 </div>
 
-                <div class="row">
-                  <div class="col-md-6">
-                    <div class="mb-3">
-                      {{ render_field(profile_form.email)}}
-                    </div>
-                  </div>
-
-                  <div class="col-md-6">
-                    <div class="mb-3">
-                      {{ render_field(profile_form.phone_number)}}
-                    </div>
-                  </div>
+                <div>
+                  <div>{{ render_field(profile_form.email)}}</div>
                 </div>
               </div>
             </div>

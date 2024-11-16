@@ -10,7 +10,15 @@ prop_next %} {% block title %}Login | TabPay {% endblock %} {% block content %}
       <div class="head-form">
         <div class="p-4">
           <h1>{{ _fsdomain('Login') }}</h1>
-          <p>Sign in to continue</p>
+          <p>
+            Not Registered?
+            <a
+              href="{{ url_for('security.register') }}"
+              style="text-decoration: none; color: #6ab843"
+            >
+              <strong>Register</strong></a
+            >
+          </p>
         </div>
         <hr />
         {% with messages = get_flashed_messages(with_categories=true) %} {% if
