@@ -220,6 +220,7 @@ class UsersResource(BaseResource):
             args = self.args.parse_args()
             logger.info(f"POST request received to create a new user. Payload: {args}")
 
+            # Validate umbrella
             umbrella = UmbrellaModel.query.get(args['umbrella_id'])
             if not umbrella:
                 return {"message": "Umbrella does not exist."}, 400
@@ -259,7 +260,12 @@ class UsersResource(BaseResource):
                 new_user.zone_memberships.append(zone)
 
             # Generate unique_id for the block membership
-            unique_id = UserModel.generate_member_identifier(umbrella, block)
+            try:
+                unique_id = UserModel.generate_member_identifier(umbrella, block)
+                logger.info(f"Generated unique ID: {unique_id}")
+            except ValueError as e:
+                logger.error(f"Error generating unique ID: {str(e)}")
+                return {"message": "Error generating unique ID. Check umbrella and block initials."}, 400
 
             # Insert the user into the member_blocks table with the unique_id
             stmt = member_blocks.insert().values(
@@ -271,7 +277,12 @@ class UsersResource(BaseResource):
 
             db.session.commit()
 
-            logger.info(f"Successfully created user {new_user.id} with roles {[r.name for r in new_user.roles]}, block memberships {[b.name for b in new_user.block_memberships]} and zone memberships {[z.name for z in new_user.zone_memberships]}")
+            logger.info(
+                f"Successfully created user {new_user.id} with roles "
+                f"{[r.name for r in new_user.roles]}, block memberships "
+                f"{[b.name for b in new_user.block_memberships]} and zone memberships "
+                f"{[z.name for z in new_user.zone_memberships]}"
+            )
 
             return marshal(new_user, self.fields), 201
 
@@ -284,6 +295,7 @@ class UsersResource(BaseResource):
             db.session.rollback()
             logger.error(f"Error creating new user: {str(e)}. Rolling back changes.")
             return self.handle_error(e)
+
 
  
 

@@ -79,9 +79,7 @@ def create_app(config_name):
     with app.app_context():
         db.create_all()
 
-        # user = UserModel.query.filter_by(id=4).first()
-        # print(user.umbrella_id)
-
+      
         # Create roles
         roles = [
             ('SuperUser', 'System Administrator'),

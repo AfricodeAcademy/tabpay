@@ -90,7 +90,7 @@ class UserModel(db.Model, UserMixin):
     roles = db.relationship('RoleModel', secondary=roles_users, backref=db.backref('users', lazy=True))
     messages = db.relationship('CommunicationModel', backref='author', lazy=True)
     payments = db.relationship('PaymentModel', backref='payer', lazy=True)
-    block_memberships = db.relationship('BlockModel', secondary=member_blocks, backref=db.backref('block_members', lazy=True))
+    block_memberships = db.relationship('BlockModel',secondary=member_blocks,backref=db.backref('block_members', lazy='dynamic'),lazy='dynamic')
     zone_memberships = db.relationship('ZoneModel', secondary=member_zones, backref=db.backref('zone_members', lazy=True))
     webauth = db.relationship('WebAuth', backref='user', uselist=False)
     hosted_meetings = db.relationship('MeetingModel', backref='host', foreign_keys='MeetingModel.host_id')
@@ -104,7 +104,7 @@ class UserModel(db.Model, UserMixin):
         Generate a unique identifier for a member based on the umbrella and block.
         Format: {UmbrellaInitials}{BlockInitials}{Increment}
         Example: NYB001
-        """
+        """        
         # Ensure initials are present
         if not umbrella.initials:
             raise ValueError("Umbrella initials cannot be None.")
