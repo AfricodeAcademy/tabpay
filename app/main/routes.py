@@ -57,7 +57,6 @@ def render_settings_page(active_tab=None,umbrella_form=None,block_form=None,comm
         if user:
             # Autofill form fields with user data
             profile_form.full_name.data = user.get('full_name', '')
-            profile_form.id_number.data = user.get('id_number', '')
             profile_form.email.data = user.get('email', '')
         else:
             flash('Unable to load user data.', 'danger')
@@ -1145,7 +1144,7 @@ def update_member(user_id,update_form):
         # Send the PATCH request to update member details
         if payload:
             try:
-                response = requests.patch(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}", json=payload)
+                response = requests.patch(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}", json=payload, params={'umbrella_id': current_data['umbrella_id']})
                 if response.status_code == 200:
                     flash("Member details updated successfully.", "success")
                 else:

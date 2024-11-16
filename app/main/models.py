@@ -13,7 +13,8 @@ from sqlalchemy import event
 # Association tables
 member_blocks = db.Table('member_blocks',
     db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
-    db.Column('block_id', db.Integer, db.ForeignKey('blocks.id'), primary_key=True)
+    db.Column('block_id', db.Integer, db.ForeignKey('blocks.id'), primary_key=True),
+    db.Column('unique_id', db.String(20), unique=True) 
 )
 
 member_zones = db.Table(
@@ -54,7 +55,6 @@ class UserModel(db.Model, UserMixin):
     fs_uniquifier = db.Column(db.String(64), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
     zone_id = db.Column(db.Integer, db.ForeignKey('zones.id'))
     confirmed_at = db.Column(db.DateTime)
-    unique_id = db.Column(db.String(10), unique=True)
     umbrella_id = db.Column(db.Integer, db.ForeignKey('umbrellas.id'))
 
     is_approved = db.Column(db.Boolean(), default=False)  # New field
@@ -99,26 +99,43 @@ class UserModel(db.Model, UserMixin):
         return f"<User {self.full_name}>"
     
     @staticmethod
-    def generate_member_identifier(umbrella):
-        # Get the umbrella initials
-        initials = umbrella.initials
-        if not initials:
+    def generate_member_identifier(umbrella, block):
+        """
+        Generate a unique identifier for a member based on the umbrella and block.
+        Format: {UmbrellaInitials}{BlockInitials}{Increment}
+        Example: NYB001
+        """
+        # Ensure initials are present
+        if not umbrella.initials:
             raise ValueError("Umbrella initials cannot be None.")
+        if not block.initials:
+            raise ValueError("Block initials cannot be None.")
 
-        # Query existing identifiers for the umbrella and find the maximum number
-        last_identifier = db.session.query(UserModel).filter(
-            UserModel.umbrella_id == umbrella.id,
-            UserModel.unique_id.like(f"{initials}%")
-        ).order_by(UserModel.unique_id.desc()).first()
+        # Combine initials
+        prefix = f"{umbrella.initials}{block.initials}"
 
-        # Extract the last number and increment by 1, or start with '001' if none exist
+        # Query existing unique_ids in member_blocks for this umbrella and block
+        last_identifier = db.session.query(member_blocks.c.unique_id).join(BlockModel, member_blocks.c.block_id == BlockModel.id).filter(
+            member_blocks.c.unique_id.like(f"{prefix}%"),
+            BlockModel.parent_umbrella_id == umbrella.id
+        ).order_by(member_blocks.c.unique_id.desc()).first()
+
+        # Determine the next incremental number
         if last_identifier:
-            last_number = int(last_identifier.unique_id[-3:])
-            new_number = f"{last_number + 1:03}"
+            try:
+                last_number = int(last_identifier[0][-3:])
+                new_number = f"{last_number + 1:03}"
+            except ValueError:
+                # Handle cases where the last three characters are not digits
+                new_number = "001"
         else:
             new_number = "001"
 
-        return f"{initials}{new_number}"
+        # Construct the unique_id
+        unique_id = f"{prefix}{new_number}"
+        return unique_id
+
+
 
 class WebAuth(db.Model):
     __tablename__ = 'webauth'
@@ -162,6 +179,7 @@ class BlockModel(db.Model):
     zones = db.relationship('ZoneModel', backref='parent_block', lazy=True)
     payments = db.relationship('PaymentModel', backref='block', lazy=True)
     meetings = db.relationship('MeetingModel', backref='block', lazy=True)
+    initials = db.Column(db.String(10), unique=True)
 
         # Role-specific relationships (Chairman, Secretary, Treasurer)
     chairman_id = db.Column(db.Integer, db.ForeignKey('users.id'))
@@ -176,6 +194,11 @@ class BlockModel(db.Model):
 
     def __repr__(self):
         return f"<Block {self.name}>"
+    
+    @staticmethod
+    def block_initials(name):
+        initials = f'{name[0].upper()}{name[-1].upper()}'
+        return initials
     
 class ZoneModel(db.Model):
     __tablename__ = 'zones'

@@ -36,7 +36,6 @@ def get_user_fields():
         "registered_at": fields.DateTime,
         "updated_at": fields.DateTime,
         "confirmed_at": fields.DateTime,
-        "unique_id": fields.String,
         "roles": fields.List(fields.Nested(role_fields)),
         "block_memberships": fields.List(fields.Nested(block_fields)),
         "zone_memberships": fields.List(fields.Nested(zone_fields)),  
@@ -54,6 +53,7 @@ block_fields = {
     "id": fields.Integer,
     "name": fields.String,
     "parent_umbrella_id": fields.Integer,
+    "initials": fields.String,
     "created_by": fields.Integer
 }
 communication_fields = {
@@ -101,6 +101,7 @@ umbrella_fields = {
     "id": fields.Integer,
     "name": fields.String,
     "location": fields.String,
+    "initials": fields.String,
     "created_by": fields.Integer
 }
 

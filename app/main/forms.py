@@ -17,9 +17,8 @@ class AddMemberForm(FlaskForm):
 class ProfileForm(FlaskForm):
     picture = FileField('Update Profile Picture', validators=[FileAllowed(['jpg', 'jpeg', 'png'], 'Images only')])
     full_name = StringField('Update Your Full Names', validators=[Length(max=30, min=10)])
-    id_number = IntegerField('Your ID Number', render_kw={'readonly': True})
+    # id_number = IntegerField('Your ID Number', render_kw={'readonly': True})
     email = StringField('Update Your Email', validators=[Email(message="Invalid email")])
-    phone_number = StringField('Add Phone Number', render_kw={'placeholder': '0700000000'})
     submit = SubmitField('UPDATE PROFILE')
 
 class AddCommitteForm(FlaskForm):
