@@ -841,30 +841,52 @@ class MeetingsResource(BaseResource):
             # Parse the request arguments
             args = self.args.parse_args()
 
+            block_id = args.get('block_id')
+            zone_id = args.get('zone_id')
+            date = args.get('date')
+            
+            if not block_id or not zone_id or not date:
+                return {'error': 'Block ID, Zone ID, and date are required'}, 400
+
             # Convert the 'date' argument from string to a datetime object
             try:
                 meeting_date = datetime.strptime(args['date'], '%Y-%m-%d %H:%M:%S')
             except ValueError:
                 return {'error': 'Invalid date format, expected YYYY-MM-DD HH:MM:SS'}, 400
+            
+            block = BlockModel.query.get(block_id)
+            if not block:
+                return {'error': 'Block not found'}, 404
+            zone = ZoneModel.query.filter_by(id=zone_id, parent_block_id=block_id).first()
+            if not zone:
+                return {'error': 'Zone does not belong to the specified block'}, 400
 
+            umbrella_id = block.parent_umbrella_id
             # Get the current week range (start and end of the week)
             week_start = meeting_date - timedelta(days=meeting_date.weekday())
             week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59)
 
              # Check if there's already a meeting scheduled in any block for this week
             existing_meeting = self.model.query.filter(
+                MeetingModel.block_id == block_id,
+                MeetingModel.zone_id == zone_id,
+                BlockModel.parent_umbrella_id == block.parent_umbrella_id,
                 self.model.date >= week_start,
                 self.model.date <= week_end
             ).first()
 
             if existing_meeting:
-                return {'error': f'A meeting is already scheduled this week.', 'block': existing_meeting.block_id}, 400
-
+                return {
+                                'error': 'A meeting is already scheduled this week.',
+                                'block': block_id,
+                                'zone': zone_id,
+                                'umbrella': block.parent_umbrella_id
+                            }, 409
             # Create the new meeting object with parsed date
             new_meeting = self.model(
                 host_id=args['host_id'],
-                block_id=args['block_id'],
-                zone_id=args['zone_id'],
+                block_id=block_id,
+                zone_id=zone_id,
                 organizer_id=args['organizer_id'],
                 date=meeting_date
             )

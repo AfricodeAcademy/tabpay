@@ -179,7 +179,7 @@ class BlockModel(db.Model):
     zones = db.relationship('ZoneModel', backref='parent_block', lazy=True)
     payments = db.relationship('PaymentModel', backref='block', lazy=True)
     meetings = db.relationship('MeetingModel', backref='block', lazy=True)
-    initials = db.Column(db.String(10), unique=True)
+    initials = db.Column(db.String(10))
 
         # Role-specific relationships (Chairman, Secretary, Treasurer)
     chairman_id = db.Column(db.Integer, db.ForeignKey('users.id'))
@@ -229,6 +229,7 @@ class MeetingModel(db.Model):
     organizer_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     date = db.Column(db.DateTime, nullable=False)
     payments = db.relationship('PaymentModel', backref='meeting', lazy=True)  
+
 
     def __repr__(self):
         return f"<Meeting {self.unique_id} on {self.date}>"
