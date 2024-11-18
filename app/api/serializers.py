@@ -7,6 +7,7 @@ def get_user_fields():
     block_fields = {
         "id": fields.Integer,
         "name": fields.String,
+        "unique_id":fields.String
     }
     
     role_fields = {
@@ -54,7 +55,8 @@ block_fields = {
     "name": fields.String,
     "parent_umbrella_id": fields.Integer,
     "initials": fields.String,
-    "created_by": fields.Integer
+    "created_by": fields.Integer,
+    "unique_id": fields.String 
 }
 communication_fields = {
     "id": fields.Integer,
@@ -125,9 +127,7 @@ meeting_fields = {
     "zone_id": fields.Integer,
     "host_id": fields.Integer,
     "organizer_id": fields.Integer,
-    "date": fields.DateTime,
-    "paybill_no": fields.Integer,  
-    "acc_number": fields.String
+    "date": fields.DateTime
 }
 
 

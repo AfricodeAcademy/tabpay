@@ -5,7 +5,7 @@ from flask_security import current_user
 from werkzeug.exceptions import HTTPException
 from flask_restful import Api, Resource, marshal_with, marshal, abort
 from ..main.models import UserModel, CommunicationModel, \
-    PaymentModel, BankModel, BlockModel, UmbrellaModel, ZoneModel, MeetingModel, RoleModel, roles_users, member_blocks
+    PaymentModel, BankModel, BlockModel, UmbrellaModel, ZoneModel, MeetingModel, RoleModel, roles_users, member_blocks,member_zones
 from .serializers import get_user_fields, user_args, communication_fields, \
     communication_args, payment_fields, payment_args, bank_fields, bank_args, \
     block_fields, block_args, umbrella_fields, umbrella_args, zone_fields, zone_args, \
@@ -217,9 +217,11 @@ class UsersResource(BaseResource):
 
     def post(self):
         try:
+            # Parse arguments
             args = self.args.parse_args()
             logger.info(f"POST request received to create a new user. Payload: {args}")
 
+            # Validate umbrella
             umbrella = UmbrellaModel.query.get(args['umbrella_id'])
             if not umbrella:
                 return {"message": "Umbrella does not exist."}, 400
@@ -229,10 +231,24 @@ class UsersResource(BaseResource):
             if not zone:
                 return {"message": "Zone does not exist."}, 400
 
-            # Validate block
+            # Validate block (parent of the zone)
             block = BlockModel.query.get(zone.parent_block_id)
             if not block:
                 return {"message": "Block associated with the zone does not exist."}, 400
+
+            # Check for duplicate user
+            existing_user = UserModel.query.filter(
+                (UserModel.id_number == args['id_number']) |
+                (UserModel.phone_number == args['phone_number']) |
+                (UserModel.acc_number == args['acc_number']),
+                UserModel.zone_id == args['zone_id'],
+                UserModel.umbrella_id == args['umbrella_id']
+            ).first()
+
+            if existing_user:
+                return {
+                    "message": "A member with this ID number, phone number, or account number already exists in this zone."
+                }, 400
 
             # Create the new user
             new_user = UserModel(
@@ -245,8 +261,9 @@ class UsersResource(BaseResource):
                 umbrella_id=args['umbrella_id']
             )
 
+            # Add user to the session
             db.session.add(new_user)
-            db.session.flush()  # Ensure the user is added and has an ID before assigning memberships
+            db.session.flush()  # Flush to assign an ID to the user
 
             # Assign role if provided
             if 'role_id' in args and args['role_id'] is not None:
@@ -254,14 +271,15 @@ class UsersResource(BaseResource):
                 if role:
                     new_user.roles.append(role)
 
-            # Add zone membership
-            if zone not in new_user.zone_memberships:
-                new_user.zone_memberships.append(zone)
+            # Generate unique ID for block membership
+            try:
+                unique_id = UserModel.generate_member_identifier(umbrella, block)
+                logger.info(f"Generated unique ID: {unique_id}")
+            except ValueError as e:
+                logger.error(f"Error generating unique ID: {str(e)}")
+                return {"message": "Error generating unique ID. Check umbrella and block initials."}, 400
 
-            # Generate unique_id for the block membership
-            unique_id = UserModel.generate_member_identifier(umbrella, block)
-
-            # Insert the user into the member_blocks table with the unique_id
+            # Insert user into the `member_blocks` table
             stmt = member_blocks.insert().values(
                 user_id=new_user.id,
                 block_id=block.id,
@@ -269,21 +287,46 @@ class UsersResource(BaseResource):
             )
             db.session.execute(stmt)
 
+            # Add zone membership with umbrella_id
+            if not any(
+                mz.zone_id == zone.id and mz.umbrella_id == args['umbrella_id']
+                for mz in new_user.zone_memberships
+            ):
+                stmt = member_zones.insert().values(
+                    user_id=new_user.id,
+                    zone_id=zone.id,
+                    umbrella_id=args['umbrella_id']
+                )
+                db.session.execute(stmt)
+
+            # Commit the session
             db.session.commit()
 
-            logger.info(f"Successfully created user {new_user.id} with roles {[r.name for r in new_user.roles]}, block memberships {[b.name for b in new_user.block_memberships]} and zone memberships {[z.name for z in new_user.zone_memberships]}")
+            # Log success
+            logger.info(
+                f"Successfully created user {new_user.id} with roles "
+                f"{[r.name for r in new_user.roles]}, block memberships "
+                f"{[b.name for b in new_user.block_memberships]} and zone memberships "
+                f"{[z.name for z in new_user.zone_memberships]}"
+            )
 
+            # Return the newly created user
             return marshal(new_user, self.fields), 201
 
         except IntegrityError as e:
+            # Handle duplicate entries
             db.session.rollback()
             logger.error(f"Duplicate entry detected: {str(e)}")
-            return {"message": "A member with this ID number, phone number, or account number already exists in this zone."}, 400
+            return {
+                "message": "A member with this ID number, phone number, or account number already exists in this zone."
+            }, 400
 
         except Exception as e:
+            # General exception handling
             db.session.rollback()
             logger.error(f"Error creating new user: {str(e)}. Rolling back changes.")
             return self.handle_error(e)
+
 
  
 
@@ -294,7 +337,7 @@ class UsersResource(BaseResource):
             user = UserModel.query.get_or_404(id)
             updated = False
 
-            # Handle approval
+                        # Handle approval
             if 'is_approved' in args and args['is_approved'] is not None:
                 if args['is_approved'] and not user.is_approved:
                     user.approve(current_user)  # Assuming current_user is the approver
@@ -303,13 +346,12 @@ class UsersResource(BaseResource):
                     user.unapprove()
                     updated = True
 
-            # Update other fields
+            # Update fields except 'is_approved', 'approval_date', and 'approved_by_id'
             for key, value in args.items():
                 if value is not None and key not in ['is_approved', 'approval_date', 'approved_by_id', 'block_id']:
                     setattr(user, key, value)
                     updated = True
 
-            # Handle multipart form data (e.g., profile picture)
             if 'multipart/form-data' in request.content_type:
                 logger.info("Handling multipart form data for profile update")
                 if 'picture' in request.files:
@@ -321,35 +363,26 @@ class UsersResource(BaseResource):
                     else:
                         logger.error("No image file provided in multipart request")
                         return {"message": "No image file provided."}, 400
+            else:
+                logger.info(f"PATCH request received to update user {id}. Payload: {args}")
+                unchanged_fields = []
 
-            # Fetch umbrella
-            umbrella_id = args.get('umbrella_id')
-            umbrella = UmbrellaModel.query.get(umbrella_id) if umbrella_id else user.umbrella
+                for field in ['full_name', 'id_number', 'phone_number', 'zone_id', 'bank_id', 'acc_number', 'email','image_file']:
+                    if args[field] is not None and getattr(user, field) != args[field]:
+                        setattr(user, field, args[field])
+                        updated = True
+                    else:
+                        unchanged_fields.append(field)
 
             # Check if block_id is provided to update block memberships
             block_id = args.get('block_id')
             if block_id is not None:
                 block = BlockModel.query.get(block_id)
                 if block:
-                    # Check if the user is already a member of the block
-                    existing_membership = db.session.query(member_blocks).filter_by(
-                        user_id=user.id,
-                        block_id=block_id
-                    ).first()
-
-                    if not existing_membership:
-                        # Generate unique_id
-                        unique_id = UserModel.generate_member_identifier(umbrella, block)
-
-                        # Add membership with unique_id
-                        stmt = member_blocks.insert().values(
-                            user_id=user.id,
-                            block_id=block.id,
-                            unique_id=unique_id
-                        )
-                        db.session.execute(stmt)
+                    if block not in user.block_memberships:
+                        user.block_memberships.append(block)
+                        logger.info(f"Added block {block.id} to user's block memberships.")
                         updated = True
-                        logger.info(f"Added block {block.id} to user's block memberships with unique_id {unique_id}.")
                     else:
                         logger.info(f"User {user.id} is already a member of block {block.id}.")
                 else:
@@ -362,36 +395,42 @@ class UsersResource(BaseResource):
                 if zone:
                     if zone not in user.zone_memberships:
                         user.zone_memberships.append(zone)
-                        updated = True
                         logger.info(f"Added zone {zone.id} to user's zone memberships.")
+                        updated = True
+                    else:
+                        logger.info(f"User {user.id} is already a member of zone {zone.id}.")
                 else:
-                    logger.warning(f"Zone {zone_id} not found.")
+                    logger.warning(f"Zone {zone_id} not found.")               
 
-            # Handle role assignments
+
+
             role_id = args.get('role_id')
             action = args.get('action')
 
-            if role_id is not None and action is not None:
+            if role_id is not None:
                 role = RoleModel.query.get(role_id)
 
                 if role:
                     # Ensure Chairman, Secretary, and Treasurer are mutually exclusive
-                    conflicting_roles = {
-                        3: [4, 6],  # Chairman conflicts with Secretary and Treasurer
-                        4: [3, 6],  # Secretary conflicts with Chairman and Treasurer
-                        6: [3, 4]   # Treasurer conflicts with Chairman and Secretary
-                    }
+                    if role_id == 3 and any(r.id in [4, 6] for r in user.roles):
+                        logger.warning("Cannot assign Chairman role when the user already has the Secretary or Umbrella Treasurer role.")
+                        return {"message": "Cannot assign Chairman when the user is already a Secretary or Treasurer."}, 400
 
-                    if role_id in conflicting_roles and any(r.id in conflicting_roles[role_id] for r in user.roles):
-                        logger.warning(f"Cannot assign {role.name} role due to conflicting roles.")
-                        return {"message": f"Cannot assign {role.name} when the user has conflicting roles."}, 400
+                    elif role_id == 4 and any(r.id in [3, 6] for r in user.roles):
+                        logger.warning("Cannot assign Secretary role when the user already has the Chairman or Treasurer role.")
+                        return {"message": "Cannot assign Secretary when the user is already a Chairman or Treasurer."}, 400
 
+                    elif role_id == 6 and any(r.id in [3, 4] for r in user.roles):
+                        logger.warning("Cannot assign Treasurer role when the user already has the Chairman or Secretary role.")
+                        return {"message": "Cannot assign Treasurer when the user is already a Chairman or Secretary."}, 400
+
+                    # Handle Role Removal
                     if action == 'remove':
                         if role in user.roles:
                             # Retrieve the block_id associated with the user's role
                             role_assignment = db.session.query(roles_users).filter_by(user_id=user.id, role_id=role_id).first()
                             if role_assignment:
-                                associated_block_id = role_assignment.block_id
+                                block_id = role_assignment.block_id  # Get the block_id
 
                                 # Remove the role from the user
                                 user.roles.remove(role)
@@ -399,43 +438,52 @@ class UsersResource(BaseResource):
                                 updated = True
 
                                 # Remove the block from the corresponding block list
-                                if associated_block_id:
-                                    block = BlockModel.query.get(associated_block_id)
-                                    if block:
-                                        if role_id == 3:  # Chairman
-                                            user.chaired_blocks = [b for b in user.chaired_blocks if b.id != block.id]
-                                            logger.info(f"Removed block {block.id} from user's chaired_blocks.")
-                                        elif role_id == 4:  # Secretary
-                                            user.secretary_blocks = [b for b in user.secretary_blocks if b.id != block.id]
-                                            logger.info(f"Removed block {block.id} from user's secretary_blocks.")
-                                        elif role_id == 6:  # Treasurer
-                                            user.treasurer_blocks = [b for b in user.treasurer_blocks if b.id != block.id]
-                                            logger.info(f"Removed block {block.id} from user's treasurer_blocks.")
-                        else:
-                            return {"message": "User does not have this role."}, 400
+                                if block_id:
+                                    if role_id == 3:  # Chairman
+                                        user.chaired_blocks = [b for b in user.chaired_blocks if b.id != block_id]
+                                        logger.info(f"Removed block {block_id} from user's chaired_blocks.")
+                                    elif role_id == 4:  # Secretary
+                                        user.secretary_blocks = [b for b in user.secretary_blocks if b.id != block_id]
+                                        logger.info(f"Removed block {block_id} from user's secretary_blocks.")
+                                    elif role_id == 6:  # Treasurer
+                                        user.treasurer_blocks = [b for b in user.treasurer_blocks if b.id != block_id]
+                                        logger.info(f"Removed block {block_id} from user's treasurer_blocks.")
 
+                        else:
+                            return {"message": "User does not have this role"}, 400
+
+
+                    # Handle Role Addition
                     elif action == 'add':
                         if role in user.roles:
                             logger.info(f"User {user.id} already has the role {role.name}.")
                             return {"message": f"User already has the role '{role.name}'."}, 400
                         else:
-                            user.roles.append(role)
-                            logger.info(f"Assigned role {role.name} to user {user.id}")
+                            user.roles.append(role)  # Add the role if it's not already assigned
+                            logger.info(f"Assigned additional role {role.name} to user {user.id}")
                             updated = True
 
-                            # Optionally, assign block-specific roles
-                            if block_id:
-                                block = BlockModel.query.get(block_id)
-                                if block:
-                                    if role_id == 3:  # Chairman
-                                        user.chaired_blocks.append(block)
-                                        logger.info(f"Added block {block.id} to user's chaired_blocks.")
-                                    elif role_id == 4:  # Secretary
-                                        user.secretary_blocks.append(block)
-                                        logger.info(f"Added block {block.id} to user's secretary_blocks.")
-                                    elif role_id == 6:  # Treasurer
-                                        user.treasurer_blocks.append(block)
-                                        logger.info(f"Added block {block.id} to user's treasurer_blocks.")
+                    # Update Blocks Based on Role
+                    block_id = args.get('block_id')
+                    if block_id is not None:
+                        block = BlockModel.query.get(block_id)
+                        if block:
+                            if role_id == 3:  # Chairman
+                                if block not in user.chaired_blocks:
+                                    user.chaired_blocks.append(block)
+                                    logger.info(f"Added block {block.id} to user's chaired_blocks.")
+
+                            elif role_id == 4:  # Secretary
+                                if block not in user.secretary_blocks:
+                                    user.secretary_blocks.append(block)
+                                    logger.info(f"Added block {block.id} to user's secretary_blocks.")
+
+                            elif role_id == 5:  # Treasurer
+                                if block not in user.treasurer_blocks:
+                                    user.treasurer_blocks.append(block)
+                                    logger.info(f"Added block {block.id} to user's treasurer_blocks.")
+                        else:
+                            logger.warning(f"Block {block_id} not found.")
 
             if updated:
                 db.session.commit()
@@ -445,9 +493,9 @@ class UsersResource(BaseResource):
             return {"message": "No updates made to user."}, 400
 
         except Exception as e:
-            db.session.rollback()
             logger.error(f"Error updating user {id}: {str(e)}")
             return {"message": "An error occurred while updating the user."}, 500
+
 
 
 class CommunicationsResource(BaseResource):
@@ -829,30 +877,52 @@ class MeetingsResource(BaseResource):
             # Parse the request arguments
             args = self.args.parse_args()
 
+            block_id = args.get('block_id')
+            zone_id = args.get('zone_id')
+            date = args.get('date')
+            
+            if not block_id or not zone_id or not date:
+                return {'error': 'Block ID, Zone ID, and date are required'}, 400
+
             # Convert the 'date' argument from string to a datetime object
             try:
                 meeting_date = datetime.strptime(args['date'], '%Y-%m-%d %H:%M:%S')
             except ValueError:
                 return {'error': 'Invalid date format, expected YYYY-MM-DD HH:MM:SS'}, 400
+            
+            block = BlockModel.query.get(block_id)
+            if not block:
+                return {'error': 'Block not found'}, 404
+            zone = ZoneModel.query.filter_by(id=zone_id, parent_block_id=block_id).first()
+            if not zone:
+                return {'error': 'Zone does not belong to the specified block'}, 400
 
+            umbrella_id = block.parent_umbrella_id
             # Get the current week range (start and end of the week)
             week_start = meeting_date - timedelta(days=meeting_date.weekday())
             week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59)
 
              # Check if there's already a meeting scheduled in any block for this week
             existing_meeting = self.model.query.filter(
+                MeetingModel.block_id == block_id,
+                MeetingModel.zone_id == zone_id,
+                BlockModel.parent_umbrella_id == block.parent_umbrella_id,
                 self.model.date >= week_start,
                 self.model.date <= week_end
             ).first()
 
             if existing_meeting:
-                return {'error': f'A meeting is already scheduled this week.', 'block': existing_meeting.block_id}, 400
-
+                return {
+                                'error': 'A meeting is already scheduled this week.',
+                                'block': block_id,
+                                'zone': zone_id,
+                                'umbrella': block.parent_umbrella_id
+                            }, 409
             # Create the new meeting object with parsed date
             new_meeting = self.model(
                 host_id=args['host_id'],
-                block_id=args['block_id'],
-                zone_id=args['zone_id'],
+                block_id=block_id,
+                zone_id=zone_id,
                 organizer_id=args['organizer_id'],
                 date=meeting_date
             )
