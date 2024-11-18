@@ -34,7 +34,7 @@ def forbidden_error(error):
 
 
 # Helper function to render the settings page with forms
-def render_settings_page(active_tab=None,umbrella_form=None,block_form=None,committee_form=None,zone_form=None, member_form=None,error=None):
+def render_settings_page(active_tab=None,umbrella_form=None,errors=None,block_form=None,committee_form=None,zone_form=None,error=None, member_form=None):
     # Instantiate all forms
     profile_form = ProfileForm()
 
@@ -124,8 +124,9 @@ def render_settings_page(active_tab=None,umbrella_form=None,block_form=None,comm
                            user=current_user,
                            blocks=blocks,
                            zones=zones,
+                           error=error,
                            active_tab=active_tab,  
-                           error=error)
+                           errors=errors)
 
 # Single route to handle all settings form submissions
 @main.route('/settings', methods=['GET', 'POST'])
@@ -538,25 +539,26 @@ def handle_member_creation(member_form):
     banks = get_banks()
     member_form.bank_id.choices = [("", "--Choose a Bank--")] + [(str(bank['id']), bank['name']) for bank in banks]
 
+
+    errors = member_form.errors
+
     if member_form.validate_on_submit():
         zone_id = member_form.member_zone.data
-        existing_members = get_members_by_zone(zone_id)
+        existing_members = get_members_by_zone(zone_id,umbrella['id'])
 
-        # Check if the ID number already exists in the zone
+        # Custom validation logic
         if any(member['id_number'] == member_form.id_number.data for member in existing_members):
-            flash('A member with that ID number already exists in this zone!', 'danger')
-            return redirect(url_for('main.settings', active_tab='member'))
+            member_form.id_number.errors.append('A member with that ID number already exists in this zone.')
 
-        # Check if the phone number already exists in the zone
         if any(member['phone_number'] == member_form.phone_number.data for member in existing_members):
-            flash('A member with that phone number already exists in this zone!', 'danger')
-            return redirect(url_for('main.settings', active_tab='member'))
+            member_form.phone_number.errors.append('A member with that phone number already exists in this zone.')
 
-        # Check if the account number already exists in the zone
         if any(member['acc_number'] == member_form.acc_number.data for member in existing_members):
-            flash('A member with that account number already exists in this zone!', 'danger')
-            return redirect(url_for('main.settings', active_tab='member'))
+            member_form.acc_number.errors.append('A member with that account number already exists in this zone.')
 
+        # If any errors exist, re-render the form with errors
+        if member_form.errors:
+            return render_settings_page(member_form=member_form, active_tab='member')
 
    
         payload = {
@@ -577,6 +579,8 @@ def handle_member_creation(member_form):
             zone_name = zone_map.get(int(member_form.member_zone.data))
             flash(f'{member_form.full_name.data} added to {zone_name} successfully!', 'success')
         else:
+            error_message = response.json().get('message', 'Unknown error')
+            print(error_message)
             flash('Failed to create member.', 'danger')
         
         # Persist zone selection for convenience
@@ -659,9 +663,9 @@ def get_zones_by_block(block_id):
 
 
 # Helper function to get members of a specific zone
-def get_members_by_zone(zone_id):
+def get_members_by_zone(zone_id,umbrella_id):
     """Fetches members associated with the specified zone via API."""
-    response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'zone_id': zone_id})
+    response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'zone_id': zone_id,'umbrella_id': umbrella_id})
 
     if response.status_code == 200:
         return response.json()
@@ -1088,6 +1092,7 @@ def update_member(user_id,update_form):
     update_form.block_id.choices =  [("", "--Choose an Additional Block--")] + [(str(block['id']), block['name']) for block in blocks]
 
     # Prepare a mapping for zones with block names
+    umbrella = get_umbrella_by_user(current_user.id)
     zone_map = {}
     for block in blocks:
         block_id = block['id']

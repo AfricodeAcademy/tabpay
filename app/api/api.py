@@ -5,7 +5,7 @@ from flask_security import current_user
 from werkzeug.exceptions import HTTPException
 from flask_restful import Api, Resource, marshal_with, marshal, abort
 from ..main.models import UserModel, CommunicationModel, \
-    PaymentModel, BankModel, BlockModel, UmbrellaModel, ZoneModel, MeetingModel, RoleModel, roles_users, member_blocks
+    PaymentModel, BankModel, BlockModel, UmbrellaModel, ZoneModel, MeetingModel, RoleModel, roles_users, member_blocks,member_zones
 from .serializers import get_user_fields, user_args, communication_fields, \
     communication_args, payment_fields, payment_args, bank_fields, bank_args, \
     block_fields, block_args, umbrella_fields, umbrella_args, zone_fields, zone_args, \
@@ -217,6 +217,7 @@ class UsersResource(BaseResource):
 
     def post(self):
         try:
+            # Parse arguments
             args = self.args.parse_args()
             logger.info(f"POST request received to create a new user. Payload: {args}")
 
@@ -230,10 +231,24 @@ class UsersResource(BaseResource):
             if not zone:
                 return {"message": "Zone does not exist."}, 400
 
-            # Validate block
+            # Validate block (parent of the zone)
             block = BlockModel.query.get(zone.parent_block_id)
             if not block:
                 return {"message": "Block associated with the zone does not exist."}, 400
+
+            # Check for duplicate user
+            existing_user = UserModel.query.filter(
+                (UserModel.id_number == args['id_number']) |
+                (UserModel.phone_number == args['phone_number']) |
+                (UserModel.acc_number == args['acc_number']),
+                UserModel.zone_id == args['zone_id'],
+                UserModel.umbrella_id == args['umbrella_id']
+            ).first()
+
+            if existing_user:
+                return {
+                    "message": "A member with this ID number, phone number, or account number already exists in this zone."
+                }, 400
 
             # Create the new user
             new_user = UserModel(
@@ -246,8 +261,9 @@ class UsersResource(BaseResource):
                 umbrella_id=args['umbrella_id']
             )
 
+            # Add user to the session
             db.session.add(new_user)
-            db.session.flush()  # Ensure the user is added and has an ID before assigning memberships
+            db.session.flush()  # Flush to assign an ID to the user
 
             # Assign role if provided
             if 'role_id' in args and args['role_id'] is not None:
@@ -255,11 +271,7 @@ class UsersResource(BaseResource):
                 if role:
                     new_user.roles.append(role)
 
-            # Add zone membership
-            if zone not in new_user.zone_memberships:
-                new_user.zone_memberships.append(zone)
-
-            # Generate unique_id for the block membership
+            # Generate unique ID for block membership
             try:
                 unique_id = UserModel.generate_member_identifier(umbrella, block)
                 logger.info(f"Generated unique ID: {unique_id}")
@@ -267,7 +279,7 @@ class UsersResource(BaseResource):
                 logger.error(f"Error generating unique ID: {str(e)}")
                 return {"message": "Error generating unique ID. Check umbrella and block initials."}, 400
 
-            # Insert the user into the member_blocks table with the unique_id
+            # Insert user into the `member_blocks` table
             stmt = member_blocks.insert().values(
                 user_id=new_user.id,
                 block_id=block.id,
@@ -275,8 +287,22 @@ class UsersResource(BaseResource):
             )
             db.session.execute(stmt)
 
+            # Add zone membership with umbrella_id
+            if not any(
+                mz.zone_id == zone.id and mz.umbrella_id == args['umbrella_id']
+                for mz in new_user.zone_memberships
+            ):
+                stmt = member_zones.insert().values(
+                    user_id=new_user.id,
+                    zone_id=zone.id,
+                    umbrella_id=args['umbrella_id']
+                )
+                db.session.execute(stmt)
+
+            # Commit the session
             db.session.commit()
 
+            # Log success
             logger.info(
                 f"Successfully created user {new_user.id} with roles "
                 f"{[r.name for r in new_user.roles]}, block memberships "
@@ -284,14 +310,19 @@ class UsersResource(BaseResource):
                 f"{[z.name for z in new_user.zone_memberships]}"
             )
 
+            # Return the newly created user
             return marshal(new_user, self.fields), 201
 
         except IntegrityError as e:
+            # Handle duplicate entries
             db.session.rollback()
             logger.error(f"Duplicate entry detected: {str(e)}")
-            return {"message": "A member with this ID number, phone number, or account number already exists in this zone."}, 400
+            return {
+                "message": "A member with this ID number, phone number, or account number already exists in this zone."
+            }, 400
 
         except Exception as e:
+            # General exception handling
             db.session.rollback()
             logger.error(f"Error creating new user: {str(e)}. Rolling back changes.")
             return self.handle_error(e)
