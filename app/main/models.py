@@ -20,7 +20,9 @@ member_blocks = db.Table('member_blocks',
 member_zones = db.Table(
     'member_zones',
     db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
-    db.Column('zone_id', db.Integer, db.ForeignKey('zones.id'), primary_key=True)
+    db.Column('zone_id', db.Integer, db.ForeignKey('zones.id'), primary_key=True),
+    db.Column('umbrella_id', db.Integer, db.ForeignKey('umbrellas.id'), nullable=False),  
+    db.UniqueConstraint('user_id', 'zone_id',  name='uq_user_zone')  
 )
 
 roles_users = db.Table('roles_users',
@@ -56,7 +58,7 @@ class UserModel(db.Model, UserMixin):
     zone_id = db.Column(db.Integer, db.ForeignKey('zones.id'))
     confirmed_at = db.Column(db.DateTime)
     umbrella_id = db.Column(db.Integer, db.ForeignKey('umbrellas.id'))
-
+ 
     is_approved = db.Column(db.Boolean(), default=False)  # New field
     approval_date = db.Column(db.DateTime())  # New field
     approved_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
@@ -81,9 +83,7 @@ class UserModel(db.Model, UserMixin):
         db.session.commit()
 
      # composite unique constraint
-    __table_args__ = (
-        db.UniqueConstraint('id_number', 'phone_number', 'acc_number', 'zone_id', name='uq_user_id_phone_acc_zone'),
-    )
+
 
     
     # Relationships
