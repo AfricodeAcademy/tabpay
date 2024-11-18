@@ -4,7 +4,7 @@ from datetime import timedelta
 
 class Config:
     SECRET_KEY = secrets.token_hex(32)
-    SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:postgres@localhost:5432/tabpay'
+    # SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:postgres@localhost:5432/tabpay'
     SQLALCHEMY_DATABASE_URI = 'sqlite:///tabpay.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECURITY_PASSWORD_SALT = '201343284857125688191020663358661879047'
