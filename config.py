@@ -72,7 +72,7 @@ class DevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///tabpay.db'
     # SQLALCHEMY_DATABASE_URI = 'postgresql://captain:captain@localhost:5432/tabpay'
-    API_BASE_URL = "http://localhost:5002"
+    API_BASE_URL = "http://localhost:5000"
 
 class ProductionConfig(Config):
     DEBUG = False
