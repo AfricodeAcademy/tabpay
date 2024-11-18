@@ -205,9 +205,7 @@ def handle_profile_update():
         if profile_form.email.data != current_user.email:
             update_data['email'] = profile_form.email.data
             user_changed = True
-        if profile_form.phone_number.data != current_user.phone_number:
-            update_data['phone_number'] = profile_form.phone_number.data
-            user_changed = True
+   
 
         # Make API call to update profile fields if any data changed
         if update_data:
@@ -220,7 +218,6 @@ def handle_profile_update():
                     # Update the current user details in session after successful update
                     current_user.full_name = update_data.get('full_name', current_user.full_name)
                     current_user.email = update_data.get('email', current_user.email)
-                    current_user.phone_number = update_data.get('phone_number', current_user.phone_number)
                 else:
                     logger.error(f"Failed to update profile fields. API response: {response.status_code} - {response.text}")
                     errors = response.json().get('message', "An error occurred")
@@ -548,13 +545,13 @@ def handle_member_creation(member_form):
 
         # Custom validation logic
         if any(member['id_number'] == member_form.id_number.data for member in existing_members):
-            member_form.id_number.errors.append('A member with that ID number already exists in this zone.')
+            member_form.id_number.errors.append('A member with that ID number already exists ')
 
         if any(member['phone_number'] == member_form.phone_number.data for member in existing_members):
-            member_form.phone_number.errors.append('A member with that phone number already exists in this zone.')
+            member_form.phone_number.errors.append('A member with that phone number already exists')
 
         if any(member['acc_number'] == member_form.acc_number.data for member in existing_members):
-            member_form.acc_number.errors.append('A member with that account number already exists in this zone.')
+            member_form.acc_number.errors.append('A member with that account number already exists ')
 
         # If any errors exist, re-render the form with errors
         if member_form.errors:
