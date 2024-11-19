@@ -94,14 +94,14 @@ def create_app(config_name):
             user_datastore.find_or_create_role(name=role_name, description=description)
         
         # Create Superuser
-        if not user_datastore.find_user(email='enockbett427@gmail.com'):
+        if not user_datastore.find_user(email='benard@africodeacademy.com'):
             hashed_password = hash_password('123456')
             user_datastore.create_user(
-                email='enockbett427@gmail.com',
+                email='benard@africodeacademy.com',
                 password=hashed_password,
-                id_number=42635058,
-                full_name='Enock Bett',
-                phone_number='0105405050',
+                id_number=28505304,
+                full_name='Benard Ronoh',
+                phone_number='0729057932',
                 roles=[user_datastore.find_role('SuperUser')],
             is_approved=True)
 
