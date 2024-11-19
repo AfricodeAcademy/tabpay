@@ -428,7 +428,6 @@ def handle_umbrella_creation(umbrella_form):
             'created_by': current_user.id
         })
         flash('Umbrella created successfully!', 'success')
-        return redirect(url_for('main.settings', active_tab='block'))
 
     return render_settings_page(umbrella_form=umbrella_form,active_tab='umbrella')
 
@@ -736,8 +735,9 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
         when = meeting_details['when']
         acc_number = meeting_details['acc_number']
         paybill_no = meeting_details['paybill_no']
+        id_meeting = meeting_details['meeting_id']
     else:
-        meeting_block = meeting_zone = host = when = paybill_no = acc_number = None
+        meeting_block = meeting_zone = host = when = paybill_no = acc_number = id_meeting = None
         flash('No upcoming meetings found.','warning')
     
     message = f"""
@@ -807,7 +807,7 @@ Upcoming block is hosted by {meeting_zone} and the host is {host}. Paybill: {pay
                            zones=zones,acc_number=acc_number,paybill_no=paybill_no,
                            members=members,
                            active_tab=active_tab,  
-                           error=error,meeting_block=meeting_block,host=host,meeting_zone=meeting_zone,when=when)
+                           error=error,meeting_block=meeting_block,host=host,meeting_zone=meeting_zone,when=when,id_meeting=id_meeting)
 
 # Single route to handle all host form submissions
 @main.route('/host', methods=['GET', 'POST'])
@@ -823,6 +823,10 @@ def host():
     elif 'edit_member_submit' in request.form:  
         user_id = request.args.get('user_id')  
         return update_member(user_id, update_form=update_form)
+    elif 'edit_meeting' in request.form:  
+        meeting_id = request.args.get('meeting_id')  
+        print(f"MEETING ID FROM REQUEST ARGS: {meeting_id}")
+        return edit_meeting_details(meeting_id, schedule_form=schedule_form)
     elif 'remove_member_submit' in request.form: 
         if request.form.get('_method') == 'DELETE':
             user_id = request.args.get('user_id')   
@@ -833,40 +837,82 @@ def host():
     # Default GET request rendering the host page
     return render_host_page(schedule_form=schedule_form,update_form=update_form,active_tab=request.args.get('active_tab', 'schedule_meeting'))
 
-def edit_meeting_details(meeting_id):
-    schedule_form = ScheduleForm()
+
+def edit_meeting_details(meeting_id, schedule_form):
+    # Fetch current meeting data
+    try:
+        current_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/meetings/{meeting_id}")
+        if current_response.status_code == 200:
+            current_data = current_response.json()
+        else:
+            current_data = {}
+    except Exception as e:
+        print(f"Error fetching meeting data: {str(e)}")
+        flash("Error fetching meeting data.", "danger")
+        return redirect(url_for('main.host', active_tab='upcoming_block'))
 
     if schedule_form.validate_on_submit():
         # Collect only the form data fields that are provided
-        update_data = {}
-        if schedule_form.block.data:
-            update_data['block_id'] = schedule_form.block.data
-        if schedule_form.zone.data:
-            update_data['zone_id'] = schedule_form.zone.data
-        if schedule_form.host.data:
-            update_data['host'] = schedule_form.host.data
-        if schedule_form.when.data:
-            update_data['when'] = schedule_form.when.data
+        payload = {}
+        form_fields = {
+            'host': 'host',
+            'when': 'when',
+            'zone_id': 'zone_id',
+            'block_id': 'block_id',
+        }
+        
+        any_input = False
+        for form_field, payload_key in form_fields.items():
+            form_data = getattr(schedule_form, form_field).data
+            current_value = current_data.get(payload_key)
+
+            # Special handling for the 'when' (date) field
+            if form_field == 'when':
+                if form_data:
+                    try:       
+
+                        # Convert form data into a datetime object
+                        formatted_date = datetime.strptime(form_data, '%Y-%m-%d %H:%M:%S')
+                        if formatted_date != datetime.fromisoformat(current_value):  # Compare with current value
+                            payload[payload_key] = formatted_date.isoformat()  # Ensure ISO 8601 format
+                            any_input = True
+                    except ValueError:
+                        flash("Invalid date format. Please use YYYY-MM-DDTHH:MM:SS.", "danger")
+                        return redirect(url_for('main.host', active_tab='upcoming_block'))
+            else:
+                # If the form field has changed and it's not empty, include it in the payload
+                if form_data and form_data != current_value:
+                    payload[payload_key] = form_data
+                    any_input = True
+
+        # Check if no input was made (i.e., nothing to update)
+        if not any_input:
+            flash("No changes made.", "warning")
+            return redirect(url_for('main.host', active_tab='upcoming_block'))
 
         # Call the API to update the meeting with partial data
-        success = update_meeting_api(meeting_id, update_data)
+        success = update_meeting_api(meeting_id, payload)
 
         if success:
             flash("Meeting details updated successfully.", "success")
         else:
             flash("Failed to update meeting details.", "danger")
     else:
+        # Debugging validation issues
+        print(schedule_form.errors)
         flash("Invalid form data.", "danger")
+        return redirect(url_for('main.host', active_tab='upcoming_block'))
 
     return redirect(url_for('main.host', active_tab='upcoming_block'))
 
 
-def update_meeting_api(meeting_id, update_data):
+def update_meeting_api(meeting_id, payload):
     try:
         response = requests.patch(
             f"{current_app.config['API_BASE_URL']}/api/v1/meetings/{meeting_id}",
-            json=update_data
+            json=payload
         )
+        print(f"DETAILS FOR UPDATING THE MEEETING: {    response.json()}")
         return response.status_code == 200
     except Exception as e:
         logging.error(f"Failed to update meeting: {e}")
@@ -1108,7 +1154,7 @@ def update_member(user_id,update_form):
         current_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}")
         current_data = current_response.json() if current_response.status_code == 200 else {}
     except Exception as e:
-        flash(f"Error fetching current member data: {str(e)}", "danger")
+        print(f"Error fetching current member data: {str(e)}", "danger")
         return redirect(url_for('main.host', active_tab='block_members'))
 
     # Check for form submission

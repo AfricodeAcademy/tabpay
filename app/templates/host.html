@@ -174,8 +174,8 @@ Regular Block Hosting {% endblock %} {% block content %}
                     <button
                       type="button"
                       class="btn btn-sm btn-warning"
-                      data-toggle="modal"
-                      data-target="#editMeetingModal"
+                      data-bs-toggle="modal"
+                      data-bs-target="#editMeetingModal{{id_meeting }}"
                     >
                       Edit
                     </button>
@@ -184,33 +184,56 @@ Regular Block Hosting {% endblock %} {% block content %}
                   <!-- Edit Meeting Modal -->
                   <div
                     class="modal fade"
-                    id="editMeetingModal"
+                    id="editMeetingModal{{id_meeting }}"
                     tabindex="-1"
                     role="dialog"
-                    aria-labelledby="editMeetingModalLabel"
+                    aria-labelledby="editMeetingModalLabel{{id_meeting }}"
                     aria-hidden="true"
                   >
-                    <div class="modal-dialog" role="document">
+                    <div class="modal-dialog">
                       <div class="modal-content">
                         <form
-                          method="POST"
-                          action="{{ url_for('main.host', meeting_id=meeting_id) }}"
+                          method="post"
+                          action="{{ url_for('main.host', meeting_id=id_meeting,active_tab='upcoming_block') }}"
+                          novalidate
                         >
                           <div class="modal-header">
-                            <h5 class="modal-title" id="editMeetingModalLabel">
+                            <h5
+                              class="modal-title"
+                              id="editMeetingModalLabel{{id_meeting }}"
+                            >
                               Edit Meeting Details
                             </h5>
                             <button
                               type="button"
                               class="close"
-                              data-dismiss="modal"
+                              data-bs-dismiss="modal"
                               aria-label="Close"
                             >
                               <span aria-hidden="true">&times;</span>
                             </button>
                           </div>
+                          {{ flash.render_flash_messages() }}
+
                           <div class="modal-body">
                             {{ schedule_form.hidden_tag() }}
+                            <input
+                              type="hidden"
+                              name="meeting_id"
+                              value="{{ id_meeting }}"
+                            />
+                            <input type="text" name="host" value="{{ host }}" />
+                            <input
+                              type="text"
+                              name="meeting_block"
+                              value="{{ meeting_block }}"
+                            />
+                            <input
+                              type="text"
+                              name="meeting_zone"
+                              value="{{ meeting_zone }}"
+                            />
+                            <input type="text" name="when" value="{{ when }}" />
 
                             <div class="row">
                               <div class="col-md-6">
@@ -281,7 +304,11 @@ Regular Block Hosting {% endblock %} {% block content %}
                             >
                               Cancel
                             </button>
-                            <button type="submit" class="btn btn-primary">
+                            <button
+                              type="submit"
+                              name="edit_meeting"
+                              class="btn btn-success"
+                            >
                               Save Changes
                             </button>
                           </div>
