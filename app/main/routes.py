@@ -17,9 +17,7 @@ main = Blueprint('main', __name__)
 
 sms = SendSMS()
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+
 
 @main.route('/', methods=['GET'])
 def home():
@@ -170,7 +168,6 @@ def handle_profile_update():
     user_changed = False
 
     if profile_form.validate_on_submit():
-        logger.info("Form validated successfully.")
 
         # Handle profile picture update
         if profile_form.picture.data:
@@ -187,15 +184,12 @@ def handle_profile_update():
                         flash('Profile picture updated successfully!', 'success')
                         current_user.image_file = picture_file
                         user_changed = True
-                        logger.info("Profile picture updated successfully via API.")
                     else:
-                        logger.error(f"Failed to update profile picture. API response: {response.status_code} - {response.text}")
                         flash('Failed to update profile picture.', 'danger')
                 else:
                     flash('The new profile picture is the same as the current one.', 'info')
 
             except Exception as e:
-                logger.error(f"Error updating profile picture: {e}")
                 flash('An error occurred while updating the profile picture.', 'danger')
 
         # Handle other profile field updates (name, email, phone number)
@@ -213,22 +207,18 @@ def handle_profile_update():
                 response = requests.patch(api_url, json=update_data, headers={'Authorization': f"Bearer {current_user.get_auth_token()}"})
                 if response.status_code == 200:
                     flash("Profile updated successfully!", "success")
-                    logger.info("Profile fields updated successfully via API.")
                     user_changed = True
                     # Update the current user details in session after successful update
                     current_user.full_name = update_data.get('full_name', current_user.full_name)
                     current_user.email = update_data.get('email', current_user.email)
                 else:
-                    logger.error(f"Failed to update profile fields. API response: {response.status_code} - {response.text}")
                     errors = response.json().get('message', "An error occurred")
                     flash(errors, "danger")
             except Exception as e:
-                logger.error(f"Error while updating profile fields: {e}")
                 flash("An error occurred while updating profile details.", "danger")
 
         # Inform user if no changes were detected
         if not user_changed:
-            logger.info("No changes made to profile fields or picture.")
             flash("No changes made to your profile.", "info")
 
     else:
@@ -248,7 +238,7 @@ def get_roles():
 def get_user_by_id_number(id_number):
     try:
         response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'id_number': id_number})
-        current_app.logger.debug(f"API Response: {response.json()}")  # Log response for debugging
+        # current_app.logger.debug(f"API Response: {response.json()}")  
         if response.status_code == 200:
             user = response.json()  # Expecting a single user, not a list
             return user
@@ -702,7 +692,7 @@ def create_zone(payload):
 def statistics():
     
     umbrella_id = get_umbrella_by_user(current_user.id)
-    print(f'fetched umbrella: {umbrella_id}')
+    # print(f'fetched umbrella: {umbrella_id}')
 
     total_members = len(get_members())
 
@@ -1241,7 +1231,6 @@ def get_members():
     umbrella_id = umbrella['id']  # Extract the umbrella ID
 
     try:
-        logger.info("Fetching users with role 'Member' for the specified umbrella.")
         # Fetch members associated with the umbrella
         response = requests.get(
             f"{current_app.config['API_BASE_URL']}/api/v1/users/",
@@ -1250,14 +1239,11 @@ def get_members():
         
         if response.status_code == 200:
             members = response.json()
-            logger.info(f"Users fetched successfully: {len(members)} members.")
             return members
           
         else:
-            logger.error(f"Error fetching members: Status Code {response.status_code}")
             return []
     except Exception as e:
-        logger.error(f"Exception during fetching members: {str(e)}")
         return []
 
 
@@ -1329,7 +1315,6 @@ def remove_committee_role(user_id, active_tab):
 
     except requests.exceptions.RequestException as e:
         flash(f"Error removing committee role!", 'danger')
-        logger.error(f"Request failed: {str(e)}")
         return redirect(url_for('main.committee', active_tab=active_tab))
 
 
@@ -1790,24 +1775,35 @@ def search():
     return render_template('search_results.html', query=query, search_type=search_type, results=results)
 
 @main.route('/block/<int:block_id>')
+@login_required
+@approval_required
 def view_block(block_id):
-    # Fetch block details by ID
-    block = BlockModel.query.get_or_404(block_id)
+    umbrella = get_umbrella_by_user(current_user.id)
+    block = BlockModel.query.filter_by(id=block_id,parent_umbrella_id=umbrella['id']).first()
 
     # Pass block details to the home page
     return render_template('search_results.html', block=block)
 
 
 @main.route('/blocks', methods=['GET'])
+@login_required
+@approval_required
 def view_all_blocks():
-    blocks = BlockModel.query.all()  # Fetch all blocks
+    umbrella = get_umbrella_by_user(current_user.id)
+    blocks = BlockModel.query.filter_by(parent_umbrella_id=umbrella['id']).all()
 
     
     block_data = []
+    members =get_members()
     for block in blocks:
+        block_members = [
+                member for member in members 
+                if any(block_membership['id'] == block.id for block_membership in member.get('block_memberships', []))
+            ]     
         block_data.append({
             'name': block.name,
-            'parent_umbrella': block.parent_umbrella.name if block.parent_umbrella else 'N/A'
+            'parent_umbrella': umbrella['name'] if  umbrella['name'] else 'N/A',
+            'members': len(block_members)
         })
 
     return render_template('all_blocks.html', blocks=block_data)

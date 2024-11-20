@@ -66,14 +66,14 @@ class UserModel(db.Model, UserMixin):
                                 backref='approved_users')
     
     def approve(self, approved_by):
-        current_app.logger.debug(f"Approving user {self.id}")
+        # current_app.logger.debug(f"Approving user {self.id}")
         self.is_approved = True
         self.roles.append(RoleModel.query.filter_by(name='Administrator').first())
         self.approval_date = datetime.now(timezone.utc)
         self.approved_by_id = approved_by.id
-        current_app.logger.debug(f"User {self.id} approved by {approved_by.id}")
+        # current_app.logger.debug(f"User {self.id} approved by {approved_by.id}")
         db.session.commit()
-        current_app.logger.debug(f"Approval for user {self.id} committed to database")
+        # current_app.logger.debug(f"Approval for user {self.id} committed to database")
 
     def unapprove(self):
         self.is_approved = False

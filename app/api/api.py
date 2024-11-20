@@ -11,7 +11,7 @@ from .serializers import get_user_fields, user_args, communication_fields, \
     block_fields, block_args, umbrella_fields, umbrella_args, zone_fields, zone_args, \
     meeting_fields, meeting_args,role_args,role_fields
 from ..utils import db
-import logging
+# import logging
 from ..main.routes import save_picture
 from sqlalchemy.orm import joinedload
 
@@ -22,24 +22,20 @@ api = Api(api_bp)
 
 
 
-# Basic logging setup
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
-
 
 def handle_error(self, e):
     db.session.rollback()
 
     if isinstance(e, SQLAlchemyError):
-        logging.error(f"Database error: {str(e)}", exc_info=True)
+        # logging.error(f"Database error: {str(e)}", exc_info=True)
         error_message = {"success": False, "message": "Database error occurred", "details": str(e)}
         status_code = 500
     elif isinstance(e, HTTPException):
-        logging.error(f"HTTP error: {str(e)}", exc_info=True)
+        # logging.error(f"HTTP error: {str(e)}", exc_info=True)
         error_message = {"success": False, "message": "HTTP error occurred", "details": str(e)}
         status_code = e.code
     else:
-        logging.error(f"Unexpected error: {str(e)}", exc_info=True)
+        # logging.error(f"Unexpected error: {str(e)}", exc_info=True)
         error_message = {"success": False, "message": "Unexpected error occurred", "details": str(e)}
         status_code = 500
 
@@ -129,9 +125,7 @@ class UsersResource(BaseResource):
     def get(self, id=None):
         try:
             if id:
-                logger.info(f"GET request received for user {id}")
                 user = self.model.query.get_or_404(id)
-                logger.info(f"User zone_id: {user.zone_id}, bank_id: {user.bank_id}")
 
                 if user.zone_id:
                     user.zone_name = ZoneModel.query.filter_by(id=user.zone_id).first().name if user.zone_id else None
@@ -140,7 +134,6 @@ class UsersResource(BaseResource):
                     user.bank_name = BankModel.query.filter_by(id=user.bank_id).first().name if user.bank_id else None
 
                 if not user:
-                    logger.info(f"User with ID {id} not found")
                     return {"message": "User not found"}, 404
                 return marshal(user, self.fields), 200
 
@@ -154,7 +147,6 @@ class UsersResource(BaseResource):
 
             # Fetch user by id_number if provided
             if id_number:
-                logger.info(f"GET request received for user with id_number {id_number}")
                 user = self.model.query.filter_by(id_number=id_number).first()
                 if not user:
                     return {"message": "User not found"}, 404
@@ -162,7 +154,6 @@ class UsersResource(BaseResource):
 
             # Fetch users by role, umbrella, and zone if all are provided
             if role_name and umbrella_id:
-                logger.info(f"GET request received for users with role {role_name}, umbrella {umbrella_id}, and zone {zone_id}")
                 users = (
                     self.model.query
                     .join(UserModel.roles)
@@ -178,7 +169,6 @@ class UsersResource(BaseResource):
 
             # Fetch users by role and umbrella if both are provided
             if role_name and umbrella_id:
-                logger.info(f"GET request received for users with role {role_name} and umbrella {umbrella_id}")
                 users = (
                     self.model.query
                     .join(UserModel.roles)
@@ -193,12 +183,10 @@ class UsersResource(BaseResource):
 
             # Fetch users by role if role_name is provided (without umbrella)
             if role_name:
-                logger.info(f"GET request received for users with role {role_name}")
                 users = self.model.query.join(UserModel.roles).filter(RoleModel.name == role_name).all()
                 return marshal(users, self.fields), 200
 
             # Fetch all users if no filters are provided
-            logger.info("GET request received for all users")
             users = self.model.query.all()
             for user in users:
                 if user.zone_id:
@@ -206,20 +194,17 @@ class UsersResource(BaseResource):
 
                 if user.bank_id:
                     bank = BankModel.query.get(user.bank_id)
-                    logger.info(f"Bank fetched: {bank}")
                     if bank:
                         user.bank_name = bank.name
             return marshal(users, self.fields), 200
 
         except Exception as e:
-            logger.error(f"Error retrieving users: {str(e)}")
             return self.handle_error(e)
 
     def post(self):
         try:
             # Parse arguments
             args = self.args.parse_args()
-            logger.info(f"POST request received to create a new user. Payload: {args}")
 
             # Validate umbrella
             umbrella = UmbrellaModel.query.get(args['umbrella_id'])
@@ -274,9 +259,7 @@ class UsersResource(BaseResource):
             # Generate unique ID for block membership
             try:
                 unique_id = UserModel.generate_member_identifier(umbrella, block)
-                logger.info(f"Generated unique ID: {unique_id}")
             except ValueError as e:
-                logger.error(f"Error generating unique ID: {str(e)}")
                 return {"message": "Error generating unique ID. Check umbrella and block initials."}, 400
 
             # Insert user into the `member_blocks` table
@@ -301,22 +284,13 @@ class UsersResource(BaseResource):
 
             # Commit the session
             db.session.commit()
-
-            # Log success
-            logger.info(
-                f"Successfully created user {new_user.id} with roles "
-                f"{[r.name for r in new_user.roles]}, block memberships "
-                f"{[b.name for b in new_user.block_memberships]} and zone memberships "
-                f"{[z.name for z in new_user.zone_memberships]}"
-            )
-
+   
             # Return the newly created user
             return marshal(new_user, self.fields), 201
 
         except IntegrityError as e:
             # Handle duplicate entries
             db.session.rollback()
-            logger.error(f"Duplicate entry detected: {str(e)}")
             return {
                 "message": "A member with this ID number, phone number, or account number already exists in this zone."
             }, 400
@@ -324,7 +298,6 @@ class UsersResource(BaseResource):
         except Exception as e:
             # General exception handling
             db.session.rollback()
-            logger.error(f"Error creating new user: {str(e)}. Rolling back changes.")
             return self.handle_error(e)
 
 
@@ -353,7 +326,6 @@ class UsersResource(BaseResource):
                     updated = True
 
             if 'multipart/form-data' in request.content_type:
-                logger.info("Handling multipart form data for profile update")
                 if 'picture' in request.files:
                     image_file = request.files['picture']
                     if image_file:
@@ -361,10 +333,8 @@ class UsersResource(BaseResource):
                         user.image_file = saved_filename
                         updated = True
                     else:
-                        logger.error("No image file provided in multipart request")
                         return {"message": "No image file provided."}, 400
             else:
-                logger.info(f"PATCH request received to update user {id}. Payload: {args}")
                 unchanged_fields = []
 
                 for field in ['full_name', 'id_number', 'phone_number', 'zone_id', 'bank_id', 'acc_number', 'email','image_file']:
@@ -381,12 +351,8 @@ class UsersResource(BaseResource):
                 if block:
                     if block not in user.block_memberships:
                         user.block_memberships.append(block)
-                        logger.info(f"Added block {block.id} to user's block memberships.")
                         updated = True
-                    else:
-                        logger.info(f"User {user.id} is already a member of block {block.id}.")
-                else:
-                    logger.warning(f"Block {block_id} not found.")
+             
 
             # Check if zone_id is provided to update zone memberships
             zone_id = args.get('zone_id')
@@ -395,12 +361,8 @@ class UsersResource(BaseResource):
                 if zone:
                     if zone not in user.zone_memberships:
                         user.zone_memberships.append(zone)
-                        logger.info(f"Added zone {zone.id} to user's zone memberships.")
                         updated = True
-                    else:
-                        logger.info(f"User {user.id} is already a member of zone {zone.id}.")
-                else:
-                    logger.warning(f"Zone {zone_id} not found.")               
+                              
 
 
 
@@ -413,15 +375,12 @@ class UsersResource(BaseResource):
                 if role:
                     # Ensure Chairman, Secretary, and Treasurer are mutually exclusive
                     if role_id == 3 and any(r.id in [4, 6] for r in user.roles):
-                        logger.warning("Cannot assign Chairman role when the user already has the Secretary or Umbrella Treasurer role.")
                         return {"message": "Cannot assign Chairman when the user is already a Secretary or Treasurer."}, 400
 
                     elif role_id == 4 and any(r.id in [3, 6] for r in user.roles):
-                        logger.warning("Cannot assign Secretary role when the user already has the Chairman or Treasurer role.")
                         return {"message": "Cannot assign Secretary when the user is already a Chairman or Treasurer."}, 400
 
                     elif role_id == 6 and any(r.id in [3, 4] for r in user.roles):
-                        logger.warning("Cannot assign Treasurer role when the user already has the Chairman or Secretary role.")
                         return {"message": "Cannot assign Treasurer when the user is already a Chairman or Secretary."}, 400
 
                     # Handle Role Removal
@@ -434,20 +393,16 @@ class UsersResource(BaseResource):
 
                                 # Remove the role from the user
                                 user.roles.remove(role)
-                                logger.info(f"Removed role {role.name} from user {user.id}")
                                 updated = True
 
                                 # Remove the block from the corresponding block list
                                 if block_id:
                                     if role_id == 3:  # Chairman
                                         user.chaired_blocks = [b for b in user.chaired_blocks if b.id != block_id]
-                                        logger.info(f"Removed block {block_id} from user's chaired_blocks.")
                                     elif role_id == 4:  # Secretary
                                         user.secretary_blocks = [b for b in user.secretary_blocks if b.id != block_id]
-                                        logger.info(f"Removed block {block_id} from user's secretary_blocks.")
                                     elif role_id == 6:  # Treasurer
                                         user.treasurer_blocks = [b for b in user.treasurer_blocks if b.id != block_id]
-                                        logger.info(f"Removed block {block_id} from user's treasurer_blocks.")
 
                         else:
                             return {"message": "User does not have this role"}, 400
@@ -456,11 +411,9 @@ class UsersResource(BaseResource):
                     # Handle Role Addition
                     elif action == 'add':
                         if role in user.roles:
-                            logger.info(f"User {user.id} already has the role {role.name}.")
                             return {"message": f"User already has the role '{role.name}'."}, 400
                         else:
                             user.roles.append(role)  # Add the role if it's not already assigned
-                            logger.info(f"Assigned additional role {role.name} to user {user.id}")
                             updated = True
 
                     # Update Blocks Based on Role
@@ -471,29 +424,23 @@ class UsersResource(BaseResource):
                             if role_id == 3:  # Chairman
                                 if block not in user.chaired_blocks:
                                     user.chaired_blocks.append(block)
-                                    logger.info(f"Added block {block.id} to user's chaired_blocks.")
 
                             elif role_id == 4:  # Secretary
                                 if block not in user.secretary_blocks:
                                     user.secretary_blocks.append(block)
-                                    logger.info(f"Added block {block.id} to user's secretary_blocks.")
 
                             elif role_id == 5:  # Treasurer
                                 if block not in user.treasurer_blocks:
                                     user.treasurer_blocks.append(block)
-                                    logger.info(f"Added block {block.id} to user's treasurer_blocks.")
-                        else:
-                            logger.warning(f"Block {block_id} not found.")
+             
 
             if updated:
                 db.session.commit()
-                logger.info(f"Successfully updated user {user.id} with roles {[r.name for r in user.roles]}")
                 return marshal(user, self.fields), 200
 
             return {"message": "No updates made to user."}, 400
 
         except Exception as e:
-            logger.error(f"Error updating user {id}: {str(e)}")
             return {"message": "An error occurred while updating the user."}, 500
 
 
@@ -523,7 +470,6 @@ class PaymentsResource(BaseResource):
 
         if meeting_id:
             try:
-                logger.info(f"Fetching payments for meeting ID: {meeting_id}")
 
                 # Query payments by meeting_id and join payer (user) and block tables
                 payments = PaymentModel.query \
@@ -533,11 +479,9 @@ class PaymentsResource(BaseResource):
                     .options(joinedload(PaymentModel.payer), joinedload(PaymentModel.block)) \
                     .all()
 
-                logger.info(f"Payments fetched for meeting ID {meeting_id}: {payments}")
 
                 payment_data = []
                 for payment in payments:
-                    logger.debug(f"Processing payment: ID {payment.id}, Payer {payment.payer.full_name}, Block {payment.block.name}")
 
                     payment_data.append({
                         "mpesa_id": payment.mpesa_id,
@@ -551,11 +495,9 @@ class PaymentsResource(BaseResource):
                         "status": "Contributed" if payment.transaction_status else "Pending"
                     })
 
-                logger.info(f"Payments query result: {payment_data}")
                 return marshal(payments, self.fields), 200
 
             except Exception as e:
-                logger.error(f'Payments error: {e}')
                 return self.handle_error(e)
         else:
             # Handle other queries for fetching all payments or specific payment by ID
@@ -629,7 +571,6 @@ class BlocksResource(BaseResource):
     def post(self):
         try:
             args = self.args.parse_args()
-            logger.info(f"POST request received to create a new block. Payload: {args}")
 
             # Generate unique initials for the block name
             initials = BlockModel.block_initials(args['name'])
@@ -641,7 +582,6 @@ class BlocksResource(BaseResource):
             ).first()
 
             if existing_block:
-                logger.warning(f"Block with name '{args['name']}' already exists under umbrella {args['parent_umbrella_id']}.")
                 return {"success": False, "message": "Block with this name already exists under the specified umbrella."}, 400
 
             # Create the new block
@@ -655,12 +595,10 @@ class BlocksResource(BaseResource):
             db.session.add(new_block)
             db.session.commit()
 
-            logger.info(f"Successfully created block {new_block.id} with initials {initials}")
             return marshal(new_block, self.fields), 201
 
         except Exception as e:
             db.session.rollback()
-            logger.error(f"Error creating new block: {str(e)}. Rolling back changes.")
             return self.handle_error(e)
         
         
@@ -697,7 +635,6 @@ class UmbrellasResource(BaseResource):
     def post(self):
         try:
             args = self.args.parse_args()
-            logger.info(f"POST request received to create new umbrella. Payload: {args}")
 
             # Generate unique initials based on the umbrella name
             initials = UmbrellaModel.generate_unique_initials(args['name'])
@@ -713,12 +650,10 @@ class UmbrellasResource(BaseResource):
             db.session.add(new_umbrella)
             db.session.commit()
 
-            logger.info(f"Successfully created umbrella {new_umbrella.id} with initials {initials}")
             return marshal(new_umbrella, self.fields), 201
 
         except Exception as e:
             db.session.rollback()
-            logger.error(f"Error creating new umbrella: {str(e)}. Rolling back changes.")
             return self.handle_error(e)
 
 class RolesResource(BaseResource):
@@ -734,13 +669,13 @@ class MeetingsResource(BaseResource):
 
     def get(self, id=None):
         try:
-            logging.info(f"Incoming request received: {request.url}")
+            # logging.info(f"Incoming request received: {request.url}")
 
             if id:
-                logging.info(f"Fetching meeting with ID: {id}")
+                # logging.info(f"Fetching meeting with ID: {id}")
                 meeting = self.model.query.get_or_404(id)
                 if meeting.date < datetime.now():
-                    logging.info("The meeting date has passed; setting meeting to None.")
+                    # logging.info("The meeting date has passed; setting meeting to None.")
                     return {'message': 'No upcoming meeting available'}, 404
                 return marshal(meeting, self.fields), 200
 
@@ -750,7 +685,7 @@ class MeetingsResource(BaseResource):
             start_date = request.args.get('start')
             end_date = request.args.get('end')
 
-            logging.info(f"Query parameters: organizer_id={organizer_id}, start={start_date}, end={end_date}")
+            # logging.info(f"Query parameters: organizer_id={organizer_id}, start={start_date}, end={end_date}")
 
             # Check if both 'organizer_id' and date range are provided
             if organizer_id and start_date and end_date:
@@ -758,10 +693,10 @@ class MeetingsResource(BaseResource):
                 try:
                     start_date = datetime.strptime(start_date, '%Y-%m-%d')
                     end_date = datetime.strptime(end_date, '%Y-%m-%d')
-                    logging.info(f"Parsed start date: {start_date}, end date: {end_date}")
+                    # logging.info(f"Parsed start date: {start_date}, end date: {end_date}")
 
                 except ValueError:
-                    logging.error(f"Invalid date format received: start={start_date}, end={end_date}")
+                    # logging.error(f"Invalid date format received: start={start_date}, end={end_date}")
 
                     return {'error': 'Invalid date format. Use YYYY-MM-DD.'}, 400
 
@@ -769,7 +704,7 @@ class MeetingsResource(BaseResource):
                 meetings = MeetingModel.query.filter(MeetingModel.organizer_id == organizer_id,
                                                      MeetingModel.date >= start_date,
                                                      MeetingModel.date <= end_date).all()
-                logging.info(f"Meetings found: {len(meetings)}")
+                # logging.info(f"Meetings found: {len(meetings)}")
 
                 if meetings:
                     # Prepare details for all meetings within the date range
@@ -789,7 +724,7 @@ class MeetingsResource(BaseResource):
                             'meeting_id':meeting.id
                         }
                         meeting_details.append(details)
-                    logging.info(f"Meeting details: {meeting_details}")
+                    # logging.info(f"Meeting details: {meeting_details}")
 
                     return meeting_details, 200
                 else:
@@ -820,7 +755,7 @@ class MeetingsResource(BaseResource):
 
                     return meeting_details, 200
                 else:
-                    logging.warning(f"No meetings found for organizer_id={organizer_id} within date range.")
+                    # logging.warning(f"No meetings found for organizer_id={organizer_id} within date range.")
 
                     return {'message': 'No meetings found for this organizer'}, 404
 
@@ -867,7 +802,7 @@ class MeetingsResource(BaseResource):
                 return {'message': 'No meetings found'}, 404
 
         except Exception as e:
-            logging.error(f"Exception in MeetingsResource: {e}", exc_info=True)
+            # logging.error(f"Exception in MeetingsResource: {e}", exc_info=True)
 
             return self.handle_error(e)
 
@@ -937,30 +872,64 @@ class MeetingsResource(BaseResource):
         except Exception as e:
             return self.handle_error(e)
 
+    def patch(self, id):
+        try:
+            args = self.args.parse_args()
+            meeting = self.model.query.get_or_404(id)
+
+            # Validate date if provided
+            if args.get('date'):
+                try:
+                    updated_date = datetime.strptime(args['date'], '%Y-%m-%d %H:%M:%S')
+                    if updated_date < datetime.now():
+                        return {'error': 'Meeting date must be in the future'}, 400
+                    args['date'] = updated_date
+                except ValueError:
+                    return {'error': 'Invalid date format, expected YYYY-MM-DD HH:MM:SS'}, 400
+
+            # Validate block and zone relationship if provided
+            if args.get('block_id') and args.get('zone_id'):
+                block = BlockModel.query.get(args['block_id'])
+                zone = ZoneModel.query.filter_by(id=args['zone_id'], parent_block_id=args['block_id']).first()
+                if not block or not zone:
+                    return {'error': 'Zone does not belong to the specified block'}, 400
+
+            # Update fields dynamically
+            for key, value in args.items():
+                if value is not None:
+                    setattr(meeting, key, value)
+
+            db.session.commit()
+            return marshal(meeting, self.fields), 200
+
+        except Exception as e:
+            return self.handle_error(e)
+
+
 class ZonesResource(BaseResource):
     model = ZoneModel
     fields = zone_fields
     args = zone_args
 
     def get(self, id=None):
-        logging.debug(f"Received GET request for zones. ID: {id}, Args: {request.args}")
+        # logging.debug(f"Received GET request for zones. ID: {id}, Args: {request.args}")
         try:
             if id:
                 return super().get(id)
 
             parent_block_id = request.args.get('parent_block_id')
-            logging.debug(f"Parent block ID from query params: {parent_block_id}")
+            # logging.debug(f"Parent block ID from query params: {parent_block_id}")
 
             query = self.model.query
             if parent_block_id:
                 query = query.filter_by(parent_block_id=parent_block_id)
 
             zones = query.all()
-            logging.debug(f"Found {len(zones)} zones")
+            # logging.debug(f"Found {len(zones)} zones")
             result = marshal(zones, self.fields)
             return result, 200
         except Exception as e:
-            logging.error(f"Error in ZonesResource.get: {str(e)}", exc_info=True)
+            # logging.error(f"Error in ZonesResource.get: {str(e)}", exc_info=True)
             return self.handle_error(e)
 
 
