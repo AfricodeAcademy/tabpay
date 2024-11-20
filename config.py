@@ -13,7 +13,7 @@ class Config:
     SECURITY_REGISTERABLE = True
     SECURITY_CONFIRMABLE = True
     SECURITY_RECOVERABLE = True
-    SECURITY_POST_LOGIN_VIEW = '/'  # Changed to home route which will handle redirection
+    # Removed SECURITY_POST_LOGIN_VIEW to use our custom handler
     SECURITY_POST_LOGOUT_VIEW = '/'
     SECURITY_POST_REGISTER_VIEW = '/auth/login'
     SECURITY_URL_PREFIX = '/auth'

@@ -23,8 +23,18 @@ def init_signals(app):
         @after_this_request
         def redirect_after_login(response):
             """Redirect based on user role."""
+            if not user.is_approved:
+                return redirect(url_for('auth.pending_approval'))
+            
+            # Role-based redirections
             if user.has_role('SuperUser'):
                 return redirect(url_for('admin.index'))
-            return redirect(url_for('main.statistics'))
+            elif any(user.has_role(role) for role in ['Administrator', 'Chairman', 'Secretary', 'Treasurer']):
+                return redirect(url_for('main.statistics'))  # Dashboard view
+            elif user.has_role('Member'):
+                return redirect(url_for('main.render_contribution_page'))  # Member contribution page
+            
+            # Default fallback
+            return redirect(url_for('main.home'))
         
         return None 
