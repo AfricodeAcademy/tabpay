@@ -11,7 +11,7 @@ from ..utils.send_sms import SendSMS
 from app.main.models import UserModel, BlockModel, PaymentModel, ZoneModel
 from app.auth.decorators import approval_required
 from functools import wraps
-
+from ..utils.mpesa import get_mpesa_client
 
 main = Blueprint('main', __name__)
 
@@ -1263,78 +1263,6 @@ def get_members():
         return []
 
 
-# Fetch and display committee members
-def render_committee_page(active_tab=None, error=None):
-    # Fetch Chairman, Secretary, and Treasurer from the API
-    umbrella = get_umbrella_by_user(current_user.id)
-    if not umbrella:
-        flash('Please create an umbrella first to see your committee members!', 'danger')
-        return redirect(url_for('main.settings', active_tab='umbrella'))
-
-    umbrella_id = umbrella['id']  
-
-    try:
-        chairman_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Chairman','umbrella_id' : umbrella_id })
-        secretary_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Secretary','umbrella_id' : umbrella_id})
-        treasurer_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Treasurer','umbrella_id' : umbrella_id})
-
-        # Raise exception if request failed
-        chairman_response.raise_for_status()
-        secretary_response.raise_for_status()
-        treasurer_response.raise_for_status()
-
-        # Parse the response
-        committee_members = {
-            'chairmen': chairman_response.json(),
-            'secretaries': secretary_response.json(),
-            'treasurers': treasurer_response.json()
-        }
-        print(f'Chairmen for Umbrella {umbrella_id}: {committee_members}')
-
-        return render_template('committee.html', title='Committee | Dashboard', 
-                               committee_members=committee_members, 
-                               active_tab=active_tab,
-                                 error=error)
-
-    except requests.exceptions.RequestException as e:
-        print(f'Committee error: {e}')
-        flash(f"Error fetching committee members.", 'danger')
-        return redirect(url_for('main.committee'))
-
-# Single route to handle committee-related actions
-@main.route('/committee', methods=['GET', 'POST'])
-@login_required
-@approval_required
-@roles_accepted('SuperUser', 'Administrator')
-def committee():    
-    if 'remove_role_submit' in request.form:
-        user_id = request.args.get('user_id')  
-        active_tab = request.form.get('active_tab')  
-        return remove_committee_role(user_id, active_tab)  
-
-    return render_committee_page(active_tab=request.args.get('active_tab', 'chairmen'))
-
-
-# Remove committee role (Chairman, Secretary, Treasurer)
-def remove_committee_role(user_id, active_tab):
-    if not user_id:
-        flash('User ID is missing.', 'danger')
-        return redirect(url_for('main.committee', active_tab=active_tab))
-
-    try:
-        role_id = request.form.get('role_id')
-        action = 'remove'
-        response = requests.patch(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}", json={'role_id': role_id, 'action': action})
-        response.raise_for_status()
-        flash('Committee role removed successfully', 'success')
-        return redirect(url_for('main.committee', active_tab=active_tab))
-
-    except requests.exceptions.RequestException as e:
-        flash(f"Error removing committee role!", 'danger')
-        logger.error(f"Request failed: {str(e)}")
-        return redirect(url_for('main.committee', active_tab=active_tab))
-
-
 # Helper function to render the reports page with member contributions
 def render_reports_page(active_tab=None, error=None, host_id=None, member_id=None, status=None):
     schedule_form = ScheduleForm()
@@ -1714,31 +1642,119 @@ def handle_request_payment(payment_form):
     member_id = payment_form.member.data
     amount = payment_form.amount.data
 
-
-
-    # Prepare payload for the API request
-    payload = {
-        'block_id': block_id,
-        'member_id': member_id,
-        'amount': amount,
-    }
-
-    # Make API call to trigger M-Pesa push notification
+    # Get member details
     try:
-        response = requests.post('', json=payload)
+        member = next((m for m in get_members() if str(m['id']) == str(member_id)), None)
+        if not member:
+            flash('Member not found.', 'danger')
+            return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
 
-        # Check API response
-        if response.status_code == 200:
+        # Extract phone number from member details
+        phone_number = member.get('phone_number')
+        if not phone_number:
+            flash('Member phone number not found.', 'danger')
+            return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
+
+        # Generate bill reference number using block and member IDs
+        bill_ref = f"Block_{block_id}_Member_{member_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+
+        # Initialize M-Pesa payment
+        try:
+            mpesa = get_mpesa_client()
+            response = mpesa.initiate_payment(
+                amount=int(amount),
+                phone_number=phone_number,
+                bill_ref_number=bill_ref
+            )
+
+            # Log successful payment initiation
+            logger.info(f"M-Pesa payment initiated: {response}")
             flash('M-Pesa payment request sent successfully.', 'success')
-        else:
-            flash(f'Error: {response.json().get("message")}', 'danger')
+
+        except Exception as e:
+            logger.error(f'M-Pesa payment error: {str(e)}')
+            flash('Error occurred while processing payment request. Please try again.', 'danger')
 
     except Exception as e:
-        print(f'M-Pesa Push Error: {e}')
+        logger.error(f'Error fetching member details: {str(e)}')
         flash('Error occurred while processing payment request. Please try again.', 'danger')
 
     # Redirect back to the 'Request Payment' tab
     return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
+
+@main.route('/payments/validation', methods=['POST'])
+def mpesa_validation():
+    """Handle M-Pesa validation callbacks"""
+    try:
+        data = request.get_json()
+        logger.info(f"Received M-Pesa validation request: {json.dumps(data, indent=2)}")
+        
+        # Add your validation logic here
+        # For example, check if the member exists and has pending payments
+        
+        return jsonify({
+            "ResultCode": "0",
+            "ResultDesc": "Accepted"
+        })
+    except Exception as e:
+        logger.error(f"Error processing M-Pesa validation: {str(e)}")
+        return jsonify({
+            "ResultCode": "C2B00016",
+            "ResultDesc": "Rejected"
+        })
+
+@main.route('/payments/confirmation', methods=['POST'])
+def mpesa_confirmation():
+    """Handle M-Pesa confirmation callbacks"""
+    try:
+        data = request.get_json()
+        logger.info(f"Received M-Pesa confirmation: {json.dumps(data, indent=2)}")
+        
+        # Extract payment details from callback data
+        try:
+            # Parse the bill reference number to get block and member IDs
+            bill_ref = data.get('BillRefNumber', '')
+            parts = bill_ref.split('_')
+            if len(parts) >= 4:
+                block_id = parts[1]
+                member_id = parts[3]
+                
+                # Create payment record
+                payload = {
+                    'block_id': block_id,
+                    'member_id': member_id,
+                    'amount': data.get('TransAmount'),
+                    'mpesa_id': data.get('TransID'),
+                    'source_phone_number': data.get('MSISDN'),
+                    'transaction_status': True
+                }
+                
+                # Save payment to database via API
+                response = requests.post(
+                    f"{current_app.config['API_BASE_URL']}/api/v1/payments/",
+                    json=payload
+                )
+                response.raise_for_status()
+                
+                logger.info(f"Successfully saved M-Pesa payment: {response.json()}")
+                
+            else:
+                logger.error(f"Invalid bill reference number format: {bill_ref}")
+                
+        except Exception as e:
+            logger.error(f"Error processing payment data: {str(e)}")
+        
+        return jsonify({
+            "ResultCode": "0",
+            "ResultDesc": "Success"
+        })
+        
+    except Exception as e:
+        logger.error(f"Error processing M-Pesa confirmation: {str(e)}")
+        return jsonify({
+            "ResultCode": "1",
+            "ResultDesc": "Error processing confirmation"
+        })
 @main.route('/search',methods=['GET', 'POST'])
 def search():
     query = request.args.get('query')

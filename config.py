@@ -57,6 +57,15 @@ class Config:
     AT_API_KEY='atsk_26b6fd63c4ab81592df201a60a3b3c3b221234128dc34046355f0cd9198e1a7afc6e724a'
     AT_SENDER_ID='Africode'
 
+    # M-Pesa Configuration
+    MPESA_ENVIRONMENT = os.getenv('MPESA_ENVIRONMENT', 'sandbox')
+    MPESA_CONSUMER_KEY = os.getenv('MPESA_CONSUMER_KEY')
+    MPESA_CONSUMER_SECRET = os.getenv('MPESA_CONSUMER_SECRET')
+    MPESA_SHORTCODE = os.getenv('MPESA_SHORTCODE')
+    MPESA_PASSKEY = os.getenv('MPESA_PASSKEY')
+    MPESA_CALLBACK_URL = os.getenv('MPESA_CALLBACK_URL')
+    MPESA_CALLBACK_BASE_URL = os.getenv('MPESA_CALLBACK_BASE_URL')
+
     # Flask-Admin settings
     FLASK_ADMIN_SWATCH = 'cyborg'
     FLASK_ADMIN_FLUID_LAYOUT = True
