@@ -9,7 +9,11 @@ from app.auth.forms import ExtendedConfirmRegisterForm, ExtendedLoginForm, Exten
 from flask_wtf.csrf import CSRFProtect
 from .admin import init_admin
 import logging
+import os
+from dotenv import load_dotenv
 
+# Load environment variables
+load_dotenv()
 
 # def configure_logging():
 #     # Configure root logger
@@ -92,21 +96,44 @@ def create_app(config_name):
         for role_name, description in roles:
             user_datastore.find_or_create_role(name=role_name, description=description)
         
-        # Create Superuser
-        if not user_datastore.find_user(email='enockbett427@gmail.com'):
-            hashed_password = hash_password('123456')
-            user_datastore.create_user(
-                email='enockbett427@gmail.com',
-                password=hashed_password,
-                id_number=42635058,
-                full_name='Enock Bett',
-                phone_number='0105405050',
-                roles=[user_datastore.find_role('SuperUser')],
-            is_approved=True)
+        # Create Superusers from environment variables
+        def get_superusers_from_env():
+            superusers = []
+            i = 1
+            while True:
+                email = os.getenv(f'SUPERUSER_{i}_EMAIL')
+                if not email:
+                    break
+        
+                superusers.append({
+                    'email': email,
+                    'password': os.getenv(f'SUPERUSER_{i}_PASSWORD'),
+                    'id_number': int(os.getenv(f'SUPERUSER_{i}_ID')),
+                    'full_name': os.getenv(f'SUPERUSER_{i}_NAME'),
+                    'phone_number': os.getenv(f'SUPERUSER_{i}_PHONE')
+                })
+                i += 1
+            return superusers
 
-            db.session.commit()
-            print(f'SuperUser created successfully {user_datastore.find_user(is_approved=True)}')
-            
+        superusers = get_superusers_from_env()
+        
+        for user_data in superusers:
+            if not user_datastore.find_user(email=user_data['email']):
+                hashed_password = hash_password(user_data['password'])
+                user_datastore.create_user(
+                    email=user_data['email'],
+                    password=hashed_password,
+                    id_number=user_data['id_number'],
+                    full_name=user_data['full_name'],
+                    phone_number=user_data['phone_number'],
+                    roles=[user_datastore.find_role('SuperUser')],
+                    is_approved=True
+                )
+                print(f"Created superuser: {user_data['email']}")
+        
+        db.session.commit()
+        print('All superusers created successfully')
+        
     import_initial_banks(app)
      # Initialize debug CSRF if in debug mode
     return app

@@ -22,7 +22,8 @@ sms = SendSMS()
 @main.route('/', methods=['GET'])
 def home():
     if current_user.is_authenticated:
-        return redirect(url_for('main.statistics'))
+        if current_user.is_approved and any(current_user.has_role(role) for role in ['SuperUser', 'Administrator', 'Chairman', 'Secretary', 'Treasurer']):
+            return redirect(url_for('main.statistics'))
     return render_template('index.html')
 
 @main.errorhandler(403)
@@ -844,6 +845,7 @@ def edit_meeting_details(meeting_id, schedule_form):
     if schedule_form.validate_on_submit():
         # Collect only the form data fields that are provided
         payload = {}
+
         form_fields = {
             'host': 'host',
             'when': 'when',
