@@ -1,5 +1,5 @@
 from sqlalchemy.exc import SQLAlchemyError,IntegrityError
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from flask import Blueprint, jsonify, request
 from flask_security import current_user
 from werkzeug.exceptions import HTTPException
@@ -7,8 +7,9 @@ from flask_restful import Api, Resource, marshal_with, marshal, abort
 from ..main.models import UserModel, CommunicationModel, \
     PaymentModel, BankModel, BlockModel, UmbrellaModel, ZoneModel, MeetingModel, RoleModel, roles_users, member_blocks,member_zones
 from .serializers import get_user_fields, user_args, communication_fields, \
-    communication_args, payment_fields, payment_args, bank_fields, bank_args, \
-    block_fields, block_args, umbrella_fields, umbrella_args, zone_fields, zone_args, \
+    communication_args, payment_fields, payment_args, payment_update_args, \
+    bank_fields, bank_args, block_fields, block_args, \
+    umbrella_fields, umbrella_args, zone_fields, zone_args, \
     meeting_fields, meeting_args,role_args,role_fields
 from ..utils import db
 import logging
@@ -514,87 +515,126 @@ class PaymentsResource(BaseResource):
     args = payment_args
 
     def get(self, id=None):
-        if id:
-            # Fetch a specific payment by ID
-            return super().get(id)
+        """Get a single payment or list all payments"""
+        try:
+            if id:
+                payment = db.session.get(PaymentModel, id)
+                if not payment:
+                    abort(404, message=f"Payment with id {id} not found")
+                return marshal(payment, payment_fields), 200
+            
+            # Get query parameters for filtering
+            args = request.args
+            query = PaymentModel.query
 
-        # Check if a meeting_id query parameter is provided
-        meeting_id = request.args.get('meeting_id', None)
-
-        if meeting_id:
-            try:
-                logger.info(f"Fetching payments for meeting ID: {meeting_id}")
-
-                # Query payments by meeting_id and join payer (user) and block tables
-                payments = PaymentModel.query \
-                    .filter_by(meeting_id=meeting_id) \
-                    .join(UserModel, PaymentModel.payer_id == UserModel.id) \
-                    .join(BlockModel, PaymentModel.block_id == BlockModel.id) \
-                    .options(joinedload(PaymentModel.payer), joinedload(PaymentModel.block)) \
-                    .all()
-
-                logger.info(f"Payments fetched for meeting ID {meeting_id}: {payments}")
-
-                payment_data = []
-                for payment in payments:
-                    logger.debug(f"Processing payment: ID {payment.id}, Payer {payment.payer.full_name}, Block {payment.block.name}")
-
-                    payment_data.append({
-                        "mpesa_id": payment.mpesa_id,
-                        "amount": payment.amount,
-                        "transaction_status": payment.transaction_status,
-                        "payer_id": payment.payer.id,  # Payer ID
-                        "payer_full_name": payment.payer.full_name,  # Payer Full Name
-                        "block_id": payment.block.id,  # Block ID
-                        "block_name": payment.block.name,  # Block Name
-                        "payment_date": payment.payment_date,
-                        "status": "Contributed" if payment.transaction_status else "Pending"
-                    })
-
-                logger.info(f"Payments query result: {payment_data}")
-                return marshal(payments, self.fields), 200
-
-            except Exception as e:
-                logger.error(f'Payments error: {e}')
-                return self.handle_error(e)
-        else:
-            # Handle other queries for fetching all payments or specific payment by ID
-            return super().get()
-
+            # Apply filters if provided
+            if args.get('payer_id'):
+                query = query.filter_by(payer_id=args.get('payer_id'))
+            if args.get('block_id'):
+                query = query.filter_by(block_id=args.get('block_id'))
+            if args.get('meeting_id'):
+                query = query.filter_by(meeting_id=args.get('meeting_id'))
+            if args.get('mpesa_id'):
+                query = query.filter_by(mpesa_id=args.get('mpesa_id'))
+            
+            # Get all payments with applied filters
+            payments = query.all()
+            return marshal(payments, payment_fields), 200
+            
+        except Exception as e:
+            logger.error(f"Error retrieving payment(s): {str(e)}", exc_info=True)
+            return handle_error(self, e)
 
     def post(self):
-        args = self.args.parse_args()
+        try:
+            args = self.args.parse_args()
+            
+            # Create new payment with all fields
+            new_payment = self.model(
+                mpesa_id=args['mpesa_id'],
+                account_number=args['account_number'],
+                source_phone_number=args['source_phone_number'],
+                amount=args['amount'],
+                payment_date=args.get('payment_date', datetime.now(timezone.utc)),
+                transaction_status=args.get('transaction_status', False),
+                bank_id=args['bank_id'],
+                block_id=args['block_id'],
+                payer_id=args['payer_id'],
+                meeting_id=args.get('meeting_id'),
+                
+                # M-Pesa specific fields
+                transaction_type=args.get('transaction_type'),
+                business_short_code=args.get('business_short_code'),
+                invoice_number=args.get('invoice_number'),
+                org_account_balance=args.get('org_account_balance'),
+                third_party_trans_id=args.get('third_party_trans_id'),
+                first_name=args.get('first_name'),
+                middle_name=args.get('middle_name'),
+                last_name=args.get('last_name')
+            )
+            
+            db.session.add(new_payment)
+            db.session.commit()
+            
+            logger.info(f"Successfully created payment with ID: {new_payment.id}")
+            return marshal(new_payment, self.fields), 201
+            
+        except Exception as e:
+            logger.error(f"Error creating payment: {str(e)}", exc_info=True)
+            db.session.rollback()
+            return {"success": False, "message": "Error creating payment", "details": str(e)}, 500
 
-        # Check if the meeting exists
-        meeting = MeetingModel.query.get(args['meeting_id'])
-        if not meeting:
-            return {'message': 'Meeting not found.'}, 404
+    def patch(self, id):
+        """Update a payment"""
+        try:
+            payment = db.session.get(PaymentModel, id)
+            if not payment:
+                abort(404, message=f"Payment with id {id} not found")
+                
+            args = payment_update_args.parse_args()
+            
+            for key, value in args.items():
+                if value is not None:
+                    setattr(payment, key, value)
+            
+            db.session.commit()
+            logger.info(f"Successfully updated payment with ID: {id}")
+            return marshal(payment, payment_fields), 200
+            
+        except Exception as e:
+            logger.error(f"Error updating payment with ID {id}: {str(e)}", exc_info=True)
+            return handle_error(self, e)
 
-        # Check if the block exists
-        block = BlockModel.query.get(args['block_id'])
-        if not block:
-            return {'message': 'Block not found.'}, 404
+    def delete(self, id):
+        """Delete a payment"""
+        try:
+            payment = db.session.get(PaymentModel, id)
+            if not payment:
+                abort(404, message=f"Payment with id {id} not found")
+                
+            db.session.delete(payment)
+            db.session.commit()
+            return {"message": f"Payment with id {id} deleted successfully"}, 200
+            
+        except Exception as e:
+            logger.error(f"Error deleting payment with ID {id}: {str(e)}", exc_info=True)
+            return handle_error(self, e)
 
-        # Create a new payment
-        new_payment = PaymentModel(
-            mpesa_id=args['mpesa_id'],
-            account_number=args['account_number'],
-            source_phone_number=args['source_phone_number'],
-            amount=args['amount'],
-            bank_id=args['bank_id'],
-            block_id=args['block_id'],
-            payer_id=args['payer_id'],
-            meeting_id=args['meeting_id']
-        )
-        if new_payment.amount > 200:
-            new_payment.transaction_status = True
+    def handle_error(self, e):
+        db.session.rollback()
 
-        db.session.add(new_payment)
-        db.session.commit()
+        if isinstance(e, SQLAlchemyError):
+            error_message = {"success": False, "message": "Database error occurred", "details": str(e)}
+            abort(500, message=error_message)
 
+        elif isinstance(e, HTTPException):
+            error_message = {"success": False, "message": "HTTP error occurred", "details": str(e)}
+            abort(e.code, message=error_message)
 
-        return marshal(new_payment,self.fields), 201
-
+        else:
+            error_message = {"success": False, "message": "Unexpected error occurred", "details": str(e)}
+            abort(500, message=error_message)
+        return error_message
 
 class BlocksResource(BaseResource):
     model = BlockModel
@@ -976,6 +1016,3 @@ api.add_resource(UmbrellasResource, '/umbrellas/', '/umbrellas/<int:id>')
 api.add_resource(ZonesResource, '/zones/', '/zones/<int:id>')
 api.add_resource(MeetingsResource, '/meetings/', '/meetings/<int:id>')
 api.add_resource(RolesResource, '/roles/','/roles/<int:id>')
-
-
-

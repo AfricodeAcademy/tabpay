@@ -93,8 +93,16 @@ class ProductionConfig(Config):
     # SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///tabpay.db')
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'postgresql://tabpay:tabpay@localhost:5432/tabpay')
 
+class TestingConfig(Config):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'  # Use in-memory SQLite for testing
+    WTF_CSRF_ENABLED = False
+    SECURITY_PASSWORD_HASH = 'plaintext'  # For faster testing
+    SERVER_NAME = 'localhost:5000'  # Required for URL generation in tests
+
 config = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
+    'testing': TestingConfig,  # Add testing config
     'default': DevelopmentConfig
 }

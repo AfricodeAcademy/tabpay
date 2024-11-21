@@ -11,6 +11,7 @@ from .admin import init_admin
 import logging
 import os
 from dotenv import load_dotenv
+from flask_migrate import Migrate
 
 # Load environment variables
 load_dotenv()
@@ -50,6 +51,8 @@ def create_app(config_name):
     
     # Initialize extensions
     db.init_app(app)
+    migrate = Migrate()
+    migrate.init_app(app, db)  # Initialize Flask-Migrate
     mail.init_app(app)
     
     security.init_app(app, user_datastore,

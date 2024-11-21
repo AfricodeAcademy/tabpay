@@ -1684,76 +1684,131 @@ def handle_request_payment(payment_form):
 
 @main.route('/payments/validation', methods=['POST'])
 def mpesa_validation():
-    """Handle M-Pesa validation callbacks"""
+    """Handle M-Pesa validation callback"""
     try:
-        data = request.get_json()
-        logger.info(f"Received M-Pesa validation request: {json.dumps(data, indent=2)}")
+        # Get the callback data
+        callback_data = request.get_json()
+        logger.info(f"Received M-Pesa validation callback: {json.dumps(callback_data, indent=2)}")
+
+        # Extract key transaction details
+        transaction_type = callback_data.get('TransactionType')
+        trans_id = callback_data.get('TransID')
+        trans_amount = callback_data.get('TransAmount')
+        business_short_code = callback_data.get('BusinessShortCode')
+        bill_ref_number = callback_data.get('BillRefNumber')
+        invoice_number = callback_data.get('InvoiceNumber')
+        msisdn = callback_data.get('MSISDN')  # Customer phone
         
-        # Add your validation logic here
-        # For example, check if the member exists and has pending payments
-        
+        # Validate required fields
+        required_fields = ['TransID', 'TransAmount', 'BusinessShortCode', 'BillRefNumber', 'MSISDN']
+        for field in required_fields:
+            if not callback_data.get(field):
+                logger.error(f"Missing required field: {field}")
+                return jsonify({
+                    "ResultCode": "C2B00011",
+                    "ResultDesc": "Invalid validation request"
+                }), 400
+
+        # Validate business shortcode
+        if business_short_code != current_app.config['MPESA_SHORTCODE']:
+            logger.error(f"Invalid business shortcode: {business_short_code}")
+            return jsonify({
+                "ResultCode": "C2B00012",
+                "ResultDesc": "Invalid business shortcode"
+            }), 400
+
+        # TODO: Add your business validation logic here
+        # For example, check if the bill reference number exists
+        # Check if the amount matches expected amount
+        # etc.
+
+        # For now, accept all transactions
         return jsonify({
             "ResultCode": "0",
             "ResultDesc": "Accepted"
         })
+
     except Exception as e:
         logger.error(f"Error processing M-Pesa validation: {str(e)}")
         return jsonify({
-            "ResultCode": "C2B00016",
-            "ResultDesc": "Rejected"
-        })
+            "ResultCode": "C2B00013",
+            "ResultDesc": "Internal server error"
+        }), 500
 
 @main.route('/payments/confirmation', methods=['POST'])
 def mpesa_confirmation():
-    """Handle M-Pesa confirmation callbacks"""
+    """Handle M-Pesa confirmation callback"""
     try:
-        data = request.get_json()
-        logger.info(f"Received M-Pesa confirmation: {json.dumps(data, indent=2)}")
-        
-        # Extract payment details from callback data
+        # Get the callback data
+        callback_data = request.get_json()
+        logger.info(f"Received M-Pesa confirmation callback: {json.dumps(callback_data, indent=2)}")
+
+        # Extract key transaction details
+        transaction_type = callback_data.get('TransactionType')
+        trans_id = callback_data.get('TransID')
+        trans_time = callback_data.get('TransTime')
+        trans_amount = callback_data.get('TransAmount')
+        business_short_code = callback_data.get('BusinessShortCode')
+        bill_ref_number = callback_data.get('BillRefNumber')
+        invoice_number = callback_data.get('InvoiceNumber')
+        org_account_balance = callback_data.get('OrgAccountBalance')
+        third_party_trans_id = callback_data.get('ThirdPartyTransID')
+        msisdn = callback_data.get('MSISDN')
+        first_name = callback_data.get('FirstName')
+        middle_name = callback_data.get('MiddleName')
+        last_name = callback_data.get('LastName')
+
+        # Validate required fields
+        required_fields = ['TransID', 'TransAmount', 'BusinessShortCode', 'BillRefNumber', 'MSISDN']
+        for field in required_fields:
+            if not callback_data.get(field):
+                logger.error(f"Missing required field: {field}")
+                return jsonify({
+                    "ResultCode": "C2B00011",
+                    "ResultDesc": "Invalid confirmation request"
+                }), 400
+
+        # Save transaction to database
         try:
-            # Parse the bill reference number to get block and member IDs
-            bill_ref = data.get('BillRefNumber', '')
-            parts = bill_ref.split('_')
-            if len(parts) >= 4:
-                block_id = parts[1]
-                member_id = parts[3]
-                
-                # Create payment record
-                payload = {
-                    'block_id': block_id,
-                    'member_id': member_id,
-                    'amount': data.get('TransAmount'),
-                    'mpesa_id': data.get('TransID'),
-                    'source_phone_number': data.get('MSISDN'),
-                    'transaction_status': True
-                }
-                
-                # Save payment to database via API
-                response = requests.post(
-                    f"{current_app.config['API_BASE_URL']}/api/v1/payments/",
-                    json=payload
-                )
-                response.raise_for_status()
-                
-                logger.info(f"Successfully saved M-Pesa payment: {response.json()}")
-                
-            else:
-                logger.error(f"Invalid bill reference number format: {bill_ref}")
-                
+            transaction = Transaction(
+                transaction_type=transaction_type,
+                trans_id=trans_id,
+                trans_time=datetime.strptime(trans_time, '%Y%m%d%H%M%S'),
+                trans_amount=float(trans_amount),
+                business_short_code=business_short_code,
+                bill_ref_number=bill_ref_number,
+                invoice_number=invoice_number,
+                org_account_balance=float(org_account_balance) if org_account_balance else None,
+                third_party_trans_id=third_party_trans_id,
+                msisdn=msisdn,
+                first_name=first_name,
+                middle_name=middle_name,
+                last_name=last_name,
+                status='COMPLETED'
+            )
+            db.session.add(transaction)
+            db.session.commit()
+            logger.info(f"Successfully saved transaction: {trans_id}")
+
         except Exception as e:
-            logger.error(f"Error processing payment data: {str(e)}")
-        
+            logger.error(f"Error saving transaction: {str(e)}")
+            db.session.rollback()
+            # Note: We still return success to M-Pesa
+            # Handle the database error internally and retry later
+
+        # Always acknowledge receipt to M-Pesa
         return jsonify({
             "ResultCode": "0",
             "ResultDesc": "Success"
         })
-        
+
     except Exception as e:
         logger.error(f"Error processing M-Pesa confirmation: {str(e)}")
+        # Always acknowledge receipt to M-Pesa, even on error
+        # Handle errors internally
         return jsonify({
-            "ResultCode": "1",
-            "ResultDesc": "Error processing confirmation"
+            "ResultCode": "0",
+            "ResultDesc": "Success"
         })
 @main.route('/search',methods=['GET', 'POST'])
 def search():
