@@ -19,8 +19,8 @@ class Config:
     SECURITY_URL_PREFIX = '/auth'
     SECURITY_TEMPLATE_PATH = "templates/security"
     SECURITY_CSRF_ENABLE = True
-    SECURITY_CSRF_PROTECT_MECHANISMS = ['session']  
-    SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = False  
+    SECURITY_CSRF_PROTECT_MECHANISMS = ['basic']  
+    SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = True  
     SECURITY_CHANGE_EMAIL = True
     SECURITY_CHANGEABLE = True
     SECURITY_TRACKABLE = True
@@ -29,7 +29,7 @@ class Config:
     
     #add these for better security
     SECURITY_CSRF_COOKIE = {'httponly': True, 'samesite': 'Lax', 'secure': False}
-    SECURITY_CSRF_COOKIE_NAME = 'XSRF-TOKEN'
+    SECURITY_CSRF_COOKIE_NAME = 'csrf_token'
 
     # Session settings
     SESSION_COOKIE_SECURE = False  
@@ -80,7 +80,7 @@ class Config:
     WTF_CSRF_TIME_LIMIT = None  
     WTF_CSRF_SECRET_KEY = SECRET_KEY
     WTF_CSRF_CHECK_DEFAULT = False
-    WTF_CSRF_SSL_STRICT = True
+    WTF_CSRF_SSL_STRICT = False
 
 
 class DevelopmentConfig(Config):

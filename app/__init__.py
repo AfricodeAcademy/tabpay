@@ -48,6 +48,19 @@ def create_app(config_name):
     csrf = CSRFProtect()
     csrf.init_app(app)
     
+    # Add CSRF token to all responses
+    @app.after_request
+    def add_csrf_token(response):
+        if 'text/html' in response.content_type:
+            response.set_cookie(
+                'csrf_token',
+                csrf.generate_csrf(),
+                httponly=True,
+                samesite='Lax',
+                secure=app.config['SESSION_COOKIE_SECURE']
+            )
+        return response
+        
     # Initialize extensions
     db.init_app(app)
     mail.init_app(app)
