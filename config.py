@@ -83,6 +83,7 @@ class Config:
 class DevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = 'postgresql://tabpay:tabpay@localhost:5432/tabpay'
+    WTF_CSRF_CHECK_DEFAULT = False
     # API_BASE_URL is inherited from Config class
 
 class ProductionConfig(Config):
