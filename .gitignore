@@ -1,9 +1,10 @@
 .tabpay/
+donotpush/
 app/__pycache__/*
 
 # Byte-compiled / optimized / DLL files
 
-
+migrations/
 __pycache__/
 *.py[cod]
 *$py.class

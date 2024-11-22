@@ -3,6 +3,7 @@ import sys
 import gc
 import logging
 import psutil
+from flask_wtf.csrf import CSRFError
 
 # Add the application directory to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -39,11 +40,16 @@ try:
         gc.collect()  # Force garbage collection
         log_memory_usage()
     
-    # Add error handling
+    # Add error handlers
     @app.errorhandler(500)
     def handle_500(error):
         logger.error(f'Internal Server Error: {error}')
         return 'Internal Server Error', 500
+
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(error):
+        logger.warning(f'CSRF Error: {error.description}')
+        return 'CSRF validation failed. Please try again.', 400
     
     logger.info('Application created successfully')
 except Exception as e:

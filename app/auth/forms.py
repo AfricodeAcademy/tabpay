@@ -2,6 +2,7 @@ from flask_security.forms import ConfirmRegisterForm, LoginForm, RegisterForm
 from wtforms import StringField, IntegerField, EmailField, PasswordField
 from wtforms.validators import DataRequired, Length, ValidationError, EqualTo
 from ..api.api import UserModel
+from flask import request
 
 class ExtendedRegisterForm(RegisterForm):
     full_name = StringField('Please enter your Full Names', 
@@ -48,16 +49,18 @@ class ExtendedConfirmRegisterForm(ConfirmRegisterForm):
 
 
 class ExtendedLoginForm(LoginForm):
-    email = EmailField('Please enter your Email', validators=[DataRequired(message="Email is required!")],render_kw={'placeholder':'hello@reallygreatsite.com'})
-    password = PasswordField('Please enter Password', validators=[DataRequired(message="Password is required!")], render_kw={'placeholder':'******'})
+    email = EmailField('Please enter your Email', 
+                      validators=[DataRequired(message="Email is required!")],
+                      render_kw={'placeholder':'hello@reallygreatsite.com'})
+    password = PasswordField('Please enter Password', 
+                           validators=[DataRequired(message="Password is required!")], 
+                           render_kw={'placeholder':'******'})
+    
+    def __init__(self, *args, **kwargs):
+        super(ExtendedLoginForm, self).__init__(*args, **kwargs)
+        self.next.data = request.args.get('next', '')
 
 
 
 # class ExtendedSendConfirmationForm(SendConfirmationForm):
 #     email = EmailField('Please enter your Email', validators=[DataRequired()],render_kw={'placeholder':'hello@reallygreatsite.com'})
-
-
-
-
-
-

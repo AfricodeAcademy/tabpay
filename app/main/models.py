@@ -21,8 +21,7 @@ member_zones = db.Table(
     'member_zones',
     db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
     db.Column('zone_id', db.Integer, db.ForeignKey('zones.id'), primary_key=True),
-    db.Column('umbrella_id', db.Integer, db.ForeignKey('umbrellas.id'), nullable=False),  
-    db.UniqueConstraint('user_id', 'zone_id',  name='uq_user_zone')  
+    db.Column('umbrella_id', db.Integer, db.ForeignKey('umbrellas.id'), nullable=False)
 )
 
 roles_users = db.Table('roles_users',
@@ -49,6 +48,15 @@ class UserModel(db.Model, UserMixin):
     id_number = db.Column(db.Integer, index=True)
     phone_number = db.Column(db.String(80))
     active = db.Column(db.Boolean, default=True)
+    
+    # Flask-Security tracking fields
+    last_login_at = db.Column(db.DateTime())
+    current_login_at = db.Column(db.DateTime())
+    last_login_ip = db.Column(db.String(100))
+    current_login_ip = db.Column(db.String(100))
+    login_count = db.Column(db.Integer, default=0)
+    confirmed_at = db.Column(db.DateTime())
+    
     bank_id = db.Column(db.Integer, db.ForeignKey('banks.id'))
     acc_number = db.Column(db.String(50))
     image_file = db.Column(db.String(20), nullable=False, default='profile.png')
@@ -56,9 +64,8 @@ class UserModel(db.Model, UserMixin):
     updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
     fs_uniquifier = db.Column(db.String(64), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
     zone_id = db.Column(db.Integer, db.ForeignKey('zones.id'))
-    confirmed_at = db.Column(db.DateTime)
     umbrella_id = db.Column(db.Integer, db.ForeignKey('umbrellas.id'))
- 
+
     is_approved = db.Column(db.Boolean(), default=False)  # New field
     approval_date = db.Column(db.DateTime())  # New field
     approved_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
@@ -260,22 +267,63 @@ class BankModel(db.Model):
         return f"<Bank {self.name}>"
 
 class PaymentModel(db.Model):
+    """Model for storing payments including M-Pesa transactions"""
     __tablename__ = 'payments'
+    
     id = db.Column(db.Integer, primary_key=True)
-    mpesa_id = db.Column(db.String(255), nullable=False)
-    account_number = db.Column(db.String(80), nullable=False)
-    source_phone_number = db.Column(db.String(80), nullable=False)
+    mpesa_id = db.Column(db.String(255), nullable=False)  # TransID from M-Pesa
+    account_number = db.Column(db.String(80), nullable=False)  # BillRefNumber
+    source_phone_number = db.Column(db.String(80), nullable=False)  # MSISDN
     amount = db.Column(db.Integer, nullable=False)
     payment_date = db.Column(db.DateTime, default=db.func.current_timestamp())
     transaction_status = db.Column(db.Boolean, default=False)
+    
+    # Bank and block relationships
     bank_id = db.Column(db.Integer, db.ForeignKey('banks.id'), nullable=False)
     block_id = db.Column(db.Integer, db.ForeignKey('blocks.id'), nullable=False)
     payer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    meeting_id = db.Column(db.Integer, db.ForeignKey('meetings.id'), nullable=True) 
-
-
+    meeting_id = db.Column(db.Integer, db.ForeignKey('meetings.id'), nullable=True)
+    
+    # Additional M-Pesa fields
+    transaction_type = db.Column(db.String(50))  # e.g., CustomerPayBillOnline
+    business_short_code = db.Column(db.String(20))
+    invoice_number = db.Column(db.String(50))
+    org_account_balance = db.Column(db.Float)
+    third_party_trans_id = db.Column(db.String(50))
+    first_name = db.Column(db.String(50))
+    middle_name = db.Column(db.String(50))
+    last_name = db.Column(db.String(50))
+    
     def __repr__(self):
-        return f"<Payment {self.amount} by {self.payer_id}>"
+        return f'<Payment {self.mpesa_id}>'
+
+    @property
+    def customer_name(self):
+        """Get full customer name"""
+        names = filter(None, [self.first_name, self.middle_name, self.last_name])
+        return ' '.join(names)
+
+    def to_dict(self):
+        """Convert payment to dictionary"""
+        return {
+            'id': self.id,
+            'mpesa_id': self.mpesa_id,
+            'transaction_type': self.transaction_type,
+            'account_number': self.account_number,
+            'source_phone_number': self.source_phone_number,
+            'amount': self.amount,
+            'payment_date': self.payment_date.isoformat() if self.payment_date else None,
+            'transaction_status': self.transaction_status,
+            'bank_id': self.bank_id,
+            'block_id': self.block_id,
+            'payer_id': self.payer_id,
+            'meeting_id': self.meeting_id,
+            'business_short_code': self.business_short_code,
+            'invoice_number': self.invoice_number,
+            'org_account_balance': self.org_account_balance,
+            'third_party_trans_id': self.third_party_trans_id,
+            'customer_name': self.customer_name
+        }
 
 class CommunicationModel(db.Model):
     __tablename__ = 'communications'

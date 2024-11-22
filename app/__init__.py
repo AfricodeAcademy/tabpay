@@ -11,6 +11,8 @@ from .admin import init_admin
 import logging
 import os
 from dotenv import load_dotenv
+from flask_migrate import Migrate
+from flask_session import Session
 
 # Load environment variables
 load_dotenv()
@@ -34,7 +36,6 @@ load_dotenv()
 # Setup Flask-Security
 user_datastore = SQLAlchemyUserDatastore(db, UserModel, RoleModel)
 
-
 def create_app(config_name):
     # configure_logging()
     
@@ -42,20 +43,50 @@ def create_app(config_name):
     app = Flask(__name__, template_folder='templates')
     app.config.from_object(config[config_name])
     
-
+    # Initialize Session
+    Session(app)
+    
     # Initialize CSRF protection
     csrf = CSRFProtect()
     csrf.init_app(app)
     
+    # Add security headers to all responses
+    @app.after_request
+    def add_security_headers(response):
+        if response.mimetype == "text/html":
+            # Set security headers
+            response.headers['X-Frame-Options'] = 'SAMEORIGIN'
+            response.headers['X-XSS-Protection'] = '1; mode=block'
+            response.headers['X-Content-Type-Options'] = 'nosniff'
+        return response
+        
     # Initialize extensions
     db.init_app(app)
     mail.init_app(app)
     
-    security.init_app(app, user_datastore,
-                      template_folder="templates/security",
-                     confirm_register_form=ExtendedConfirmRegisterForm,
-                     register_form=ExtendedRegisterForm,
-                     login_form=ExtendedLoginForm)
+    # Initialize Flask-Migrate
+    migrate = Migrate(app, db)
+    
+    # Initialize Flask-Security with CSRF protection
+    security.init_app(
+        app,
+        user_datastore,
+        template_folder="templates/security",
+        confirm_register_form=ExtendedConfirmRegisterForm,
+        register_form=ExtendedRegisterForm,
+        login_form=ExtendedLoginForm,
+        csrf_cookie={"key": "csrf_token"}  # Match the config setting
+    )
+    
+    # Ensure CSRF protection for all routes except login/register
+    from flask import request
+    @app.before_request
+    def csrf_protect():
+        if app.config['WTF_CSRF_ENABLED']:
+            # Skip CSRF check for login and register endpoints
+            if request.endpoint in ['security.login', 'security.register']:
+                return
+            csrf.protect()
     
     # Initialize Flask-Admin
     admin = init_admin(app, db)

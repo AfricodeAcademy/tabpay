@@ -83,12 +83,23 @@ payment_fields = {
     "amount": fields.Integer,
     "payment_date": fields.DateTime(dt_format="rfc822", attribute=lambda x: format_datetime(x.payment_date)),
     "transaction_status": fields.Boolean,
-    "bank_id":fields.Integer,
+    "bank_id": fields.Integer,
     "block_id": fields.Integer,
     "payer_id": fields.Integer,
     "meeting_id": fields.Integer,
     "payer_full_name": fields.String(attribute=lambda x: getattr(x.payer, 'full_name', 'Unknown')),  
-    "block_name": fields.String(attribute=lambda x: getattr(x.block, 'name', 'Unknown'))  
+    "block_name": fields.String(attribute=lambda x: getattr(x.block, 'name', 'Unknown')),
+    
+    # Additional M-Pesa fields
+    "transaction_type": fields.String,
+    "business_short_code": fields.String,
+    "invoice_number": fields.String,
+    "org_account_balance": fields.Float,
+    "third_party_trans_id": fields.String,
+    "first_name": fields.String,
+    "middle_name": fields.String,
+    "last_name": fields.String,
+    "customer_name": fields.String(attribute='customer_name')  # Uses the property we defined
 }
 
 
@@ -162,14 +173,31 @@ bank_args.add_argument('name', type=str, required=True, help='Bank Name is requi
 bank_args.add_argument('paybill_no', type=int, required=True, help='Paybill Number is required')
 
 payment_args = reqparse.RequestParser()
-payment_args.add_argument('mpesa_id', type=str, required=True, help='MPESA ID is required')
-payment_args.add_argument('account_number', type=str, required=True, help='Account Number is required')
+payment_args.add_argument('mpesa_id', type=str, required=True, help='M-Pesa Transaction ID is required')
+payment_args.add_argument('account_number', type=str, required=True, help='Account number is required')
 payment_args.add_argument('source_phone_number', type=str, required=True, help='Source phone number is required')
 payment_args.add_argument('amount', type=int, required=True, help='Amount is required')
+payment_args.add_argument('payment_date', type=lambda x: datetime.strptime(x, '%Y-%m-%d %H:%M:%S') if x else None)
+payment_args.add_argument('transaction_status', type=bool)
 payment_args.add_argument('bank_id', type=int, required=True, help='Bank ID is required')
 payment_args.add_argument('block_id', type=int, required=True, help='Block ID is required')
 payment_args.add_argument('payer_id', type=int, required=True, help='Payer ID is required')
-payment_args.add_argument('meeting_id', type=int, required=True, help='Meeting ID is required')
+payment_args.add_argument('meeting_id', type=int)
+
+# Additional M-Pesa fields
+payment_args.add_argument('transaction_type', type=str)
+payment_args.add_argument('business_short_code', type=str)
+payment_args.add_argument('invoice_number', type=str)
+payment_args.add_argument('org_account_balance', type=float)
+payment_args.add_argument('third_party_trans_id', type=str)
+payment_args.add_argument('first_name', type=str)
+payment_args.add_argument('middle_name', type=str)
+payment_args.add_argument('last_name', type=str)
+
+payment_update_args = reqparse.RequestParser()
+payment_update_args.add_argument('transaction_status', type=bool)
+payment_update_args.add_argument('org_account_balance', type=float)
+payment_update_args.add_argument('third_party_trans_id', type=str)
 
 block_args = reqparse.RequestParser()
 block_args.add_argument('name', type=str, required=True, help='Block Name is required')
@@ -197,4 +225,3 @@ meeting_args.add_argument('block_id', type=int, required=True, help='Block ID is
 meeting_args.add_argument('zone_id', type=int, required=True, help='Zone ID is required')
 meeting_args.add_argument('organizer_id', type=int, required=True, help='Organizer ID is required')
 meeting_args.add_argument('date', type=str, required=True, help='Meeting date is required (format: YYYY-MM-DD HH:MM:SS)')
-
