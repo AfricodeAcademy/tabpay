@@ -101,6 +101,7 @@ class ProductionConfig(Config):
     SECURITY_CSRF_COOKIE = {'key': 'csrf_token', 'httponly': False, 'samesite': 'Lax', 'secure': True}
     SECURITY_CSRF_COOKIE_NAME = 'tabpay_csrf_token'
     SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = True  # Allow login without CSRF
+    WTF_CSRF_CHECK_DEFAULT = False  # Required when SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS is True
     WTF_CSRF_SSL_STRICT = True
     WTF_CSRF_ENABLED = True
     WTF_CSRF_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE']
