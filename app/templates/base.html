@@ -117,8 +117,8 @@
           {% if current_user.has_role('Administrator') or
           current_user.has_role('SuperUser') %}
           <a
-            href="{{ url_for('main.committee') }}"
-            class="{% if request.endpoint == 'main.committee' %}active{% endif %}"
+            href="{{ url_for('main.settings', active_tab='committee') }}"
+            class="{% if request.endpoint == 'main.settings' and request.args.get('active_tab') == 'committee' %}active{% endif %}"
           >
             <i class="fas fa-users"></i> Committee
           </a>
@@ -174,8 +174,8 @@
               {% if current_user.has_role('Administrator') or
               current_user.has_role('SuperUser') %}
               <a
-                href="{{ url_for('main.committee') }}"
-                class="{% if request.endpoint == 'main.committee' %}active{% endif %}"
+                href="{{ url_for('main.settings', active_tab='committee') }}"
+                class="{% if request.endpoint == 'main.settings' and request.args.get('active_tab') == 'committee' %}active{% endif %}"
               >
                 <i class="fas fa-users"></i> Committee
               </a>

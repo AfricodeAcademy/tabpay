@@ -51,9 +51,10 @@ def create_app(config_name):
     
     # Initialize extensions
     db.init_app(app)
-    migrate = Migrate()
-    migrate.init_app(app, db)  # Initialize Flask-Migrate
     mail.init_app(app)
+    
+    # Initialize Flask-Migrate
+    migrate = Migrate(app, db)
     
     security.init_app(app, user_datastore,
                       template_folder="templates/security",

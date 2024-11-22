@@ -21,8 +21,7 @@ member_zones = db.Table(
     'member_zones',
     db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
     db.Column('zone_id', db.Integer, db.ForeignKey('zones.id'), primary_key=True),
-    db.Column('umbrella_id', db.Integer, db.ForeignKey('umbrellas.id'), nullable=False),  
-    db.UniqueConstraint('user_id', 'zone_id',  name='uq_user_zone')  
+    db.Column('umbrella_id', db.Integer, db.ForeignKey('umbrellas.id'), nullable=False)
 )
 
 roles_users = db.Table('roles_users',
@@ -49,6 +48,15 @@ class UserModel(db.Model, UserMixin):
     id_number = db.Column(db.Integer, index=True)
     phone_number = db.Column(db.String(80))
     active = db.Column(db.Boolean, default=True)
+    
+    # Flask-Security tracking fields
+    last_login_at = db.Column(db.DateTime())
+    current_login_at = db.Column(db.DateTime())
+    last_login_ip = db.Column(db.String(100))
+    current_login_ip = db.Column(db.String(100))
+    login_count = db.Column(db.Integer, default=0)
+    confirmed_at = db.Column(db.DateTime())
+    
     bank_id = db.Column(db.Integer, db.ForeignKey('banks.id'))
     acc_number = db.Column(db.String(50))
     image_file = db.Column(db.String(20), nullable=False, default='profile.png')
@@ -56,9 +64,8 @@ class UserModel(db.Model, UserMixin):
     updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
     fs_uniquifier = db.Column(db.String(64), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
     zone_id = db.Column(db.Integer, db.ForeignKey('zones.id'))
-    confirmed_at = db.Column(db.DateTime)
     umbrella_id = db.Column(db.Integer, db.ForeignKey('umbrellas.id'))
- 
+
     is_approved = db.Column(db.Boolean(), default=False)  # New field
     approval_date = db.Column(db.DateTime())  # New field
     approved_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
