@@ -96,18 +96,23 @@ class ProductionConfig(Config):
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_DOMAIN = '.tabpay.africa'
+    SESSION_COOKIE_NAME = 'tabpay_session'  # Custom session name
+    PERMANENT_SESSION_LIFETIME = timedelta(days=1)
     
     # CSRF settings
     SECURITY_CSRF_COOKIE = {'httponly': True, 'samesite': 'Lax', 'secure': True}
-    SECURITY_CSRF_COOKIE_NAME = 'XSRF-TOKEN'
+    SECURITY_CSRF_COOKIE_NAME = 'tabpay_csrf_token'  # Custom CSRF token name
     SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = False
     WTF_CSRF_SSL_STRICT = True
     WTF_CSRF_ENABLED = True
+    WTF_CSRF_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE']
     
     # Cookie settings
     REMEMBER_COOKIE_SECURE = True
     REMEMBER_COOKIE_HTTPONLY = True
     REMEMBER_COOKIE_SAMESITE = 'Lax'
+    REMEMBER_COOKIE_NAME = 'tabpay_remember_token'  # Custom remember token name
 
 class TestingConfig(Config):
     TESTING = True
