@@ -66,6 +66,9 @@ class Config:
     MPESA_CALLBACK_URL = os.getenv('MPESA_CALLBACK_URL')
     MPESA_CALLBACK_BASE_URL = os.getenv('MPESA_CALLBACK_BASE_URL')
 
+    # API Base URL from environment variable
+    API_BASE_URL = os.getenv('API_BASE_URL', 'https://tabpay.africa')  # Default to production URL if not set
+
     # Flask-Admin settings
     FLASK_ADMIN_SWATCH = 'cyborg'
     FLASK_ADMIN_FLUID_LAYOUT = True
@@ -83,10 +86,8 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    # SQLALCHEMY_DATABASE_URI = 'sqlite:///tabpay.db'
     SQLALCHEMY_DATABASE_URI = 'postgresql://tabpay:tabpay@localhost:5432/tabpay'
-    # API_BASE_URL = "http://localhost:5000"
-    API_BASE_URL = "https://tabpay.africa"
+    # API_BASE_URL is inherited from Config class
 
 class ProductionConfig(Config):
     DEBUG = False
