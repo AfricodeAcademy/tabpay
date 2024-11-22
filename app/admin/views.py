@@ -27,18 +27,33 @@ class UserAdminView(SecureModelView):
 
     @expose('/action/', methods=['POST'])
     def action_view(self):
-        csrf_token = request.form.get('csrf_token')
+        # Get CSRF token from form or headers
+        csrf_token = request.form.get('csrf_token') or request.headers.get('X-CSRF-Token')
+        
         if not csrf_token:
-            flash('CSRF token missing', 'error')
+            current_app.logger.error('CSRF token missing in admin action')
+            flash('Session expired. Please refresh the page and try again.', 'error')
             return redirect(url_for('.index_view'))
 
         try:
             validate_csrf(csrf_token)
         except Exception as csrf_ex:
-            flash('CSRF validation failed', 'error')
+            current_app.logger.error(f'CSRF validation failed: {str(csrf_ex)}')
+            flash('Security token expired. Please refresh the page and try again.', 'error')
             return redirect(url_for('.index_view'))
 
-        return self.handle_action()
+        # Get the action from the form
+        action = request.form.get('action')
+        
+        # Log the action for debugging
+        current_app.logger.info(f'Admin action requested: {action}')
+        
+        try:
+            return self.handle_action()
+        except Exception as e:
+            current_app.logger.error(f'Error in admin action: {str(e)}\n{traceback.format_exc()}')
+            flash('An error occurred while processing your request.', 'error')
+            return redirect(url_for('.index_view'))
  
     @property
     def can_approve(self):
@@ -132,20 +147,51 @@ class RoleAdminView(SecureModelView):
     can_edit = True
     @expose('/action/', methods=['POST'])
     def action_view(self):
-        csrf_token = request.form.get('csrf_token')
+        # Get CSRF token from form or headers
+        csrf_token = request.form.get('csrf_token') or request.headers.get('X-CSRF-Token')
+        
         if not csrf_token:
-            flash('CSRF token missing', 'error')
+            current_app.logger.error('CSRF token missing in admin action')
+            flash('Session expired. Please refresh the page and try again.', 'error')
             return redirect(url_for('.index_view'))
 
         try:
             validate_csrf(csrf_token)
         except Exception as csrf_ex:
-            flash('CSRF validation failed', 'error')
+            current_app.logger.error(f'CSRF validation failed: {str(csrf_ex)}')
+            flash('Security token expired. Please refresh the page and try again.', 'error')
             return redirect(url_for('.index_view'))
 
-        return self.handle_action()
-    
+        # Get the action from the form
+        action = request.form.get('action')
+        
+        # Log the action for debugging
+        current_app.logger.info(f'Admin action requested: {action}')
+        
+        try:
+            return self.handle_action()
+        except Exception as e:
+            current_app.logger.error(f'Error in admin action: {str(e)}\n{traceback.format_exc()}')
+            flash('An error occurred while processing your request.', 'error')
+            return redirect(url_for('.index_view'))
 
+    def handle_action(self):
+        logger = current_app.logger
+        logger.debug("handle_action called")
+
+        try:
+            action = request.form.get('action')
+            ids = request.form.getlist('rowid')
+            
+            logger.debug(f"Action: {action}, IDs: {ids}")
+
+            return super().handle_action(action, ids)
+
+        except Exception as e:
+            logger.error(f"Error in handle_action: {str(e)}")
+            logger.error(traceback.format_exc())
+            flash(f'Action failed: {str(e)}', 'error')
+            return redirect(url_for('.index_view'))
 
 class UmbrellaAdminView(SecureModelView):
     # Customize the list view, including filters and columns shown
@@ -161,19 +207,33 @@ class UmbrellaAdminView(SecureModelView):
 
     @expose('/action/', methods=['POST'])
     def action_view(self):
-        # CSRF protection for actions
-        csrf_token = request.form.get('csrf_token')
+        # Get CSRF token from form or headers
+        csrf_token = request.form.get('csrf_token') or request.headers.get('X-CSRF-Token')
+        
         if not csrf_token:
-            flash('CSRF token missing', 'error')
+            current_app.logger.error('CSRF token missing in admin action')
+            flash('Session expired. Please refresh the page and try again.', 'error')
             return redirect(url_for('.index_view'))
 
         try:
             validate_csrf(csrf_token)
         except Exception as csrf_ex:
-            flash('CSRF validation failed', 'error')
+            current_app.logger.error(f'CSRF validation failed: {str(csrf_ex)}')
+            flash('Security token expired. Please refresh the page and try again.', 'error')
             return redirect(url_for('.index_view'))
 
-        return self.handle_action()
+        # Get the action from the form
+        action = request.form.get('action')
+        
+        # Log the action for debugging
+        current_app.logger.info(f'Admin action requested: {action}')
+        
+        try:
+            return self.handle_action()
+        except Exception as e:
+            current_app.logger.error(f'Error in admin action: {str(e)}\n{traceback.format_exc()}')
+            flash('An error occurred while processing your request.', 'error')
+            return redirect(url_for('.index_view'))
 
     def handle_action(self):
         logger = current_app.logger

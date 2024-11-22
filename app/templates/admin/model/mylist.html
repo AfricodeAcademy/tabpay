@@ -1,4 +1,26 @@
-{% extends "admin/model/list.html" %} {% block model_list_table %}
+{% extends "admin/model/list.html" %} 
+
+{% block list_header scoped %}
+    {{ super() }}
+{% endblock %}
+
+{% block list_row_actions scoped %}
+    {{ super() }}
+{% endblock %}
+
+{% block list_form %}
+    <form id="action_form" action="{{ url_for('.action_view') }}" method="POST" style="display: none">
+        <input type="hidden" id="csrf_token" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" id="url" name="url" value="{{ return_url }}">
+        <input type="hidden" id="action" name="action">
+        {% for pk in pk_map %}
+        <input type="checkbox" name="rowid" value="{{ pk }}" style="display: none">
+        {% endfor %}
+    </form>
+    {{ super() }}
+{% endblock %}
+
+{% block model_list_table %}
 <div class="container">
   <form
     class="action-form"
