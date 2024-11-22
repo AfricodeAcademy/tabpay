@@ -44,7 +44,6 @@ def create_app(config_name):
     app = Flask(__name__, template_folder='templates')
     app.config.from_object(config[config_name])
     
-
     # Initialize CSRF protection
     csrf = CSRFProtect()
     csrf.init_app(app)
@@ -56,11 +55,21 @@ def create_app(config_name):
     # Initialize Flask-Migrate
     migrate = Migrate(app, db)
     
-    security.init_app(app, user_datastore,
-                      template_folder="templates/security",
-                     confirm_register_form=ExtendedConfirmRegisterForm,
-                     register_form=ExtendedRegisterForm,
-                     login_form=ExtendedLoginForm)
+    # Initialize Flask-Security with CSRF protection
+    security.init_app(
+        app,
+        user_datastore,
+        template_folder="templates/security",
+        confirm_register_form=ExtendedConfirmRegisterForm,
+        register_form=ExtendedRegisterForm,
+        login_form=ExtendedLoginForm
+    )
+    
+    # Ensure CSRF protection for all routes
+    @app.before_request
+    def csrf_protect():
+        if app.config['WTF_CSRF_ENABLED']:
+            csrf.protect()
     
     # Initialize Flask-Admin
     admin = init_admin(app, db)
