@@ -24,7 +24,9 @@ logger = logging.getLogger(__name__)
 @main.route('/', methods=['GET'])
 def home():
     if current_user.is_authenticated:
-        if current_user.is_approved and any(current_user.has_role(role) for role in ['SuperUser', 'Administrator', 'Chairman', 'Secretary', 'Treasurer']):
+        if current_user.has_role('SuperUser'):
+            return redirect(url_for('admin.index'))
+        elif current_user.is_approved and any(current_user.has_role(role) for role in ['Administrator', 'Chairman', 'Secretary', 'Treasurer']):
             return redirect(url_for('main.statistics'))
     return render_template('index.html')
 
