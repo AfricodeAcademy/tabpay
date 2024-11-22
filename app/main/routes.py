@@ -24,10 +24,20 @@ logger = logging.getLogger(__name__)
 @main.route('/', methods=['GET'])
 def home():
     if current_user.is_authenticated:
+        # Check for SuperUser role first
         if current_user.has_role('SuperUser'):
             return redirect(url_for('admin.index'))
-        elif current_user.is_approved and any(current_user.has_role(role) for role in ['Administrator', 'Chairman', 'Secretary', 'Treasurer']):
+        
+        # Check for other administrative roles
+        admin_roles = ['Administrator', 'Chairman', 'Secretary', 'Treasurer']
+        if current_user.is_approved and any(current_user.has_role(role) for role in admin_roles):
             return redirect(url_for('main.statistics'))
+            
+        # For regular members or other roles, redirect to contribution page
+        if current_user.has_role('Member'):
+            return redirect(url_for('main.render_contribution_page'))
+            
+    # Only unauthenticated users or users without specific roles can see the landing page
     return render_template('index.html')
 
 @main.errorhandler(403)
