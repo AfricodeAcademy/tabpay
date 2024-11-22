@@ -4,8 +4,6 @@ from datetime import timedelta
 
 class Config:
     SECRET_KEY = secrets.token_hex(32)
-    # SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:postgres@localhost:5432/tabpay'
-    # SQLALCHEMY_DATABASE_URI = 'sqlite:///tabpay.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECURITY_PASSWORD_SALT = '201343284857125688191020663358661879047'
     
@@ -13,36 +11,37 @@ class Config:
     SECURITY_REGISTERABLE = True
     SECURITY_CONFIRMABLE = True
     SECURITY_RECOVERABLE = True
-    # Removed SECURITY_POST_LOGIN_VIEW to use our custom handler
     SECURITY_POST_LOGOUT_VIEW = '/'
     SECURITY_POST_REGISTER_VIEW = '/auth/login'
     SECURITY_URL_PREFIX = '/auth'
     SECURITY_TEMPLATE_PATH = "templates/security"
-    SECURITY_CSRF_ENABLE = True
-    SECURITY_CSRF_PROTECT_MECHANISMS = ['basic']  
-    SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = True  
-    SECURITY_CHANGE_EMAIL = True
-    SECURITY_CHANGEABLE = True
-    SECURITY_TRACKABLE = True
-    SECURITY_PASSWORD_HASH = 'bcrypt'
-    SECURITY_TOKEN_MAX_AGE = 60 * 60 * 24  # 24 hours
     
-    #add these for better security
-    SECURITY_CSRF_COOKIE = {'httponly': True, 'samesite': 'Lax', 'secure': False}
-    SECURITY_CSRF_COOKIE_NAME = 'csrf_token'
-
+    # CSRF Settings
+    WTF_CSRF_ENABLED = True
+    WTF_CSRF_CHECK_DEFAULT = True
+    WTF_CSRF_SSL_STRICT = False  # Disable SSL check for development
+    SECURITY_CSRF_ENABLE = True
+    SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = True
+    
     # Session settings
-    SESSION_COOKIE_SECURE = False  
+    SESSION_COOKIE_SECURE = False
     SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SAMESITE = 'Lax'  
-    PERMANENT_SESSION_LIFETIME = timedelta(days=1)  
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    PERMANENT_SESSION_LIFETIME = timedelta(days=1)
     SESSION_PROTECTION = 'strong'
     
     # Cookie settings
     REMEMBER_COOKIE_DURATION = timedelta(days=7)
     REMEMBER_COOKIE_SECURE = False
     REMEMBER_COOKIE_HTTPONLY = True
-    REMEMBER_COOKIE_SAMESITE = 'Lax'  
+    REMEMBER_COOKIE_SAMESITE = 'Lax'
+    
+    # Other security settings
+    SECURITY_CHANGE_EMAIL = True
+    SECURITY_CHANGEABLE = True
+    SECURITY_TRACKABLE = True
+    SECURITY_PASSWORD_HASH = 'bcrypt'
+    SECURITY_TOKEN_MAX_AGE = 60 * 60 * 24  # 24 hours
     
     # Configuration for Gmail's SMTP server
     MAIL_SERVER = 'smtp.gmail.com'
@@ -74,13 +73,6 @@ class Config:
     FLASK_ADMIN_FLUID_LAYOUT = True
     ADMIN_NAME = 'TabPay Admin'
     ADMIN_TEMPLATE_MODE = 'bootstrap4'
-
-    # CSRF settings
-    WTF_CSRF_ENABLED = True
-    WTF_CSRF_TIME_LIMIT = None  
-    WTF_CSRF_SECRET_KEY = SECRET_KEY
-    WTF_CSRF_CHECK_DEFAULT = False
-    WTF_CSRF_SSL_STRICT = False
 
 
 class DevelopmentConfig(Config):

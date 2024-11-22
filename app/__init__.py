@@ -54,7 +54,7 @@ def create_app(config_name):
         if 'text/html' in response.content_type:
             response.set_cookie(
                 'csrf_token',
-                csrf.generate_csrf(),
+                app.jinja_env.globals['csrf_token'](),
                 httponly=True,
                 samesite='Lax',
                 secure=app.config['SESSION_COOKIE_SECURE']
