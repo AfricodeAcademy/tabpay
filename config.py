@@ -89,18 +89,18 @@ class ProductionConfig(Config):
     DEBUG = False
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'postgresql://tabpay:tabpay@localhost:5432/tabpay')
     
-    # Session and security settings for production
+    # Session settings
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     SESSION_COOKIE_DOMAIN = '.tabpay.africa'
-    SESSION_COOKIE_NAME = 'tabpay_session'  # Custom session name
+    SESSION_COOKIE_NAME = 'tabpay_session'
     PERMANENT_SESSION_LIFETIME = timedelta(days=1)
     
     # CSRF settings
-    SECURITY_CSRF_COOKIE = {'httponly': True, 'samesite': 'Lax', 'secure': True}
-    SECURITY_CSRF_COOKIE_NAME = 'tabpay_csrf_token'  # Custom CSRF token name
-    SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = False
+    SECURITY_CSRF_COOKIE = {'key': 'csrf_token', 'httponly': False, 'samesite': 'Lax', 'secure': True}
+    SECURITY_CSRF_COOKIE_NAME = 'tabpay_csrf_token'
+    SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = True  # Allow login without CSRF
     WTF_CSRF_SSL_STRICT = True
     WTF_CSRF_ENABLED = True
     WTF_CSRF_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE']
@@ -109,7 +109,7 @@ class ProductionConfig(Config):
     REMEMBER_COOKIE_SECURE = True
     REMEMBER_COOKIE_HTTPONLY = True
     REMEMBER_COOKIE_SAMESITE = 'Lax'
-    REMEMBER_COOKIE_NAME = 'tabpay_remember_token'  # Custom remember token name
+    REMEMBER_COOKIE_NAME = 'tabpay_remember_token'
 
 class TestingConfig(Config):
     TESTING = True

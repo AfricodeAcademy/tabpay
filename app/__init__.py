@@ -26,6 +26,12 @@ def configure_logging():
     werkzeug_logger.setLevel(logging.INFO)
     app_logger = logging.getLogger('app')
     app_logger.setLevel(logging.DEBUG)
+    
+    # Add specific loggers for security and CSRF
+    security_logger = logging.getLogger('flask_security')
+    security_logger.setLevel(logging.DEBUG)
+    csrf_logger = logging.getLogger('flask_wtf.csrf')
+    csrf_logger.setLevel(logging.DEBUG)
 
 logging.getLogger('passlib').setLevel(logging.WARNING)
 
@@ -71,13 +77,18 @@ def create_app(config_name):
         template_folder="templates/security",
         confirm_register_form=ExtendedConfirmRegisterForm,
         register_form=ExtendedRegisterForm,
-        login_form=ExtendedLoginForm
+        login_form=ExtendedLoginForm,
+        csrf_cookie={"key": "csrf_token"}  # Match the config setting
     )
     
-    # Ensure CSRF protection for all routes
+    # Ensure CSRF protection for all routes except login/register
+    from flask import request
     @app.before_request
     def csrf_protect():
         if app.config['WTF_CSRF_ENABLED']:
+            # Skip CSRF check for login and register endpoints
+            if request.endpoint in ['security.login', 'security.register']:
+                return
             csrf.protect()
     
     # Initialize Flask-Admin
