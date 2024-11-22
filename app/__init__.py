@@ -12,21 +12,18 @@ import logging
 import os
 from dotenv import load_dotenv
 from flask_migrate import Migrate
+from flask_session import Session
 
 # Load environment variables
 load_dotenv()
 
 def configure_logging():
-    # Configure root logger
     logging.basicConfig(
         level=logging.DEBUG,
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
-    
-    # Configure specific loggers
     werkzeug_logger = logging.getLogger('werkzeug')
     werkzeug_logger.setLevel(logging.INFO)
-    
     app_logger = logging.getLogger('app')
     app_logger.setLevel(logging.DEBUG)
 
@@ -34,7 +31,6 @@ logging.getLogger('passlib').setLevel(logging.WARNING)
 
 # Setup Flask-Security
 user_datastore = SQLAlchemyUserDatastore(db, UserModel, RoleModel)
-
 
 def create_app(config_name):
     # Configure logging
@@ -44,6 +40,9 @@ def create_app(config_name):
     app = Flask(__name__, template_folder='templates')
     app.config.from_object(config[config_name])
     
+    # Initialize Session
+    Session(app)
+    
     # Initialize CSRF protection
     csrf = CSRFProtect()
     csrf.init_app(app)
@@ -52,25 +51,10 @@ def create_app(config_name):
     @app.after_request
     def add_security_headers(response):
         if response.mimetype == "text/html":
-            # Clear any existing CSRF cookies first
-            response.delete_cookie('csrf_token')
-            response.delete_cookie('XSRF-TOKEN')
-            
-            # Set fresh CSRF token
-            csrf_token = app.jinja_env.globals['csrf_token']()
-            response.set_cookie(
-                'csrf_token',
-                csrf_token,
-                httponly=True,
-                samesite='Lax',
-                secure=app.config['SESSION_COOKIE_SECURE']
-            )
-            
             # Set security headers
             response.headers['X-Frame-Options'] = 'SAMEORIGIN'
             response.headers['X-XSS-Protection'] = '1; mode=block'
             response.headers['X-Content-Type-Options'] = 'nosniff'
-            
         return response
         
     # Initialize extensions
