@@ -90,11 +90,24 @@ class DevelopmentConfig(Config):
 
 class ProductionConfig(Config):
     DEBUG = False
-    # SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///tabpay.db')
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'postgresql://tabpay:tabpay@localhost:5432/tabpay')
+    
+    # Session and security settings for production
     SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    
+    # CSRF settings
     SECURITY_CSRF_COOKIE = {'httponly': True, 'samesite': 'Lax', 'secure': True}
+    SECURITY_CSRF_COOKIE_NAME = 'XSRF-TOKEN'
+    SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = False
+    WTF_CSRF_SSL_STRICT = True
+    WTF_CSRF_ENABLED = True
+    
+    # Cookie settings
     REMEMBER_COOKIE_SECURE = True
+    REMEMBER_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_SAMESITE = 'Lax'
 
 class TestingConfig(Config):
     TESTING = True
