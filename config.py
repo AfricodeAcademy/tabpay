@@ -19,8 +19,8 @@ class Config:
     SECURITY_URL_PREFIX = '/auth'
     SECURITY_TEMPLATE_PATH = "templates/security"
     SECURITY_CSRF_ENABLE = True
-    SECURITY_CSRF_PROTECT_MECHANISMS = ['session', 'basic']
-    SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = True
+    SECURITY_CSRF_PROTECT_MECHANISMS = ['session']  
+    SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = False  
     SECURITY_CHANGE_EMAIL = True
     SECURITY_CHANGEABLE = True
     SECURITY_TRACKABLE = True
@@ -28,11 +28,11 @@ class Config:
     SECURITY_TOKEN_MAX_AGE = 60 * 60 * 24  # 24 hours
     
     #add these for better security
-    SECURITY_CSRF_COOKIE = {'httponly': True, 'samesite': 'Lax', 'secure': True}
+    SECURITY_CSRF_COOKIE = {'httponly': True, 'samesite': 'Lax', 'secure': False}
     SECURITY_CSRF_COOKIE_NAME = 'XSRF-TOKEN'
 
     # Session settings
-    SESSION_COOKIE_SECURE = True  # For HTTPS
+    SESSION_COOKIE_SECURE = False  
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'  
     PERMANENT_SESSION_LIFETIME = timedelta(days=1)  
@@ -40,7 +40,7 @@ class Config:
     
     # Cookie settings
     REMEMBER_COOKIE_DURATION = timedelta(days=7)
-    REMEMBER_COOKIE_SECURE = True
+    REMEMBER_COOKIE_SECURE = False
     REMEMBER_COOKIE_HTTPONLY = True
     REMEMBER_COOKIE_SAMESITE = 'Lax'  
     
@@ -81,7 +81,6 @@ class Config:
     WTF_CSRF_SECRET_KEY = SECRET_KEY
     WTF_CSRF_CHECK_DEFAULT = False
     WTF_CSRF_SSL_STRICT = True
-    SECURITY_CSRF_PROTECT_MECHANISMS = ['session']  
 
 
 class DevelopmentConfig(Config):
@@ -93,6 +92,9 @@ class ProductionConfig(Config):
     DEBUG = False
     # SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///tabpay.db')
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'postgresql://tabpay:tabpay@localhost:5432/tabpay')
+    SESSION_COOKIE_SECURE = True
+    SECURITY_CSRF_COOKIE = {'httponly': True, 'samesite': 'Lax', 'secure': True}
+    REMEMBER_COOKIE_SECURE = True
 
 class TestingConfig(Config):
     TESTING = True
