@@ -40,6 +40,7 @@ prop_next %} {% block title %}Login | TabPay {% endblock %} {% block content %}
           name="login_user_form"
           novalidate
         >
+          {{ login_user_form.csrf_token }}
           {{ login_user_form.hidden_tag() }}
           {{ render_form_errors(login_user_form) }}
 

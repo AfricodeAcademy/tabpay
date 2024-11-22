@@ -19,22 +19,26 @@ class Config:
     # CSRF Settings
     WTF_CSRF_ENABLED = True
     WTF_CSRF_CHECK_DEFAULT = True
-    WTF_CSRF_SSL_STRICT = False  # Disable SSL check for development
+    WTF_CSRF_SSL_STRICT = False
+    WTF_CSRF_TIME_LIMIT = None  # No time limit on tokens
     SECURITY_CSRF_ENABLE = True
     SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = True
     
     # Session settings
+    SESSION_COOKIE_NAME = 'tabpay_session'
     SESSION_COOKIE_SECURE = False
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     PERMANENT_SESSION_LIFETIME = timedelta(days=1)
-    SESSION_PROTECTION = 'strong'
+    SESSION_PROTECTION = None  # Disable session protection to prevent token invalidation
     
     # Cookie settings
+    REMEMBER_COOKIE_NAME = 'tabpay_remember'
     REMEMBER_COOKIE_DURATION = timedelta(days=7)
     REMEMBER_COOKIE_SECURE = False
     REMEMBER_COOKIE_HTTPONLY = True
     REMEMBER_COOKIE_SAMESITE = 'Lax'
+    REMEMBER_COOKIE_REFRESH_EACH_REQUEST = True
     
     # Other security settings
     SECURITY_CHANGE_EMAIL = True
