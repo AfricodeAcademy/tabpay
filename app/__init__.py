@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request
 from .utils import db, mail, security
 from .utils.initial_banks import import_initial_banks
 from .main.models import UserModel, RoleModel
@@ -8,14 +8,22 @@ from config import config
 from app.auth.forms import ExtendedConfirmRegisterForm, ExtendedLoginForm, ExtendedRegisterForm
 from flask_wtf.csrf import CSRFProtect
 from .admin import init_admin
+from .main.models import user_datastore
 import logging
 import os
 from dotenv import load_dotenv
 from flask_migrate import Migrate
-from flask_session import Session
+from flask_babel import Babel
 
 # Load environment variables
 load_dotenv()
+
+# Initialize Babel
+babel = Babel()
+
+def get_locale():
+    # Try to guess the language from the user accept header the browser transmits
+    return request.accept_languages.best_match(['en'])
 
 def configure_logging():
     logging.basicConfig(
@@ -35,9 +43,6 @@ def configure_logging():
 
 logging.getLogger('passlib').setLevel(logging.WARNING)
 
-# Setup Flask-Security
-user_datastore = SQLAlchemyUserDatastore(db, UserModel, RoleModel)
-
 def create_app(config_name):
     # Configure logging
     configure_logging()
@@ -46,13 +51,19 @@ def create_app(config_name):
     app = Flask(__name__, template_folder='templates')
     app.config.from_object(config[config_name])
     
-    # Initialize Session
-    Session(app)
-    
     # Initialize CSRF protection
     csrf = CSRFProtect()
     csrf.init_app(app)
     
+    # Exempt API routes from CSRF protection
+    @csrf.exempt
+    def csrf_exempt_api():
+        return request.path.startswith('/api/')
+
+    # Initialize Babel
+    babel.init_app(app, locale_selector=get_locale)
+    app.config['BABEL_DEFAULT_LOCALE'] = 'en'
+
     # Add security headers to all responses
     @app.after_request
     def add_security_headers(response):
@@ -81,13 +92,13 @@ def create_app(config_name):
         csrf_cookie={"key": "csrf_token"}  # Match the config setting
     )
     
-    # Ensure CSRF protection for all routes except login/register
-    from flask import request
+    # Ensure CSRF protection for all routes except login/register and API
     @app.before_request
     def csrf_protect():
         if app.config['WTF_CSRF_ENABLED']:
-            # Skip CSRF check for login and register endpoints
-            if request.endpoint in ['security.login', 'security.register']:
+            # Skip CSRF check for login, register, and API endpoints
+            if request.endpoint in ['security.login', 'security.register'] or \
+               request.path.startswith('/api/'):
                 return
             csrf.protect()
     

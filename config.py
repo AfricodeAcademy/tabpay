@@ -48,6 +48,11 @@ class Config:
     SECURITY_PASSWORD_HASH = 'bcrypt'
     SECURITY_TOKEN_MAX_AGE = 60 * 60 * 24  # 24 hours
     
+    # Babel configuration
+    BABEL_DEFAULT_LOCALE = 'en'
+    BABEL_DEFAULT_TIMEZONE = 'UTC'
+    BABEL_TRANSLATION_DIRECTORIES = 'translations'
+    
     # Configuration for Gmail's SMTP server
     MAIL_SERVER = 'smtp.gmail.com'
     MAIL_PORT = 587
