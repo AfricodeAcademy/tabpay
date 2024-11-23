@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, render_template
 from .utils import db, mail, security
 from .utils.initial_banks import import_initial_banks
 from .main.models import UserModel, RoleModel
@@ -6,7 +6,7 @@ from flask_security import SQLAlchemyUserDatastore
 from flask_security.utils import hash_password
 from config import config
 from app.auth.forms import ExtendedConfirmRegisterForm, ExtendedLoginForm, ExtendedRegisterForm
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect, CSRFError
 from .admin import init_admin
 from .main.models import user_datastore
 import logging
@@ -55,11 +55,24 @@ def create_app(config_name):
     csrf = CSRFProtect()
     csrf.init_app(app)
     
-    # Exempt API routes from CSRF protection
-    @csrf.exempt
-    def csrf_exempt_api():
-        return request.path.startswith('/api/')
-
+    # Set CSRF configuration
+    app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour
+    app.config['WTF_CSRF_SSL_STRICT'] = True
+    app.config['WTF_CSRF_METHODS'] = ['POST', 'PUT', 'PATCH', 'DELETE']
+    
+    # CSRF error handler
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(e):
+        if request.is_json:
+            # For API requests, return JSON response
+            return {
+                'error': 'CSRF validation failed',
+                'message': str(e)
+            }, 400
+        # For regular requests, show the custom error page
+        return render_template('errors/csrf_error.html', 
+                             csrf_error=str(e)), 400
+    
     # Initialize Babel
     babel.init_app(app, locale_selector=get_locale)
     app.config['BABEL_DEFAULT_LOCALE'] = 'en'
@@ -95,12 +108,20 @@ def create_app(config_name):
     # Ensure CSRF protection for all routes except login/register and API
     @app.before_request
     def csrf_protect():
-        if app.config['WTF_CSRF_ENABLED']:
-            # Skip CSRF check for login, register, and API endpoints
-            if request.endpoint in ['security.login', 'security.register'] or \
-               request.path.startswith('/api/'):
-                return
-            csrf.protect()
+        if request.endpoint and request.endpoint.startswith('api.'):
+            return  # Skip CSRF for API routes
+            
+        # Skip CSRF for security endpoints
+        if request.endpoint in ['security.login', 'security.register', 
+                              'security.logout', 'security.forgot_password',
+                              'security.reset_password', 'security.send_confirmation']:
+            return
+            
+        if request.method not in app.config['WTF_CSRF_METHODS']:
+            return  # Skip CSRF for non-protected methods
+            
+        # Apply CSRF protection
+        csrf.protect()
     
     # Initialize Flask-Admin
     admin = init_admin(app, db)

@@ -3,8 +3,9 @@ from wtforms import StringField, IntegerField, EmailField, PasswordField
 from wtforms.validators import DataRequired, Length, ValidationError, EqualTo
 from ..api.api import UserModel
 from flask import request
+from flask_wtf import FlaskForm
 
-class ExtendedRegisterForm(RegisterForm):
+class ExtendedRegisterForm(RegisterForm, FlaskForm):
     full_name = StringField('Please enter your Full Names', 
                             validators=[DataRequired(message="Full name is required!"), Length(min=4, max=20)],
                             render_kw={'placeholder': 'Jiara Martins'})
@@ -19,13 +20,16 @@ class ExtendedRegisterForm(RegisterForm):
                                                  EqualTo('password', message="Passwords must match!")],
                                      render_kw={'placeholder': '********'})
 
+    def __init__(self, *args, **kwargs):
+        super(ExtendedRegisterForm, self).__init__(*args, **kwargs)
+
     def validate_email(self, field):
         """Check if the email already exists in the database."""
         if UserModel.query.filter_by(email=field.data).first():
             raise ValidationError("This email is already registered. Please use a different email.")
 
 
-class ExtendedConfirmRegisterForm(ConfirmRegisterForm):
+class ExtendedConfirmRegisterForm(ConfirmRegisterForm, FlaskForm):
     full_name = StringField('Please enter your Full Names', 
                             validators=[DataRequired(message="Full name is required!"), Length(min=4, max=20)],
                             render_kw={'placeholder': 'Jiara Martins'})
@@ -40,27 +44,23 @@ class ExtendedConfirmRegisterForm(ConfirmRegisterForm):
                                                  EqualTo('password', message="Passwords must match!")],
                                      render_kw={'placeholder': '********'})
 
+    def __init__(self, *args, **kwargs):
+        super(ExtendedConfirmRegisterForm, self).__init__(*args, **kwargs)
+
     def validate_email(self, field):
         """Check if the email already exists in the database."""
         if UserModel.query.filter_by(email=field.data).first():
             raise ValidationError("This email is already registered. Please use a different email.")
 
-  
 
-
-class ExtendedLoginForm(LoginForm):
+class ExtendedLoginForm(LoginForm, FlaskForm):
     email = EmailField('Please enter your Email', 
                       validators=[DataRequired(message="Email is required!")],
                       render_kw={'placeholder':'hello@reallygreatsite.com'})
     password = PasswordField('Please enter Password', 
                            validators=[DataRequired(message="Password is required!")], 
                            render_kw={'placeholder':'******'})
-    
+
     def __init__(self, *args, **kwargs):
         super(ExtendedLoginForm, self).__init__(*args, **kwargs)
         self.next.data = request.args.get('next', '')
-
-
-
-# class ExtendedSendConfirmationForm(SendConfirmationForm):
-#     email = EmailField('Please enter your Email', validators=[DataRequired()],render_kw={'placeholder':'hello@reallygreatsite.com'})
