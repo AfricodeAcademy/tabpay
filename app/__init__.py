@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, session, make_response
+from flask import Flask, request, render_template, session, make_response, current_user
 from .utils import db, mail, security
 from .utils.initial_banks import import_initial_banks
 from .main.models import UserModel, RoleModel
@@ -14,6 +14,8 @@ import os
 from dotenv import load_dotenv
 from flask_migrate import Migrate
 from flask_babel import Babel
+from datetime import timedelta
+import uuid
 
 # Load environment variables
 load_dotenv()
@@ -48,8 +50,20 @@ def create_app(config_name):
     configure_logging()
     
     # Create Flask application
-    app = Flask(__name__, template_folder='templates')
+    app = Flask(__name__)
     app.config.from_object(config[config_name])
+    
+    # Load environment variables into config
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+    app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('SECURITY_PASSWORD_SALT')
+    app.config['SECURITY_TOKEN_MAX_AGE'] = int(os.environ.get('SECURITY_TOKEN_MAX_AGE', 86400))
+    app.config['SECURITY_DEFAULT_REMEMBER_ME'] = os.environ.get('SECURITY_DEFAULT_REMEMBER_ME', 'True').lower() == 'true'
+    app.config['SECURITY_TRACKABLE'] = os.environ.get('SECURITY_TRACKABLE', 'True').lower() == 'true'
+    
+    if config_name == 'production':
+        app.config['SESSION_COOKIE_SECURE'] = os.environ.get('SESSION_COOKIE_SECURE', 'True').lower() == 'true'
+        app.config['SESSION_COOKIE_DOMAIN'] = os.environ.get('SESSION_COOKIE_DOMAIN', '.tabpay.africa')
+        app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(seconds=int(os.environ.get('PERMANENT_SESSION_LIFETIME', 86400)))
     
     # Initialize CSRF protection
     csrf = CSRFProtect()
@@ -60,14 +74,43 @@ def create_app(config_name):
     app.config['WTF_CSRF_SSL_STRICT'] = True
     app.config['WTF_CSRF_METHODS'] = ['POST', 'PUT', 'PATCH', 'DELETE']
     
-    # Ensure CSRF token is set in session
+    # Initialize Flask-Security with CSRF protection
+    user_datastore = SQLAlchemyUserDatastore(db, UserModel, RoleModel)
+    security.init_app(
+        app,
+        user_datastore,
+        template_folder="templates/security",
+        confirm_register_form=ExtendedConfirmRegisterForm,
+        register_form=ExtendedRegisterForm,
+        login_form=ExtendedLoginForm,
+        csrf_cookie={
+            "key": "csrf_token",
+            "httponly": False,
+            "samesite": "Lax",
+            "secure": config_name == 'production',
+            "domain": app.config.get('SESSION_COOKIE_DOMAIN')
+        }
+    )
+
+    # Set up session persistence
     @app.before_request
-    def set_csrf_token():
-        # Skip CSRF for API routes
+    def before_request():
+        if current_user.is_authenticated:
+            session.permanent = True
+            session.modified = True
+            
+            # Refresh the user's authentication token if needed
+            if hasattr(current_user, 'authentication_token'):
+                if not current_user.authentication_token:
+                    current_user.authentication_token = str(uuid.uuid4())
+                    db.session.commit()
+
+    # CSRF protection for all routes except login/register and API
+    @app.before_request
+    def csrf_protect():
         if request.endpoint and request.endpoint.startswith('api.'):
             return
             
-        # Skip CSRF for security endpoints
         if request.endpoint in ['security.login', 'security.register', 
                               'security.logout', 'security.forgot_password',
                               'security.reset_password', 'security.send_confirmation']:
@@ -76,45 +119,20 @@ def create_app(config_name):
         if request.method not in app.config['WTF_CSRF_METHODS']:
             return
             
-        # Generate CSRF token if not in session
-        if 'csrf_token' not in session:
-            session['csrf_token'] = generate_csrf()
-            
-        # Set CSRF cookie if not already set
-        csrf_token = session.get('csrf_token')
-        if not request.cookies.get('csrf_token'):
-            response = make_response()
-            response.set_cookie('csrf_token', csrf_token, 
-                             secure=app.config.get('SESSION_COOKIE_SECURE', True),
-                             httponly=False,
-                             samesite=app.config.get('SESSION_COOKIE_SAMESITE', 'Lax'))
-            return response
-    
-    # CSRF error handler
-    @app.errorhandler(CSRFError)
-    def handle_csrf_error(e):
-        if request.is_json:
-            # For API requests, return JSON response
-            return {
-                'error': 'CSRF validation failed',
-                'message': str(e)
-            }, 400
-        # For regular requests, show the custom error page
-        return render_template('errors/csrf_error.html', 
-                             csrf_error=str(e)), 400
-    
-    # Initialize Babel
-    babel.init_app(app, locale_selector=get_locale)
-    app.config['BABEL_DEFAULT_LOCALE'] = 'en'
+        csrf.protect()
 
     # Add security headers to all responses
     @app.after_request
     def add_security_headers(response):
-        if response.mimetype == "text/html":
-            # Set security headers
+        if not request.endpoint or not request.endpoint.startswith('api.'):
             response.headers['X-Frame-Options'] = 'SAMEORIGIN'
             response.headers['X-XSS-Protection'] = '1; mode=block'
             response.headers['X-Content-Type-Options'] = 'nosniff'
+            response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+            
+            # Ensure authentication token is in header for API requests
+            if current_user.is_authenticated and hasattr(current_user, 'authentication_token'):
+                response.headers['Authentication-Token'] = current_user.authentication_token
         return response
         
     # Initialize extensions
@@ -123,35 +141,6 @@ def create_app(config_name):
     
     # Initialize Flask-Migrate
     migrate = Migrate(app, db)
-    
-    # Initialize Flask-Security with CSRF protection
-    security.init_app(
-        app,
-        user_datastore,
-        template_folder="templates/security",
-        confirm_register_form=ExtendedConfirmRegisterForm,
-        register_form=ExtendedRegisterForm,
-        login_form=ExtendedLoginForm,
-        csrf_cookie={"key": "csrf_token"}  # Match the config setting
-    )
-    
-    # Ensure CSRF protection for all routes except login/register and API
-    @app.before_request
-    def csrf_protect():
-        if request.endpoint and request.endpoint.startswith('api.'):
-            return  # Skip CSRF for API routes
-            
-        # Skip CSRF for security endpoints
-        if request.endpoint in ['security.login', 'security.register', 
-                              'security.logout', 'security.forgot_password',
-                              'security.reset_password', 'security.send_confirmation']:
-            return
-            
-        if request.method not in app.config['WTF_CSRF_METHODS']:
-            return  # Skip CSRF for non-protected methods
-            
-        # Apply CSRF protection
-        csrf.protect()
     
     # Initialize Flask-Admin
     admin = init_admin(app, db)
