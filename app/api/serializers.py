@@ -2,7 +2,7 @@ from flask_restful import fields, reqparse
 from datetime import datetime
 
 
-# Fields for serialization
+# Fields for serialization.
 def get_user_fields():
     block_fields = {
         "id": fields.Integer,
