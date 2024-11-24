@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, session, make_response
 from .utils import db, mail, security
 from .utils.initial_banks import import_initial_banks
 from .main.models import UserModel, RoleModel
@@ -6,7 +6,7 @@ from flask_security import SQLAlchemyUserDatastore
 from flask_security.utils import hash_password
 from config import config
 from app.auth.forms import ExtendedConfirmRegisterForm, ExtendedLoginForm, ExtendedRegisterForm
-from flask_wtf.csrf import CSRFProtect, CSRFError
+from flask_wtf.csrf import CSRFProtect, CSRFError, generate_csrf
 from .admin import init_admin
 from .main.models import user_datastore
 import logging
@@ -59,6 +59,36 @@ def create_app(config_name):
     app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour
     app.config['WTF_CSRF_SSL_STRICT'] = True
     app.config['WTF_CSRF_METHODS'] = ['POST', 'PUT', 'PATCH', 'DELETE']
+    
+    # Ensure CSRF token is set in session
+    @app.before_request
+    def set_csrf_token():
+        # Skip CSRF for API routes
+        if request.endpoint and request.endpoint.startswith('api.'):
+            return
+            
+        # Skip CSRF for security endpoints
+        if request.endpoint in ['security.login', 'security.register', 
+                              'security.logout', 'security.forgot_password',
+                              'security.reset_password', 'security.send_confirmation']:
+            return
+            
+        if request.method not in app.config['WTF_CSRF_METHODS']:
+            return
+            
+        # Generate CSRF token if not in session
+        if 'csrf_token' not in session:
+            session['csrf_token'] = generate_csrf()
+            
+        # Set CSRF cookie if not already set
+        csrf_token = session.get('csrf_token')
+        if not request.cookies.get('csrf_token'):
+            response = make_response()
+            response.set_cookie('csrf_token', csrf_token, 
+                             secure=app.config.get('SESSION_COOKIE_SECURE', True),
+                             httponly=False,
+                             samesite=app.config.get('SESSION_COOKIE_SAMESITE', 'Lax'))
+            return response
     
     # CSRF error handler
     @app.errorhandler(CSRFError)

@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="csrf-token" content="{{ csrf_token }}" />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     {% if title %}
     <title>{{ title }}</title>
@@ -34,6 +34,39 @@
     />
     <link rel="stylesheet" href="../static/tabpay_css/dashboard.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      // Set up CSRF token for AJAX requests
+      document.addEventListener('DOMContentLoaded', function() {
+        // Get CSRF token from meta tag
+        var csrf_token = document.querySelector('meta[name=csrf-token]').getAttribute('content');
+        
+        // Add CSRF token to all AJAX requests
+        var xhr = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function() {
+            var method = arguments[0];
+            if (!['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes(method.toUpperCase())) {
+                this.setRequestHeader('X-CSRFToken', csrf_token);
+            }
+            return xhr.apply(this, arguments);
+        };
+
+        // Add CSRF token to all fetch requests
+        var originalFetch = window.fetch;
+        window.fetch = function() {
+            var resource = arguments[0];
+            var config = arguments[1] || {};
+            
+            if (!['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes((config.method || 'GET').toUpperCase())) {
+                config.headers = {
+                    ...config.headers,
+                    'X-CSRFToken': csrf_token
+                };
+            }
+            
+            return originalFetch.apply(this, [resource, config]);
+        };
+      });
+    </script>
   </head>
   <body>
     <!-- Mobile Header with Hamburger, Logo, and Log Out -->

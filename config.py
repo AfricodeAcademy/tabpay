@@ -109,8 +109,18 @@ class Config:
 class DevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = 'postgresql://tabpay:tabpay@localhost:5432/tabpay'
-    WTF_CSRF_CHECK_DEFAULT = False
-    # API_BASE_URL is inherited from Config class
+    WTF_CSRF_CHECK_DEFAULT = False  # Required by Flask-Security when using SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS
+    WTF_CSRF_ENABLED = True
+    WTF_CSRF_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE']
+    SESSION_COOKIE_SECURE = False  # Set to False for development
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_NAME = 'tabpay_session'
+    PERMANENT_SESSION_LIFETIME = timedelta(days=1)
+    SECURITY_CSRF_COOKIE = {'key': 'csrf_token', 'httponly': False, 'samesite': 'Lax', 'secure': False}
+    SECURITY_CSRF_COOKIE_NAME = 'tabpay_csrf_token'
+    SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = True
+
 
 class ProductionConfig(Config):
     DEBUG = False
