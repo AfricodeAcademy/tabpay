@@ -21,11 +21,11 @@ import uuid
 load_dotenv()
 
 # Initialize Babel
-babel = Babel(app)
+babel = Babel()
 
-def get_locale():
-    # Try to guess the language from the user accept header the browser transmits
-    return request.accept_languages.best_match(['en'])
+# def get_locale():
+#     # Try to guess the language from the user accept header the browser transmits
+#     return request.accept_languages.best_match(['en'])
 
 def configure_logging():
     logging.basicConfig(
@@ -52,6 +52,10 @@ def create_app(config_name):
     # Create Flask application
     app = Flask(__name__)
     app.config.from_object(config[config_name])
+
+    app.config['BABEL_DEFAULT_LOCALE'] = 'en'
+    app.config['BABEL_DEFAULT_TIMEZONE'] = 'UTC'
+    babel.init_app(app)
     
     # Load environment variables into config
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
