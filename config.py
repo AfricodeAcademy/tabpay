@@ -74,13 +74,14 @@ class Config:
     BABEL_DEFAULT_TIMEZONE = 'UTC'
     BABEL_TRANSLATION_DIRECTORIES = 'translations'
     
-    # Configuration for Gmail's SMTP server
-    MAIL_SERVER = 'smtp.gmail.com'
-    MAIL_PORT = 587
-    MAIL_USERNAME = 'enockbett427@gmail.com' 
-    MAIL_PASSWORD = 'ekpm scdy pcgy fyfz'     
-    MAIL_USE_TLS = True
-    MAIL_DEFAULT_SENDER = 'enockbett427@gmail.com'
+    # Configuration for Zoho Mail
+    MAIL_SERVER = 'smtp.zoho.com'
+    MAIL_PORT = 465
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME', 'admissions@africodeacademy.com')
+    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD', 'dtvjbPBrMfyw')  # Set this via environment variable
+    MAIL_USE_SSL = True
+    MAIL_USE_TLS = False
+    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_USERNAME', 'admissions@africodeacademy.com')
 
     # Configuration for Africastalking API
     AT_USERNAME='africode'
