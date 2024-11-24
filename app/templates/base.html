@@ -36,35 +36,44 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
       // Set up CSRF token for AJAX requests
+      function getCSRFToken() {
+        return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+      }
+      
+      // Add CSRF token to all AJAX requests
+      let _old_send = XMLHttpRequest.prototype.send;
+      XMLHttpRequest.prototype.send = function() {
+        this.setRequestHeader('X-CSRFToken', getCSRFToken());
+        return _old_send.apply(this, arguments);
+      };
+      
+      // Add CSRF token to all fetch requests
+      let _fetch = window.fetch;
+      window.fetch = function() {
+        let args = Array.prototype.slice.call(arguments);
+        if (args[1] === undefined) {
+          args[1] = {};
+        }
+        if (args[1].headers === undefined) {
+          args[1].headers = {};
+        }
+        if (args[1].method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(args[1].method.toUpperCase())) {
+          args[1].headers['X-CSRFToken'] = getCSRFToken();
+        }
+        return _fetch.apply(this, args);
+      };
+      
+      // Add CSRF token to all forms
       document.addEventListener('DOMContentLoaded', function() {
-        // Get CSRF token from meta tag
-        var csrf_token = document.querySelector('meta[name=csrf-token]').getAttribute('content');
-        
-        // Add CSRF token to all AJAX requests
-        var xhr = XMLHttpRequest.prototype.open;
-        XMLHttpRequest.prototype.open = function() {
-            var method = arguments[0];
-            if (!['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes(method.toUpperCase())) {
-                this.setRequestHeader('X-CSRFToken', csrf_token);
-            }
-            return xhr.apply(this, arguments);
-        };
-
-        // Add CSRF token to all fetch requests
-        var originalFetch = window.fetch;
-        window.fetch = function() {
-            var resource = arguments[0];
-            var config = arguments[1] || {};
-            
-            if (!['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes((config.method || 'GET').toUpperCase())) {
-                config.headers = {
-                    ...config.headers,
-                    'X-CSRFToken': csrf_token
-                };
-            }
-            
-            return originalFetch.apply(this, [resource, config]);
-        };
+        document.querySelectorAll('form').forEach(function(form) {
+          if (!form.querySelector('input[name="csrf_token"]')) {
+            let input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'csrf_token';
+            input.value = getCSRFToken();
+            form.appendChild(input);
+          }
+        });
       });
     </script>
   </head>

@@ -135,19 +135,31 @@ class ProductionConfig(Config):
     PERMANENT_SESSION_LIFETIME = timedelta(days=1)
     
     # CSRF settings
-    SECURITY_CSRF_COOKIE = {'key': 'csrf_token', 'httponly': False, 'samesite': 'Lax', 'secure': True}
-    SECURITY_CSRF_COOKIE_NAME = 'tabpay_csrf_token'
-    SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = True  # Allow login without CSRF
-    WTF_CSRF_CHECK_DEFAULT = False  # Required when SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS is True
-    WTF_CSRF_SSL_STRICT = True
     WTF_CSRF_ENABLED = True
+    WTF_CSRF_CHECK_DEFAULT = False  # Required by Flask-Security
+    WTF_CSRF_SSL_STRICT = True
+    WTF_CSRF_TIME_LIMIT = 3600  # 1 hour
     WTF_CSRF_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE']
+    
+    # Flask-Security CSRF settings
+    SECURITY_CSRF_ENABLE = True
+    SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = True
+    SECURITY_CSRF_COOKIE = {
+        'key': 'csrf_token',
+        'httponly': False,
+        'samesite': 'Lax',
+        'secure': True,
+        'domain': '.tabpay.africa'
+    }
+    SECURITY_CSRF_COOKIE_NAME = 'tabpay_csrf_token'
     
     # Cookie settings
     REMEMBER_COOKIE_SECURE = True
     REMEMBER_COOKIE_HTTPONLY = True
     REMEMBER_COOKIE_SAMESITE = 'Lax'
     REMEMBER_COOKIE_NAME = 'tabpay_remember_token'
+    REMEMBER_COOKIE_DOMAIN = '.tabpay.africa'
+
 
 class TestingConfig(Config):
     TESTING = True
