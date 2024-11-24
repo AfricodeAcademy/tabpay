@@ -1,5 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from flask_mail import Mail
+from flask_mailman import Mail
 import secrets
 from PIL import Image
 from flask import current_app
