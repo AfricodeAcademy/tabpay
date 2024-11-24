@@ -21,7 +21,7 @@ import uuid
 load_dotenv()
 
 # Initialize Babel
-babel = Babel()
+babel = Babel(app)
 
 def get_locale():
     # Try to guess the language from the user accept header the browser transmits
