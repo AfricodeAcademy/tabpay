@@ -1,8 +1,8 @@
-from flask import Flask, request, render_template, session, make_response, current_user
-from .utils import db, mail, security
+from flask import Flask, request, render_template, session, make_response
+from flask_security import Security, SQLAlchemyUserDatastore, current_user
+from .utils import db, mail
 from .utils.initial_banks import import_initial_banks
 from .main.models import UserModel, RoleModel
-from flask_security import SQLAlchemyUserDatastore
 from flask_security.utils import hash_password
 from config import config
 from app.auth.forms import ExtendedConfirmRegisterForm, ExtendedLoginForm, ExtendedRegisterForm
@@ -76,9 +76,7 @@ def create_app(config_name):
     
     # Initialize Flask-Security with CSRF protection
     user_datastore = SQLAlchemyUserDatastore(db, UserModel, RoleModel)
-    security.init_app(
-        app,
-        user_datastore,
+    security = Security(app, user_datastore,
         template_folder="templates/security",
         confirm_register_form=ExtendedConfirmRegisterForm,
         register_form=ExtendedRegisterForm,

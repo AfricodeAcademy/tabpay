@@ -1,6 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
-from flask_security import Security
-from flask_mailman import Mail
+from flask_mail import Mail
 import secrets
 from PIL import Image
 from flask import current_app
@@ -11,7 +10,6 @@ import os
 
 
 db = SQLAlchemy()
-security = Security()
 mail = Mail()
 
 # SMS service
@@ -62,6 +60,4 @@ def save_picture(form_picture):
         raise e
 
 
-__all__ = ['db', 'mail', 'security', 'sms', 'init_sms'] # SMS service
-
-
+__all__ = ['db', 'mail'] # SMS service
