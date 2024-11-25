@@ -221,7 +221,7 @@ def create_app(config_name):
         
         db.session.commit()
         print('All superusers created successfully')
-
+       
     import_initial_banks(app)
      # Initialize debug CSRF if in debug mode
     return app

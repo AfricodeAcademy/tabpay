@@ -109,7 +109,7 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = 'postgresql://captain:captain@localhost:5432/tabpay'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///tabpay.db'
     WTF_CSRF_CHECK_DEFAULT = False  # Required by Flask-Security when using SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS
     WTF_CSRF_ENABLED = True
     WTF_CSRF_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE']
