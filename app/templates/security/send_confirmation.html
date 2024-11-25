@@ -17,7 +17,7 @@ TabPay {% endblock %} {% block content %}
         <div class="container mt-3" id="flash-container">
           {% for category, message in messages %}
           <div
-            class="alert alert-{{ category }} alert-dismissible fade show"
+            class="alert alert-{{ category }} alert-dismissible fade show bg-warning"
             role="alert"
           >
             {{ message }}
