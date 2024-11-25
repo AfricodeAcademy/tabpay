@@ -7,11 +7,11 @@ def approval_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not current_user.is_approved and not current_user.has_role('Administrator'):
-            current_app.logger.info(f"User {current_user.email} is not approved. Redirecting to pending approval.")
+            # current_app.logger.debug(f"User {current_user.email} is not approved. Redirecting to pending approval.")
             flash('Your account is pending approval from an administrator.', 'warning')
             return redirect(url_for('auth.pending_approval'))
         
-        current_app.logger.debug(f"User {current_user.email} is approved with roles {current_user.roles}. Proceeding to requested page.")
+        # current_app.logger.debug(f"User {current_user.email} is approved.{current_user.roles} Proceeding to requested page.")
         return f(*args, **kwargs)
     
     return decorated_function

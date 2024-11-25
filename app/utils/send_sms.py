@@ -4,12 +4,7 @@ from typing import List
 import logging
 from config import Config
 
-# Configure logging with more detail
-logging.basicConfig(
-    level=logging.DEBUG,  # Changed to DEBUG for more detailed logs
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+
 
 class SendSMS:
     def __init__(self):
@@ -31,13 +26,13 @@ class SendSMS:
             # Verify initialization by fetching account info
             try:
                 account_info = africastalking.Application.fetch_application_data()
-                logger.info(f"SMS service initialized successfully. Account info: {account_info}")
+                # logger.info(f"SMS service initialized successfully. Account info: {account_info}")
             except Exception as acc_error:
                 print("Error sending message, couldn't connect with the server!")
-                logger.warning(f"Initialized but couldn't fetch account info: {acc_error}")
+                # logger.warning(f"Initialized but couldn't fetch account info: {acc_error}")
             
         except Exception as e:
-            logger.error(f"Failed to initialize SMS service: {str(e)}")
+            # logger.error(f"Failed to initialize SMS service: {str(e)}")
             raise
     
     def send(self, message: str, recipients: List[str], sender_id: str = None) -> dict:
@@ -79,21 +74,21 @@ class SendSMS:
                 # logger.info(f"API Response: {response}")
                 
                 # Verify the response
-                if response and 'SMSMessageData' in response:
-                    message_data = response['SMSMessageData']
-                    if 'Recipients' in message_data:
-                        for recipient in message_data['Recipients']:
-                            logger.info(f"Delivery status for {recipient.get('number')}: {recipient.get('status')}")
+                # if response and 'SMSMessageData' in response:
+                #     message_data = response['SMSMessageData']
+                #     if 'Recipients' in message_data:
+                #         for recipient in message_data['Recipients']:
+                #             logger.info(f"Delivery status for {recipient.get('number')}: {recipient.get('status')}")
                     
-                return response
+                # return response
                 
             except Exception as send_error:
-                # logger.error(f"Africa's Talking API error: {str(send_error)}")
-                raise
+                logger.error(f"Africa's Talking API error: {str(send_error)}")
+                raise 
             
         except Exception as e:
-            # logger.error(f"Failed to send message: {str(e)}")
-            raise
+            logger(f"Failed to send message: {str(e)}")
+            raise 
     
     def _validate_phone_number(self, phone_number: str) -> str:
         """
@@ -132,8 +127,8 @@ class SendSMS:
         """
         try:
             account_info = africastalking.Application.fetch_application_data()
-            logger.info(f"Connection test successful. Account info: {account_info}")
+            # logger.info(f"Connection test successful. Account info: {account_info}")
             return True
         except Exception as e:
-            logger.error(f"Connection test failed: {str(e)}")
+            # logger.error(f"Connection test failed: {str(e)}")
             return False

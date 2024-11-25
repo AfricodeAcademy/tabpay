@@ -1,75 +1,81 @@
 <!-- templates/all_blocks.html -->
-{% extends "base.html" %}
-
-{% block content %}
+{% extends "base.html" %} {% block content %}
 <div class="container mt-5">
-    <h2>All Blocks</h2>
+  <h2>All Blocks</h2>
 
-    <style>
-        /* Make the back button green */
-        .btn-green {
-            background-color: #28a745;
-            color: #ffffff;
-            border: none;
-        }
+  <style>
+    :root {
+      --background-color: rgba(70, 162, 16, 0.873);
+    }
+    /* Make the back button green */
+    .btn-green {
+      background-color: var(--background-color);
+      color: #ffffff;
+      border: none;
+    }
 
-        .btn-green:hover {
-            background-color: #218838;
-            color: #ffffff;
-        }
+    .btn-green:hover {
+      background-color: #218838;
+      color: #ffffff;
+    }
 
-        /* Style the table */
-        .styled-table {
-            border-collapse: collapse;
-            width: 100%;
-            font-size: 16px;
-            font-family: Arial, sans-serif;
-        }
+    /* Style the table */
+    .styled-table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 16px;
+      font-family: Arial, sans-serif;
+    }
 
-        .styled-table thead tr {
-            background-color: #024218;
-            color: #ffffff;
-            text-align: left;
-        }
+    .styled-table thead tr {
+      background-color: var(--background-color);
+      color: #ffffff;
+      text-align: left;
+    }
 
-        .styled-table th, .styled-table td {
-            padding: 12px 15px;
-        }
+    .styled-table th,
+    .styled-table td {
+      padding: 12px 15px;
+    }
 
-        .styled-table tbody tr {
-            border-bottom: 1px solid #dddddd;
-        }
+    .styled-table tbody tr {
+      border-bottom: 1px solid #dddddd;
+    }
 
-        .styled-table tbody tr:nth-of-type(even) {
-            background-color: #f3f3f3;
-        }
+    .styled-table tbody tr:nth-of-type(even) {
+      background-color: #f3f3f3;
+    }
 
-        .styled-table tbody tr:last-of-type {
-            border-bottom: 2px solid #007bff;
-        }
+    .styled-table tbody tr:last-of-type {
+      border-bottom: 2px solid #007bff;
+    }
 
-        .styled-table tbody tr:hover {
-            background-color: #f1f1f1;
-        }
-    </style>
+    .styled-table tbody tr:hover {
+      background-color: #f1f1f1;
+    }
+  </style>
 
-    <table class="table table-bordered styled-table">
-        <thead>
-            <tr>
-                <th>Block Name</th>
-                <th>Parent Umbrella</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for block in blocks %}
-                <tr>
-                    <td>{{ block.name }}</td>
-                    <td>{{ block.parent_umbrella if block.parent_umbrella else 'N/A' }}</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+  <table class="table table-bordered styled-table">
+    <thead>
+      <tr>
+        <th>Block Name</th>
+        <th>Parent Umbrella</th>
+        <th>No. of members</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for block in blocks %}
+      <tr>
+        <td>{{ block.name }}</td>
+        <td>{{ block.parent_umbrella if block.parent_umbrella else 'N/A' }}</td>
+        <td>{{ block.members }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 
-    <a href="{{ url_for('main.statistics') }}" class="btn btn-green mt-3">Back to Dashboard</a>
+  <a href="{{ url_for('main.statistics') }}" class="btn btn-green mt-3"
+    >Back to Dashboard</a
+  >
 </div>
 {% endblock %}

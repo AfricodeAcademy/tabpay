@@ -68,14 +68,14 @@ class UserAdminView(SecureModelView):
         return False
     
     def handle_action(self):
-        logger = current_app.logger
-        logger.debug("handle_action called")
+        # logger = current_app.logger
+        # logger.debug("handle_action called")
 
         try:
             action = request.form.get('action')
             ids = request.form.getlist('rowid')
             
-            logger.debug(f"Action: {action}, IDs: {ids}")
+            # logger.debug(f"Action: {action}, IDs: {ids}")
 
             if action == 'approve':
                 return self.action_approve(ids)
@@ -85,17 +85,17 @@ class UserAdminView(SecureModelView):
             return super().handle_action(action, ids)
 
         except Exception as e:
-            logger.error(f"Error in handle_action: {str(e)}")
-            logger.error(traceback.format_exc())
+            # logger.error(f"Error in handle_action: {str(e)}")
+            # logger.error(traceback.format_exc())
             flash(f'Action failed: {str(e)}', 'error')
             return redirect(url_for('.index_view'))
 
 
     @action('approve', 'Approve Users', 'Are you sure you want to approve the selected users?')
     def action_approve(self, ids):
-        logger = current_app.logger
+        # logger = current_app.logger
         try:
-            logger.debug(f"Attempting to approve users with ids: {ids}")
+            # logger.debug(f"Attempting to approve users with ids: {ids}")
             query = self.model.query.filter(self.model.id.in_(ids))
             count = 0
             
@@ -103,14 +103,14 @@ class UserAdminView(SecureModelView):
                 if not user.is_approved:
                     user.approve(current_user)
                     count += 1
-                    logger.debug(f"User {user.id} approved")
+                    # logger.debug(f"User {user.id} approved")
                     
             self.session.commit()
-            flash(f'{count} users were successfully approved.')
+            flash(f'{user.full_name} successfully approved.')
             
         except Exception as ex:
-            logger.error(f"Error in action_approve: {str(ex)}")
-            logger.error(traceback.format_exc())
+            # logger.error(f"Error in action_approve: {str(ex)}")
+            # logger.error(traceback.format_exc())
             flash(f'Failed to approve users: {str(ex)}', 'error')
             
         return redirect(url_for('.index_view'))
@@ -126,7 +126,7 @@ class UserAdminView(SecureModelView):
                     count += 1
             
             self.session.commit()
-            flash(f'{count} users were successfully unapproved.')
+            flash(f'{user.full_name} successfully unapproved.')
             
         except Exception as ex:
             flash(f'Failed to unapprove users: {str(ex)}', 'error')
@@ -236,14 +236,14 @@ class UmbrellaAdminView(SecureModelView):
             return redirect(url_for('.index_view'))
 
     def handle_action(self):
-        logger = current_app.logger
-        logger.debug("handle_action called")
+        # logger = current_app.logger
+        # logger.debug("handle_action called")
 
         try:
             action = request.form.get('action')
             ids = request.form.getlist('rowid')
             
-            logger.debug(f"Action: {action}, IDs: {ids}")
+            # logger.debug(f"Action: {action}, IDs: {ids}")
 
             if action == 'approve':
                 return self.action_approve(ids)
@@ -253,16 +253,16 @@ class UmbrellaAdminView(SecureModelView):
             return super().handle_action(action, ids)
 
         except Exception as e:
-            logger.error(f"Error in handle_action: {str(e)}")
-            logger.error(traceback.format_exc())
+            # logger.error(f"Error in handle_action: {str(e)}")
+            # logger.error(traceback.format_exc())
             flash(f'Action failed: {str(e)}', 'error')
             return redirect(url_for('.index_view'))
 
     @action('approve', 'Approve Umbrellas', 'Are you sure you want to approve the selected umbrellas?')
     def action_approve(self, ids):
-        logger = current_app.logger
+        # logger = current_app.logger
         try:
-            logger.debug(f"Attempting to approve umbrellas with ids: {ids}")
+            # logger.debug(f"Attempting to approve umbrellas with ids: {ids}")
             query = self.model.query.filter(self.model.id.in_(ids))
             count = 0
             
@@ -270,14 +270,14 @@ class UmbrellaAdminView(SecureModelView):
                 if not umbrella.is_approved:
                     umbrella.is_approved = True
                     count += 1
-                    logger.debug(f"Umbrella {umbrella.id} approved")
+                    # logger.debug(f"Umbrella {umbrella.id} approved")
                     
             self.session.commit()
             flash(f'{count} umbrellas were successfully approved.')
             
         except Exception as ex:
-            logger.error(f"Error in action_approve: {str(ex)}")
-            logger.error(traceback.format_exc())
+            # logger.error(f"Error in action_approve: {str(ex)}")
+            # logger.error(traceback.format_exc())
             flash(f'Failed to approve umbrellas: {str(ex)}', 'error')
             
         return redirect(url_for('.index_view'))

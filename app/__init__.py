@@ -46,8 +46,7 @@ def configure_logging():
 logging.getLogger('passlib').setLevel(logging.WARNING)
 
 def create_app(config_name):
-    # Configure logging
-    configure_logging()
+    # configure_logging()
     
     # Create Flask application
     app = Flask(__name__)
@@ -220,7 +219,7 @@ def create_app(config_name):
         
         db.session.commit()
         print('All superusers created successfully')
-        
+
     import_initial_banks(app)
      # Initialize debug CSRF if in debug mode
     return app

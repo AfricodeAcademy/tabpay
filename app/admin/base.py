@@ -16,13 +16,13 @@ class SecureBaseView(AdminIndexView):
         is_active = current_user.is_active
         is_authenticated = current_user.is_authenticated
         is_superuser = current_user.has_role('SuperUser')
-        current_app.logger.debug(f"Checking access for user {current_user.id if current_user.is_authenticated else 'Anonymous'}")
-        current_app.logger.debug(f"Is active: {is_active}")
-        current_app.logger.debug(f"Is authenticated: {is_authenticated}")
-        current_app.logger.debug(f"Is superuser: {is_superuser}")
+        # current_app.logger.debug(f"Checking access for user {current_user.id if current_user.is_authenticated else 'Anonymous'}")
+        # current_app.logger.debug(f"Is active: {is_active}")
+        # current_app.logger.debug(f"Is authenticated: {is_authenticated}")
+        # current_app.logger.debug(f"Is superuser: {is_superuser}")
         
         result = (is_active and is_authenticated and (is_superuser))
-        current_app.logger.debug(f"Access granted: {result}")
+        # current_app.logger.debug(f"Access granted: {result}")
         
         return result
     
@@ -38,7 +38,7 @@ class SecureBaseView(AdminIndexView):
         return super().render(template, **kwargs)
     
     def is_action_allowed(self, name):
-        current_app.logger.debug(f"Checking if action {name} is allowed")
+        # current_app.logger.debug(f"Checking if action {name} is allowed")
         return True
 
 
