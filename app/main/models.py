@@ -59,7 +59,7 @@ class UserModel(db.Model, UserMixin):
     
     bank_id = db.Column(db.Integer, db.ForeignKey('banks.id'))
     acc_number = db.Column(db.String(50))
-    image_file = db.Column(db.String(20), nullable=False, default='profile.png')
+    image_file = db.Column(db.String(50), nullable=False, default='profile.png')
     registered_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
     fs_uniquifier = db.Column(db.String(64), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
