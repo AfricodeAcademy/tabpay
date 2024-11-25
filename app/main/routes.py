@@ -1896,3 +1896,66 @@ def view_all_blocks():
         })
 
     return render_template('all_blocks.html', blocks=block_data)
+
+
+# Fetch and display committee members
+def render_committee_page(active_tab=None, error=None):
+    # Fetch Chairman, Secretary, and Treasurer from the API
+    umbrella = get_umbrella_by_user(current_user.id)
+    if not umbrella:
+        flash('Please create an umbrella first to see your committee members!', 'danger')
+        return redirect(url_for('main.settings', active_tab='umbrella'))
+    umbrella_id = umbrella['id']  
+    try:
+        chairman_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Chairman','umbrella_id' : umbrella_id })
+        secretary_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Secretary','umbrella_id' : umbrella_id})
+        treasurer_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Treasurer','umbrella_id' : umbrella_id})
+        # Raise exception if request failed
+        chairman_response.raise_for_status()
+        secretary_response.raise_for_status()
+        treasurer_response.raise_for_status()
+        # Parse the response
+        committee_members = {
+            'chairmen': chairman_response.json(),
+            'secretaries': secretary_response.json(),
+            'treasurers': treasurer_response.json()
+        }
+        print(f'Chairmen for Umbrella {umbrella_id}: {committee_members}')
+        return render_template('committee.html', title='Committee | Dashboard', 
+                               committee_members=committee_members, 
+                               active_tab=active_tab,
+                                 error=error)
+    except requests.exceptions.RequestException as e:
+        print(f'Committee error: {e}')
+        flash(f"Error fetching committee members.", 'danger')
+        return redirect(url_for('main.committee'))
+    
+# Single route to handle committee-related actions
+@main.route('/committee', methods=['GET', 'POST'])
+@login_required
+@approval_required
+@roles_accepted('SuperUser', 'Administrator')
+def committee():    
+    if 'remove_role_submit' in request.form:
+        user_id = request.args.get('user_id')  
+        active_tab = request.form.get('active_tab')  
+        return remove_committee_role(user_id, active_tab)  
+    return render_committee_page(active_tab=request.args.get('active_tab', 'chairmen'))
+
+
+# Remove committee role (Chairman, Secretary, Treasurer)
+def remove_committee_role(user_id, active_tab):
+    if not user_id:
+        flash('User ID is missing.', 'danger')
+        return redirect(url_for('main.committee', active_tab=active_tab))
+    try:
+        role_id = request.form.get('role_id')
+        action = 'remove'
+        response = requests.patch(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}", json={'role_id': role_id, 'action': action})
+        response.raise_for_status()
+        flash('Committee role removed successfully', 'success')
+        return redirect(url_for('main.committee', active_tab=active_tab))
+    except requests.exceptions.RequestException as e:
+        flash(f"Error removing committee role!", 'danger')
+        logger.error(f"Request failed: {str(e)}")
+        return redirect(url_for('main.committee', active_tab=active_tab))
