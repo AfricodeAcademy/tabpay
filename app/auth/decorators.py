@@ -1,7 +1,7 @@
 from functools import wraps
 from flask import redirect, url_for, flash, abort, current_app
 from flask_login import current_user
-from ..main.routes import get_umbrella_by_user
+from ..utils.umbrella import get_umbrella_by_user, get_blocks_by_umbrella
 
 
 def approval_required(f):
@@ -40,7 +40,6 @@ def umbrella_required(f):
 
         # If a block_id is provided, verify it belongs to the user's umbrella
         if 'block_id' in kwargs:
-            from ..main.routes import get_blocks_by_umbrella
             blocks = get_blocks_by_umbrella()
             if not any(str(block['id']) == str(kwargs['block_id']) for block in blocks):
                 flash('You do not have permission to access this block.', 'danger')

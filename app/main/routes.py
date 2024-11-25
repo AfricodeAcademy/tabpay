@@ -10,6 +10,7 @@ from datetime import datetime,timedelta
 from ..utils.send_sms import SendSMS
 from app.main.models import UserModel, BlockModel, PaymentModel, ZoneModel
 from app.auth.decorators import approval_required, umbrella_required
+from ..utils.umbrella import get_umbrella_by_user, get_blocks_by_umbrella
 from functools import wraps
 from ..utils.mpesa import get_mpesa_client
 
@@ -764,51 +765,45 @@ Upcoming block is hosted by {meeting_zone} and the host is {host}. Paybill: {pay
     except Exception as e:
         print(f'User Details Error:{e}')
         flash('Error loading user details. Please try again later.', 'danger')
+    
+    umbrella = get_umbrella_by_user(current_user.id)
 
-    blocks, zones, members = [], [], []
-    # API call to get umbrella by user
-    try:
-        umbrella = get_umbrella_by_user(current_user.id)
-        if umbrella:
+    if not umbrella:
+        flash('Please create an umbrella first to manage contributions!', 'danger')
+        return redirect(url_for('main.settings', active_tab='umbrella'))
 
-            # API calls to dynamically fetch blocks and zones
-            blocks = get_blocks_by_umbrella()
-            schedule_form.block.choices = [("", "--Choose a Block--")] + [(str(block['id']), block['name']) for block in blocks]
-            update_form.block_id.choices =  [("", "--Choose an Additional Block--")] + [(str(block['id']), block['name']) for block in blocks]
 
-             # Prepare a mapping for zones with block names
-            zone_map = {}  # Store a mapping of zone_id to (zone_name, block_name)
-            for block in blocks:
-                # Fetch zones associated with the current block       
-                block_id = block['id']         
-                block_zones = get_zones_by_block(block_id)
-                block_name = block['name']  
-                for zone in block_zones:
-                    zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
+    # Fetch blocks associated with the umbrella
+    blocks = get_blocks_by_umbrella()
+    schedule_form.block.choices = [("", "--Choose a Block--")] + [(str(block['id']), block['name']) for block in blocks]
+    update_form.block_id.choices =  [("", "--Choose an Additional Block--")] + [(str(block['id']), block['name']) for block in blocks]
 
-            # Set the choices for the member_zone field in the form
-            schedule_form.zone.choices = [("", "--Choose a Zone--")] + [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
+     # Prepare a mapping for zones with block names
+    zone_map = {}  # Store a mapping of zone_id to (zone_name, block_name)
+    for block in blocks:
+        # Fetch zones associated with the current block       
+        block_id = block['id']         
+        block_zones = get_zones_by_block(block_id)
+        block_name = block['name']  
+        for zone in block_zones:
+            zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
 
-            update_form.member_zone.choices = [("", "--Choose an Additional Zone--")] +[(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
+    # Set the choices for the member_zone field in the form
+    schedule_form.zone.choices = [("", "--Choose a Zone--")] + [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
 
-            # Fetch members
-            members = get_members()
-            if members:
-                for member in members:
-                    member['bank_name'] = member.get('bank_name', 'Unknown Bank')
-                    schedule_form.member.choices = [("", "--Choose a Member--")] + [(str(member['id']), member['full_name']) for member in members]
-            else:
-                schedule_form.member.choice = []
+    update_form.member_zone.choices = [("", "--Choose an Additional Zone--")] +[(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
 
-            banks = get_banks()
-            update_form.bank_id.choices = [("", "--Choose Bank--")] + [(str(bank['id']), bank['name']) for bank in banks]
+    # Fetch members
+    members = get_members()
+    if members:
+        for member in members:
+            member['bank_name'] = member.get('bank_name', 'Unknown Bank')
+            schedule_form.member.choices = [("", "--Choose a Member--")] + [(str(member['id']), member['full_name']) for member in members]
+    else:
+        schedule_form.member.choice = []
 
-        else:
-            flash('Please create an umbrella first to schedule a meeting!', 'danger')
-            return redirect(url_for('main.settings',active_tab='umbrella')) 
-    except Exception as e:
-        logging.error(f"Error loading umbrella data: {e}", exc_info=True)
-
+    banks = get_banks()
+    update_form.bank_id.choices = [("", "--Choose Bank--")] + [(str(bank['id']), bank['name']) for bank in banks]
 
     # Render the host page
     return render_template('host.html', title='Host | Dashboard',
@@ -817,7 +812,7 @@ Upcoming block is hosted by {meeting_zone} and the host is {host}. Paybill: {pay
                             meeting_id=(meeting_details or {}).get('meeting_id', ''),
                            schedule_form=schedule_form,
                            blocks=blocks,message=message,
-                           zones=zones,acc_number=acc_number,paybill_no=paybill_no,
+                           zones=zone_map.keys(),acc_number=acc_number,paybill_no=paybill_no,
                            members=members,
                            active_tab=active_tab,  
                            error=error,meeting_block=meeting_block,host=host,meeting_zone=meeting_zone,when=when,id_meeting=id_meeting)
@@ -1567,7 +1562,6 @@ def render_contribution_page(active_tab=None,payment_form=None, error=None):
     if not umbrella:
         flash('Please create an umbrella first to manage contributions!', 'danger')
         return redirect(url_for('main.settings', active_tab='umbrella'))
-
 
     # Fetch blocks associated with the umbrella
     blocks = get_blocks_by_umbrella()
