@@ -817,7 +817,6 @@ Upcoming block is hosted by {meeting_zone} and the host is {host}. Paybill: {pay
                            active_tab=active_tab,  
                            error=error,meeting_block=meeting_block,host=host,meeting_zone=meeting_zone,when=when,id_meeting=id_meeting)
 
-# Single route to handle all host form submissions
 @main.route('/host', methods=['GET', 'POST'])
 @login_required
 @approval_required
@@ -1282,7 +1281,7 @@ def render_reports_page(active_tab=None, error=None, host_id=None, member_id=Non
     except Exception as e:
         print(f'User Details Error:{e}')
         flash('Error loading user details. Please try again later.', 'danger')
-
+    
     if not umbrella:
         flash('You need to create an umbrella before getting block reports!', 'danger')
         return redirect(url_for('main.settings', active_tab='umbrella'))
@@ -1985,3 +1984,21 @@ def remove_committee_role(user_id, active_tab):
         flash(f"Error removing committee role!", 'danger')
         logger.error(f"Request failed: {str(e)}")
         return redirect(url_for('main.committee', active_tab=active_tab))
+
+@main.route('/update_member', methods=['POST'])
+@login_required
+@approval_required
+def update_member():
+    update_form = EditMemberForm()
+    if update_form.validate_on_submit():
+        member_id = update_form.member_id.data
+        block_id = update_form.block_id.data
+        zone_id = update_form.member_zone.data
+
+        success, message = update_user_memberships(member_id, block_id, zone_id)
+        if success:
+            flash('Member updated successfully!', 'success')
+        else:
+            flash(f'Failed to update member: {message}', 'danger')
+
+    return redirect(url_for('main.host', active_tab='update_member'))
