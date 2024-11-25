@@ -1,7 +1,21 @@
 import requests
-from flask import current_app
+from flask import current_app, g
 from flask_security import current_user
+from functools import wraps
 
+def cache_for_request(f):
+    """Cache the result of a function for the duration of the request."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        cache_key = f"{f.__name__}:{':'.join(str(arg) for arg in args)}"
+        if not hasattr(g, 'cache'):
+            g.cache = {}
+        if cache_key not in g.cache:
+            g.cache[cache_key] = f(*args, **kwargs)
+        return g.cache[cache_key]
+    return decorated
+
+@cache_for_request
 def get_umbrella_by_user(user_id):
     """Get umbrella details for a user from the API."""
     try:
@@ -20,6 +34,7 @@ def get_umbrella_by_user(user_id):
         current_app.logger.error(f"Error fetching umbrella: {str(e)}")
         return None
 
+@cache_for_request
 def get_blocks_by_umbrella():
     """Get blocks for the current user's umbrella."""
     umbrella = get_umbrella_by_user(current_user.id)
