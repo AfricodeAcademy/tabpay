@@ -37,19 +37,21 @@
     <script>
       // Set up CSRF token for AJAX requests
       function getCSRFToken() {
-        return document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        return document
+          .querySelector('meta[name="csrf-token"]')
+          .getAttribute("content");
       }
-      
+
       // Add CSRF token to all AJAX requests
       let _old_send = XMLHttpRequest.prototype.send;
-      XMLHttpRequest.prototype.send = function() {
-        this.setRequestHeader('X-CSRFToken', getCSRFToken());
+      XMLHttpRequest.prototype.send = function () {
+        this.setRequestHeader("X-CSRFToken", getCSRFToken());
         return _old_send.apply(this, arguments);
       };
-      
+
       // Add CSRF token to all fetch requests
       let _fetch = window.fetch;
-      window.fetch = function() {
+      window.fetch = function () {
         let args = Array.prototype.slice.call(arguments);
         if (args[1] === undefined) {
           args[1] = {};
@@ -57,19 +59,24 @@
         if (args[1].headers === undefined) {
           args[1].headers = {};
         }
-        if (args[1].method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(args[1].method.toUpperCase())) {
-          args[1].headers['X-CSRFToken'] = getCSRFToken();
+        if (
+          args[1].method &&
+          ["POST", "PUT", "PATCH", "DELETE"].includes(
+            args[1].method.toUpperCase()
+          )
+        ) {
+          args[1].headers["X-CSRFToken"] = getCSRFToken();
         }
         return _fetch.apply(this, args);
       };
-      
+
       // Add CSRF token to all forms
-      document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('form').forEach(function(form) {
+      document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll("form").forEach(function (form) {
           if (!form.querySelector('input[name="csrf_token"]')) {
-            let input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'csrf_token';
+            let input = document.createElement("input");
+            input.type = "hidden";
+            input.name = "csrf_token";
             input.value = getCSRFToken();
             form.appendChild(input);
           }
@@ -159,8 +166,8 @@
           {% if current_user.has_role('Administrator') or
           current_user.has_role('SuperUser') %}
           <a
-            href="{{ url_for('main.settings', active_tab='committee') }}"
-            class="{% if request.endpoint == 'main.settings' and request.args.get('active_tab') == 'committee' %}active{% endif %}"
+            href="{{ url_for('main.committee') }}"
+            class="{% if request.endpoint == 'main.committee' %}active{% endif %}"
           >
             <i class="fas fa-users"></i> Committee
           </a>
@@ -216,8 +223,8 @@
               {% if current_user.has_role('Administrator') or
               current_user.has_role('SuperUser') %}
               <a
-                href="{{ url_for('main.settings', active_tab='committee') }}"
-                class="{% if request.endpoint == 'main.settings' and request.args.get('active_tab') == 'committee' %}active{% endif %}"
+                href="{{ url_for('main.committee') }}"
+                class="{% if request.endpoint == 'main.committee' %}active{% endif %}"
               >
                 <i class="fas fa-users"></i> Committee
               </a>
