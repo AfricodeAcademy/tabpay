@@ -5,12 +5,16 @@ from flask_security import current_user
 def get_umbrella_by_user(user_id):
     """Get umbrella details for a user from the API."""
     try:
+        # Use the correct endpoint that returns umbrella by created_by
         response = requests.get(
-            f"{current_app.config['API_BASE_URL']}/api/v1/umbrella/user/{user_id}",
+            f"{current_app.config['API_BASE_URL']}/api/v1/umbrellas/",
+            params={"created_by": user_id},
             headers={"Authorization": f"Bearer {current_user.get_auth_token()}"}
         )
         if response.status_code == 200:
-            return response.json()
+            umbrellas = response.json()
+            # Return the first umbrella if any exist
+            return umbrellas[0] if umbrellas else None
         return None
     except Exception as e:
         current_app.logger.error(f"Error fetching umbrella: {str(e)}")
