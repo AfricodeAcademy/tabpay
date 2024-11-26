@@ -2,7 +2,7 @@ from flask import redirect, url_for, after_this_request
 from flask_security import user_registered
 from flask_login import user_logged_in
 from ..utils import db
-import logging
+# import logging
 
 def init_signals(app):
     """Initialize all signals within the application context."""
@@ -10,7 +10,7 @@ def init_signals(app):
     @user_registered.connect_via(app)
     def on_user_registered(sender, user, confirm_token, **extra):
         """Handle post-registration actions."""
-        logging.debug(f"User {user.email} registered. Setting is_approved to False.")
+        # logging.debug(f"User {user.email} registered. Setting is_approved to False.")
         
         # Set additional user properties, if needed
         user.is_approved = False

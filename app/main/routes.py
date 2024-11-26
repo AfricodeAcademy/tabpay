@@ -18,9 +18,7 @@ main = Blueprint('main', __name__)
 
 sms = SendSMS()
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+
 
 @main.route('/', methods=['GET'])
 def home():
@@ -184,7 +182,6 @@ def handle_profile_update():
     user_changed = False
 
     if profile_form.validate_on_submit():
-        logger.info("Form validated successfully.")
 
         # Handle profile picture update
         if profile_form.picture.data:
@@ -201,15 +198,12 @@ def handle_profile_update():
                         flash('Profile picture updated successfully!', 'success')
                         current_user.image_file = picture_file
                         user_changed = True
-                        logger.info("Profile picture updated successfully via API.")
                     else:
-                        logger.error(f"Failed to update profile picture. API response: {response.status_code} - {response.text}")
                         flash('Failed to update profile picture.', 'danger')
                 else:
                     flash('The new profile picture is the same as the current one.', 'info')
 
             except Exception as e:
-                logger.error(f"Error updating profile picture: {e}")
                 flash('An error occurred while updating the profile picture.', 'danger')
 
         # Handle other profile field updates (name, email, phone number)
@@ -227,22 +221,18 @@ def handle_profile_update():
                 response = requests.patch(api_url, json=update_data, headers={'Authorization': f"Bearer {current_user.get_auth_token()}"})
                 if response.status_code == 200:
                     flash("Profile updated successfully!", "success")
-                    logger.info("Profile fields updated successfully via API.")
                     user_changed = True
                     # Update the current user details in session after successful update
                     current_user.full_name = update_data.get('full_name', current_user.full_name)
                     current_user.email = update_data.get('email', current_user.email)
                 else:
-                    logger.error(f"Failed to update profile fields. API response: {response.status_code} - {response.text}")
                     errors = response.json().get('message', "An error occurred")
                     flash(errors, "danger")
             except Exception as e:
-                logger.error(f"Error while updating profile fields: {e}")
                 flash("An error occurred while updating profile details.", "danger")
 
         # Inform user if no changes were detected
         if not user_changed:
-            logger.info("No changes made to profile fields or picture.")
             flash("No changes made to your profile.", "info")
 
     else:
@@ -262,7 +252,7 @@ def get_roles():
 def get_user_by_id_number(id_number):
     try:
         response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'id_number': id_number})
-        current_app.logger.debug(f"API Response: {response.json()}")  # Log response for debugging
+        # current_app.logger.debug(f"API Response: {response.json()}")  
         if response.status_code == 200:
             user = response.json()  # Expecting a single user, not a list
             return user
@@ -716,7 +706,7 @@ def create_zone(payload):
 def statistics():
     
     umbrella_id = get_umbrella_by_user(current_user.id)
-    print(f'fetched umbrella: {umbrella_id}')
+    # print(f'fetched umbrella: {umbrella_id}')
 
     total_members = len(get_members())
 
@@ -1252,7 +1242,6 @@ def get_members():
     umbrella_id = umbrella['id']  # Extract the umbrella ID
 
     try:
-        logger.info("Fetching users with role 'Member' for the specified umbrella.")
         # Fetch members associated with the umbrella
         response = requests.get(
             f"{current_app.config['API_BASE_URL']}/api/v1/users/",
@@ -1261,15 +1250,83 @@ def get_members():
         
         if response.status_code == 200:
             members = response.json()
-            logger.info(f"Users fetched successfully: {len(members)} members.")
             return members
           
         else:
-            logger.error(f"Error fetching members: Status Code {response.status_code}")
             return []
     except Exception as e:
-        logger.error(f"Exception during fetching members: {str(e)}")
         return []
+
+
+# Fetch and display committee members
+def render_committee_page(active_tab=None, error=None):
+    # Fetch Chairman, Secretary, and Treasurer from the API
+    umbrella = get_umbrella_by_user(current_user.id)
+    if not umbrella:
+        flash('Please create an umbrella first to see your committee members!', 'danger')
+        return redirect(url_for('main.settings', active_tab='umbrella'))
+
+    umbrella_id = umbrella['id']  
+
+    try:
+        chairman_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Chairman','umbrella_id' : umbrella_id })
+        secretary_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Secretary','umbrella_id' : umbrella_id})
+        treasurer_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Treasurer','umbrella_id' : umbrella_id})
+
+        # Raise exception if request failed
+        chairman_response.raise_for_status()
+        secretary_response.raise_for_status()
+        treasurer_response.raise_for_status()
+
+        # Parse the response
+        committee_members = {
+            'chairmen': chairman_response.json(),
+            'secretaries': secretary_response.json(),
+            'treasurers': treasurer_response.json()
+        }
+        print(f'Chairmen for Umbrella {umbrella_id}: {committee_members}')
+
+        return render_template('committee.html', title='Committee | Dashboard', 
+                               committee_members=committee_members, 
+                               active_tab=active_tab,
+                                 error=error)
+
+    except requests.exceptions.RequestException as e:
+        print(f'Committee error: {e}')
+        flash(f"Error fetching committee members.", 'danger')
+        return redirect(url_for('main.committee'))
+
+# Single route to handle committee-related actions
+@main.route('/committee', methods=['GET', 'POST'])
+@login_required
+@approval_required
+@roles_accepted('SuperUser', 'Administrator')
+def committee():    
+    if 'remove_role_submit' in request.form:
+        user_id = request.args.get('user_id')  
+        active_tab = request.form.get('active_tab')  
+        return remove_committee_role(user_id, active_tab)  
+
+    return render_committee_page(active_tab=request.args.get('active_tab', 'chairmen'))
+
+
+# Remove committee role (Chairman, Secretary, Treasurer)
+def remove_committee_role(user_id, active_tab):
+    if not user_id:
+        flash('User ID is missing.', 'danger')
+        return redirect(url_for('main.committee', active_tab=active_tab))
+
+    try:
+        role_id = request.form.get('role_id')
+        action = 'remove'
+        response = requests.patch(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}", json={'role_id': role_id, 'action': action})
+        response.raise_for_status()
+        flash('Committee role removed successfully', 'success')
+        return redirect(url_for('main.committee', active_tab=active_tab))
+
+    except requests.exceptions.RequestException as e:
+        flash(f"Error removing committee role!", 'danger')
+        return redirect(url_for('main.committee', active_tab=active_tab))
 
 
 # Helper function to render the reports page with member contributions
@@ -1852,105 +1909,35 @@ def search():
     return render_template('search_results.html', query=query, search_type=search_type, results=results)
 
 @main.route('/block/<int:block_id>')
+@login_required
+@approval_required
 def view_block(block_id):
-    # Fetch block details by ID
-    block = BlockModel.query.get_or_404(block_id)
+    umbrella = get_umbrella_by_user(current_user.id)
+    block = BlockModel.query.filter_by(id=block_id,parent_umbrella_id=umbrella['id']).first()
 
     # Pass block details to the home page
     return render_template('search_results.html', block=block)
 
 
 @main.route('/blocks', methods=['GET'])
+@login_required
+@approval_required
 def view_all_blocks():
-    blocks = BlockModel.query.all()  # Fetch all blocks
+    umbrella = get_umbrella_by_user(current_user.id)
+    blocks = BlockModel.query.filter_by(parent_umbrella_id=umbrella['id']).all()
 
     
     block_data = []
+    members =get_members()
     for block in blocks:
+        block_members = [
+                member for member in members 
+                if any(block_membership['id'] == block.id for block_membership in member.get('block_memberships', []))
+            ]     
         block_data.append({
             'name': block.name,
-            'parent_umbrella': block.parent_umbrella.name if block.parent_umbrella else 'N/A'
+            'parent_umbrella': umbrella['name'] if  umbrella['name'] else 'N/A',
+            'members': len(block_members)
         })
 
     return render_template('all_blocks.html', blocks=block_data)
-
-
-# Fetch and display committee members
-def render_committee_page(active_tab=None, error=None):
-    # Fetch Chairman, Secretary, and Treasurer from the API
-    umbrella = get_umbrella_by_user(current_user.id)
-    if not umbrella:
-        flash('Please create an umbrella first to see your committee members!', 'danger')
-        return redirect(url_for('main.settings', active_tab='umbrella'))
-    umbrella_id = umbrella['id']  
-    try:
-        chairman_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Chairman','umbrella_id' : umbrella_id })
-        secretary_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Secretary','umbrella_id' : umbrella_id})
-        treasurer_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role': 'Treasurer','umbrella_id' : umbrella_id})
-        # Raise exception if request failed
-        chairman_response.raise_for_status()
-        secretary_response.raise_for_status()
-        treasurer_response.raise_for_status()
-        # Parse the response
-        committee_members = {
-            'chairmen': chairman_response.json(),
-            'secretaries': secretary_response.json(),
-            'treasurers': treasurer_response.json()
-        }
-        print(f'Chairmen for Umbrella {umbrella_id}: {committee_members}')
-        return render_template('committee.html', title='Committee | Dashboard', 
-                               committee_members=committee_members, 
-                               active_tab=active_tab,
-                                 error=error)
-    except requests.exceptions.RequestException as e:
-        print(f'Committee error: {e}')
-        flash(f"Error fetching committee members.", 'danger')
-        return redirect(url_for('main.committee'))
-    
-# Single route to handle committee-related actions
-@main.route('/committee', methods=['GET', 'POST'])
-@login_required
-@approval_required
-@roles_accepted('SuperUser', 'Administrator')
-def committee():    
-    if 'remove_role_submit' in request.form:
-        user_id = request.args.get('user_id')  
-        active_tab = request.form.get('active_tab')  
-        return remove_committee_role(user_id, active_tab)  
-    return render_committee_page(active_tab=request.args.get('active_tab', 'chairmen'))
-
-
-# Remove committee role (Chairman, Secretary, Treasurer)
-def remove_committee_role(user_id, active_tab):
-    if not user_id:
-        flash('User ID is missing.', 'danger')
-        return redirect(url_for('main.committee', active_tab=active_tab))
-    try:
-        role_id = request.form.get('role_id')
-        action = 'remove'
-        response = requests.patch(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}", json={'role_id': role_id, 'action': action})
-        response.raise_for_status()
-        flash('Committee role removed successfully', 'success')
-        return redirect(url_for('main.committee', active_tab=active_tab))
-    except requests.exceptions.RequestException as e:
-        flash(f"Error removing committee role!", 'danger')
-        logger.error(f"Request failed: {str(e)}")
-        return redirect(url_for('main.committee', active_tab=active_tab))
-
-@main.route('/update_member', methods=['POST'])
-@login_required
-@approval_required
-def update_member():
-    update_form = EditMemberForm()
-    if update_form.validate_on_submit():
-        member_id = update_form.member_id.data
-        block_id = update_form.block_id.data
-        zone_id = update_form.member_zone.data
-
-        success, message = update_user_memberships(member_id, block_id, zone_id)
-        if success:
-            flash('Member updated successfully!', 'success')
-        else:
-            flash(f'Failed to update member: {message}', 'danger')
-
-    return redirect(url_for('main.host', active_tab='update_member'))

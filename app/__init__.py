@@ -16,6 +16,7 @@ from flask_migrate import Migrate
 from flask_babel import Babel
 from datetime import timedelta
 import uuid
+import secrets
 
 # Load environment variables
 load_dotenv()
@@ -46,8 +47,7 @@ def configure_logging():
 logging.getLogger('passlib').setLevel(logging.WARNING)
 
 def create_app(config_name):
-    # Configure logging
-    configure_logging()
+    # configure_logging()
     
     # Create Flask application
     app = Flask(__name__)
@@ -58,11 +58,12 @@ def create_app(config_name):
     babel.init_app(app)
     
     # Load environment variables into config
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-    app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('SECURITY_PASSWORD_SALT')
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY',secrets.token_hex(32))
+    app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('SECURITY_PASSWORD_SALT',"a2c95d6f1e8b7c3a4d5f9e6b8f2a7c18")
     app.config['SECURITY_TOKEN_MAX_AGE'] = int(os.environ.get('SECURITY_TOKEN_MAX_AGE', 86400))
     app.config['SECURITY_DEFAULT_REMEMBER_ME'] = os.environ.get('SECURITY_DEFAULT_REMEMBER_ME', 'True').lower() == 'true'
     app.config['SECURITY_TRACKABLE'] = os.environ.get('SECURITY_TRACKABLE', 'True').lower() == 'true'
+    app.config["SECURITY_PASSWORD_COMPLEXITY_CHECKER"] = None
     
     if config_name == 'production':
         app.config['SESSION_COOKIE_SECURE'] = os.environ.get('SESSION_COOKIE_SECURE', 'True').lower() == 'true'
@@ -220,9 +221,7 @@ def create_app(config_name):
         
         db.session.commit()
         print('All superusers created successfully')
-        
+       
     import_initial_banks(app)
      # Initialize debug CSRF if in debug mode
     return app
-
-# TODODELETE HAO USERS DURING PRODUCTION ENVIRONMENT
