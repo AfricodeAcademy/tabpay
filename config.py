@@ -101,9 +101,20 @@ class Config:
     MPESA_CALLBACK_URL = os.getenv('MPESA_CALLBACK_URL')
     
     # Validate required environment variables
-    if not all([MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET, MPESA_PASSKEY, MPESA_SHORTCODE,
-                MPESA_CALLBACK_URL]):
-        raise ValueError("Missing required M-Pesa configuration. Check your .env file.")
+    missing_vars = []
+    if not MPESA_CONSUMER_KEY:
+        missing_vars.append('MPESA_CONSUMER_KEY')
+    if not MPESA_CONSUMER_SECRET:
+        missing_vars.append('MPESA_CONSUMER_SECRET')
+    if not MPESA_PASSKEY:
+        missing_vars.append('MPESA_PASSKEY')
+    if not MPESA_SHORTCODE:
+        missing_vars.append('MPESA_SHORTCODE')
+    if not MPESA_CALLBACK_URL:
+        missing_vars.append('MPESA_CALLBACK_URL')
+    
+    if missing_vars:
+        raise ValueError(f"Missing required M-Pesa configurations: {', '.join(missing_vars)}. Check your .env file.")
 
     # API Base URL from environment variable
     API_BASE_URL = os.getenv('API_BASE_URL', 'https://tabpay.africa')  # Default to production URL if not set
