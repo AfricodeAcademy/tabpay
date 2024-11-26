@@ -1,7 +1,7 @@
 .tabpay/
 donotpush/
 app/__pycache__/*
-
+scripts/
 # Byte-compiled / optimized / DLL files
 
 migrations/
