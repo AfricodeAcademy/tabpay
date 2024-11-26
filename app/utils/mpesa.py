@@ -20,7 +20,10 @@ class MpesaCredentials:
     consumer_key: str
     consumer_secret: str
     shortcode: str
-    environment: str = 'sandbox'
+    environment: str = 'production'
+    passkey: Optional[str] = None
+    stk_push_shortcode: Optional[str] = None
+    stk_push_passkey: Optional[str] = None
 
 class MpesaAuthManager:
     """Handles M-Pesa API authentication"""
@@ -97,7 +100,10 @@ class MpesaC2B:
             consumer_key=current_app.config['MPESA_CONSUMER_KEY'],
             consumer_secret=current_app.config['MPESA_CONSUMER_SECRET'],
             shortcode=current_app.config['MPESA_SHORTCODE'],
-            environment=current_app.config.get('MPESA_ENVIRONMENT', 'sandbox')
+            environment=current_app.config.get('MPESA_ENVIRONMENT', 'production'),
+            passkey=current_app.config.get('MPESA_PASSKEY'),
+            stk_push_shortcode=current_app.config.get('MPESA_STK_PUSH_SHORTCODE'),
+            stk_push_passkey=current_app.config.get('MPESA_STK_PUSH_PASSKEY')
         )
         self.auth_manager = MpesaAuthManager(credentials)
         self.api_url = self.auth_manager.api_url
@@ -172,6 +178,105 @@ class MpesaC2B:
             return result
         except requests.exceptions.RequestException as e:
             logger.error(f"Error initiating payment: {str(e)}")
+            raise
+
+    def generate_password(self, timestamp: str) -> str:
+        """Generate password for STK Push"""
+        if self.credentials.environment == 'sandbox':
+            business_short_code = "174379"
+            passkey = "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919"
+        else:
+            business_short_code = self.credentials.stk_push_shortcode
+            passkey = self.credentials.stk_push_passkey
+            
+        password_str = f"{business_short_code}{passkey}{timestamp}"
+        return base64.b64encode(password_str.encode()).decode('utf-8')
+
+    def initiate_stk_push(
+        self,
+        phone_number: str,
+        amount: int,
+        account_reference: str,
+        transaction_desc: str = "Payment for TabPay"
+    ) -> Dict[str, Any]:
+        """Initiate STK Push payment request"""
+        if not self.credentials.stk_push_shortcode or not self.credentials.stk_push_passkey:
+            raise ValueError("STK Push credentials not configured")
+
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        password = self.generate_password(timestamp)
+        
+        url = f'{self.api_url}/mpesa/stkpush/v1/processrequest'
+        
+        # Format phone number (add 254 prefix if needed)
+        if phone_number.startswith('+'):
+            phone_number = phone_number[1:]
+        elif phone_number.startswith('0'):
+            phone_number = '254' + phone_number[1:]
+            
+        payload = {
+            "BusinessShortCode": self.credentials.stk_push_shortcode,
+            "Password": password,
+            "Timestamp": timestamp,
+            "TransactionType": "CustomerPayBillOnline",
+            "Amount": int(amount),
+            "PartyA": phone_number,
+            "PartyB": self.credentials.stk_push_shortcode,
+            "PhoneNumber": phone_number,
+            "CallBackURL": current_app.config['MPESA_CALLBACK_URL'],
+            "AccountReference": account_reference,
+            "TransactionDesc": transaction_desc
+        }
+        
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {self.auth_manager.get_access_token()}'
+        }
+        
+        try:
+            logger.info(f"Initiating STK Push with payload: {json.dumps(payload, indent=2)}")
+            response = requests.post(url, json=payload, headers=headers)
+            response.raise_for_status()
+            result = response.json()
+            logger.info(f"Successfully initiated STK Push: {json.dumps(result, indent=2)}")
+            return result
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error initiating STK Push: {str(e)}")
+            logger.error(f"Response content: {getattr(e.response, 'text', '')}")
+            raise
+
+    def query_stk_push_status(
+        self,
+        checkout_request_id: str,
+    ) -> Dict[str, Any]:
+        """Query the status of an STK Push transaction"""
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        password = self.generate_password(timestamp)
+        
+        url = f'{self.api_url}/mpesa/stkpushquery/v1/query'
+        
+        payload = {
+            "BusinessShortCode": self.credentials.stk_push_shortcode,
+            "Password": password,
+            "Timestamp": timestamp,
+            "CheckoutRequestID": checkout_request_id
+        }
+        
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {self.auth_manager.get_access_token()}'
+        }
+        
+        try:
+            logger.info(f"Querying STK Push status with payload: {json.dumps(payload, indent=2)}")
+            response = requests.post(url, json=payload, headers=headers)
+            response.raise_for_status()
+            result = response.json()
+            logger.info(f"Successfully queried STK Push status: {json.dumps(result, indent=2)}")
+            return result
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error querying STK Push status: {str(e)}")
+            logger.error(f"Response content: {getattr(e.response, 'text', '')}")
             raise
 
 # Create a singleton instance
