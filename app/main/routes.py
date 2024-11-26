@@ -756,7 +756,10 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
     
     message = f"""
 Dear Member,
-Upcoming block is hosted by {meeting_zone} and the host is {host}. Paybill: {paybill_no}, Account Number: {acc_number}."""
+Upcoming block is hosted by {meeting_zone} and the host is {host}. 
+Paybill: {paybill_no}
+Meeting ID: {id_meeting}
+When: {when}"""
 
     try:
         user = get_user_from_api(current_user.id)
@@ -1815,8 +1818,6 @@ def mpesa_confirmation():
                 business_short_code=business_short_code,
                 bill_ref_number=bill_ref_number,
                 invoice_number=invoice_number,
-                org_account_balance=float(org_account_balance) if org_account_balance else None,
-                third_party_trans_id=third_party_trans_id,
                 msisdn=msisdn,
                 first_name=first_name,
                 middle_name=middle_name,
