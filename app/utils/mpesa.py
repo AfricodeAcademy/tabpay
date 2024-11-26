@@ -112,17 +112,15 @@ class MpesaC2B:
     def register_urls(
         self,
         confirmation_url: str,
-        validation_url: str,
         response_type: str = "Completed"
     ) -> Dict[str, Any]:
-        """Register validation and confirmation URLs for C2B payments"""
+        """Register confirmation URL for C2B payments"""
         url = f'{self.api_url}/mpesa/c2b/v1/registerurl'
         
         payload = {
             "ShortCode": self.credentials.shortcode,
             "ResponseType": response_type,
             "ConfirmationURL": confirmation_url,
-            "ValidationURL": validation_url
         }
         
         headers = {
@@ -131,14 +129,14 @@ class MpesaC2B:
         }
         
         try:
-            logger.info(f"Registering URLs with payload: {json.dumps(payload, indent=2)}")
+            logger.info(f"Registering URL with payload: {json.dumps(payload, indent=2)}")
             response = requests.post(url, json=payload, headers=headers)
             response.raise_for_status()
             result = response.json()
-            logger.info(f"Successfully registered URLs: {json.dumps(result, indent=2)}")
+            logger.info(f"Successfully registered URL: {json.dumps(result, indent=2)}")
             return result
         except Exception as e:
-            logger.error(f" URL registration failed: {str(e)}")
+            logger.error(f"URL registration failed: {str(e)}")
             logger.error(f"Response content: {getattr(e.response, 'text', '')}")
             raise
 

@@ -57,7 +57,6 @@ def test_register_urls(auth_manager):
     
     base_url = os.getenv('MPESA_CALLBACK_BASE_URL', 'https://tabpay.africa')
     confirmation_url = f"{base_url}/payments/confirmation"
-    validation_url = f"{base_url}/payments/validation"
     
     try:
         url = f'{auth_manager.api_url}/mpesa/c2b/v1/registerurl'
@@ -66,7 +65,6 @@ def test_register_urls(auth_manager):
             "ShortCode": auth_manager.credentials.shortcode,
             "ResponseType": "Completed",
             "ConfirmationURL": confirmation_url,
-            "ValidationURL": validation_url
         }
         
         headers = {
@@ -134,6 +132,10 @@ def test_payment_simulation(auth_manager):
         if hasattr(e, 'response'):
             print(f"Response content: {e.response.text}")
         return False
+
+def test_mpesa_callback(test_client):
+    """Test M-Pesa callback endpoint"""
+    base_url = current_app.config['API_BASE_URL']
 
 def main():
     """Main test function"""

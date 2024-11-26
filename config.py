@@ -99,11 +99,10 @@ class Config:
 
     # M-Pesa Callback URLs
     MPESA_CALLBACK_URL = os.getenv('MPESA_CALLBACK_URL')
-    MPESA_VALIDATION_URL = os.getenv('MPESA_VALIDATION_URL')
-    MPESA_CALLBACK_BASE_URL = os.getenv('MPESA_CALLBACK_BASE_URL')
-
-    if not all([MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET, MPESA_SHORTCODE, 
-                MPESA_CALLBACK_URL, MPESA_VALIDATION_URL]):
+    
+    # Validate required environment variables
+    if not all([MPESA_CONSUMER_KEY, MPESA_CONSUMER_SECRET, MPESA_PASSKEY, MPESA_SHORTCODE,
+                MPESA_CALLBACK_URL]):
         raise ValueError("Missing required M-Pesa configuration. Check your .env file.")
 
     # API Base URL from environment variable
