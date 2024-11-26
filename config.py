@@ -1,6 +1,10 @@
 import os
 import secrets
 from datetime import timedelta
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 class Config:
     SECRET_KEY = secrets.token_hex(32)
@@ -100,21 +104,30 @@ class Config:
     # M-Pesa Callback URLs
     MPESA_CALLBACK_URL = os.getenv('MPESA_CALLBACK_URL')
     
-    # Validate required environment variables
+    # Validate required environment variables with debugging
     missing_vars = []
-    if not MPESA_CONSUMER_KEY:
-        missing_vars.append('MPESA_CONSUMER_KEY')
-    if not MPESA_CONSUMER_SECRET:
-        missing_vars.append('MPESA_CONSUMER_SECRET')
-    if not MPESA_PASSKEY:
-        missing_vars.append('MPESA_PASSKEY')
-    if not MPESA_SHORTCODE:
-        missing_vars.append('MPESA_SHORTCODE')
-    if not MPESA_CALLBACK_URL:
-        missing_vars.append('MPESA_CALLBACK_URL')
+    env_vars = {
+        'MPESA_CONSUMER_KEY': MPESA_CONSUMER_KEY,
+        'MPESA_CONSUMER_SECRET': MPESA_CONSUMER_SECRET,
+        'MPESA_PASSKEY': MPESA_PASSKEY,
+        'MPESA_SHORTCODE': MPESA_SHORTCODE,
+        'MPESA_CALLBACK_URL': MPESA_CALLBACK_URL
+    }
+    
+    print("Current environment variables status:")
+    for var_name, var_value in env_vars.items():
+        if not var_value:
+            missing_vars.append(var_name)
+            print(f"Missing: {var_name}")
+        else:
+            print(f"Found: {var_name}")
     
     if missing_vars:
-        raise ValueError(f"Missing required M-Pesa configurations: {', '.join(missing_vars)}. Check your .env file.")
+        error_msg = f"Missing required M-Pesa configurations: {', '.join(missing_vars)}. Check your .env file."
+        print(f"Error: {error_msg}")
+        print(f"Current working directory: {os.getcwd()}")
+        print(f"Environment file location: {os.path.join(os.getcwd(), '.env')}")
+        raise ValueError(error_msg)
 
     # API Base URL from environment variable
     API_BASE_URL = os.getenv('API_BASE_URL', 'https://tabpay.africa')  # Default to production URL if not set
