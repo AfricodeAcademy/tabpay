@@ -224,8 +224,6 @@ class ZoneModel(db.Model):
     def __repr__(self):
         return f"<Zone {self.name}>"
 
-
-
 class MeetingModel(db.Model):
     __tablename__ = 'meetings'
     id = db.Column(db.Integer, primary_key=True)

@@ -746,7 +746,10 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
     
     message = f"""
 Dear Member,
-Upcoming block is hosted by {meeting_zone} and the host is {host}. Paybill: {paybill_no}, Account Number: {acc_number}."""
+Upcoming block is hosted by {meeting_zone} and the host is {host}. 
+Paybill: {paybill_no}
+Account Number: {id_meeting}
+When: {when}"""
 
     try:
         user = get_user_from_api(current_user.id)
@@ -1776,81 +1779,13 @@ def handle_request_payment(payment_form):
     # Redirect back to the 'Request Payment' tab
     return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
 
-@main.route('/payments/validation', methods=['POST'])
-def mpesa_validation():
-    """Handle M-Pesa validation callback"""
-    try:
-        # Get the callback data
-        callback_data = request.get_json()
-        logger.info(f"Received M-Pesa validation callback: {json.dumps(callback_data, indent=2)}")
-
-        # Extract key transaction details
-        transaction_type = callback_data.get('TransactionType')
-        trans_id = callback_data.get('TransID')
-        trans_amount = callback_data.get('TransAmount')
-        business_short_code = callback_data.get('BusinessShortCode')
-        bill_ref_number = callback_data.get('BillRefNumber')
-        invoice_number = callback_data.get('InvoiceNumber')
-        msisdn = callback_data.get('MSISDN')  # Customer phone
-        
-        # Validate required fields
-        required_fields = ['TransID', 'TransAmount', 'BusinessShortCode', 'BillRefNumber', 'MSISDN']
-        for field in required_fields:
-            if not callback_data.get(field):
-                logger.error(f"Missing required field: {field}")
-                return jsonify({
-                    "ResultCode": "C2B00011",
-                    "ResultDesc": "Invalid validation request"
-                }), 400
-
-        # Validate business shortcode
-        if business_short_code != current_app.config['MPESA_SHORTCODE']:
-            logger.error(f"Invalid business shortcode: {business_short_code}")
-            return jsonify({
-                "ResultCode": "C2B00012",
-                "ResultDesc": "Invalid business shortcode"
-            }), 400
-
-        # TODO: Add your business validation logic here
-        # For example, check if the bill reference number exists
-        # Check if the amount matches expected amount
-        # etc.
-
-        # For now, accept all transactions
-        return jsonify({
-            "ResultCode": "0",
-            "ResultDesc": "Accepted"
-        })
-
-    except Exception as e:
-        logger.error(f"Error processing M-Pesa validation: {str(e)}")
-        return jsonify({
-            "ResultCode": "C2B00013",
-            "ResultDesc": "Internal server error"
-        }), 500
-
-@main.route('/payments/confirmation', methods=['POST'])
+@main.route('/mpesa/confirmation', methods=['POST'])
 def mpesa_confirmation():
     """Handle M-Pesa confirmation callback"""
     try:
-        # Get the callback data
+        # Get the callback data from M-Pesa
         callback_data = request.get_json()
-        logger.info(f"Received M-Pesa confirmation callback: {json.dumps(callback_data, indent=2)}")
-
-        # Extract key transaction details
-        transaction_type = callback_data.get('TransactionType')
-        trans_id = callback_data.get('TransID')
-        trans_time = callback_data.get('TransTime')
-        trans_amount = callback_data.get('TransAmount')
-        business_short_code = callback_data.get('BusinessShortCode')
-        bill_ref_number = callback_data.get('BillRefNumber')
-        invoice_number = callback_data.get('InvoiceNumber')
-        org_account_balance = callback_data.get('OrgAccountBalance')
-        third_party_trans_id = callback_data.get('ThirdPartyTransID')
-        msisdn = callback_data.get('MSISDN')
-        first_name = callback_data.get('FirstName')
-        middle_name = callback_data.get('MiddleName')
-        last_name = callback_data.get('LastName')
+        logger.info(f"Received M-Pesa confirmation: {callback_data}")
 
         # Validate required fields
         required_fields = ['TransID', 'TransAmount', 'BusinessShortCode', 'BillRefNumber', 'MSISDN']
@@ -1862,30 +1797,47 @@ def mpesa_confirmation():
                     "ResultDesc": "Invalid confirmation request"
                 }), 400
 
-        # Save transaction to database
+        # Extract transaction details
+        transaction_data = {
+            'transaction_type': callback_data.get('TransactionType'),
+            'trans_id': callback_data.get('TransID'),
+            'trans_time': datetime.strptime(callback_data.get('TransTime', ''), '%Y%m%d%H%M%S'),
+            'trans_amount': float(callback_data.get('TransAmount')),
+            'business_short_code': callback_data.get('BusinessShortCode'),
+            'bill_ref_number': callback_data.get('BillRefNumber'),
+            'invoice_number': callback_data.get('InvoiceNumber'),
+            'msisdn': callback_data.get('MSISDN'),
+            'first_name': callback_data.get('FirstName'),
+            'middle_name': callback_data.get('MiddleName'),
+            'last_name': callback_data.get('LastName'),
+            'status': 'COMPLETED'
+        }
+
+        # Save transaction to PaymentModel
         try:
-            transaction = Transaction(
-                transaction_type=transaction_type,
-                trans_id=trans_id,
-                trans_time=datetime.strptime(trans_time, '%Y%m%d%H%M%S'),
-                trans_amount=float(trans_amount),
-                business_short_code=business_short_code,
-                bill_ref_number=bill_ref_number,
-                invoice_number=invoice_number,
-                org_account_balance=float(org_account_balance) if org_account_balance else None,
-                third_party_trans_id=third_party_trans_id,
-                msisdn=msisdn,
-                first_name=first_name,
-                middle_name=middle_name,
-                last_name=last_name,
-                status='COMPLETED'
+            payment = PaymentModel(
+                mpesa_id=transaction_data['trans_id'],
+                account_number=transaction_data['bill_ref_number'],
+                source_phone_number=transaction_data['msisdn'],
+                amount=int(float(transaction_data['trans_amount'])),
+                transaction_status=True,
+                transaction_type=transaction_data['transaction_type'],
+                business_short_code=transaction_data['business_short_code'],
+                invoice_number=transaction_data['invoice_number'],
+                first_name=transaction_data['first_name'],
+                middle_name=transaction_data['middle_name'],
+                last_name=transaction_data['last_name'],
+                # You'll need to set these based on your business logic
+                bank_id=1,  # Set appropriate bank_id
+                block_id=1,  # Set appropriate block_id
+                payer_id=1,  # Set appropriate payer_id
             )
-            db.session.add(transaction)
+            db.session.add(payment)
             db.session.commit()
-            logger.info(f"Successfully saved transaction: {trans_id}")
+            logger.info(f"Successfully saved payment: {transaction_data['trans_id']}")
 
         except Exception as e:
-            logger.error(f"Error saving transaction: {str(e)}")
+            logger.error(f"Error saving payment: {str(e)}")
             db.session.rollback()
             # Note: We still return success to M-Pesa
             # Handle the database error internally and retry later

@@ -4,9 +4,14 @@ import gc
 import logging
 import psutil
 from flask_wtf.csrf import CSRFError
+from dotenv import load_dotenv
 
 # Add the application directory to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Load environment variables before importing app
+env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+load_dotenv(env_path)
 
 from app import create_app
 

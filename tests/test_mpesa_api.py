@@ -1,6 +1,12 @@
+import os
+import sys
 import unittest
 import json
 from datetime import datetime, timezone
+
+# Add the parent directory to Python path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from app import create_app, db
 from app.main.models import (
     PaymentModel, UserModel, BankModel, BlockModel, 
