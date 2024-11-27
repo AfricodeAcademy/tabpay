@@ -22,9 +22,6 @@ def test_mpesa_auth():
     consumer_secret = os.getenv('MPESA_CONSUMER_SECRET')
     environment = os.getenv('MPESA_ENVIRONMENT')
     
-    print(f"\nUsing credentials:")
-    print(f"Consumer Key: {consumer_key}")
-    print(f"Consumer Secret: {consumer_secret}")
     print(f"Environment: {environment}")
     
     credentials = MpesaCredentials(

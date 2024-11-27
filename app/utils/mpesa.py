@@ -62,7 +62,7 @@ class MpesaAuthManager:
                         headers=headers,
                         params=params,
                         verify=True,
-                        timeout=30
+                        timeout=60
                     )
                 
                 if response.status_code != 200:
