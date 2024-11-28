@@ -122,7 +122,7 @@ class Config:
             missing_vars.append(var_name)
             print(f"Missing: {var_name}")
         else:
-            print(f"Found: {var_name}")
+            print(f"Found: {var_name[0]}{'*' * (len(var_name) - 1)}")
     
     if missing_vars:
         error_msg = f"Missing required M-Pesa configurations: {', '.join(missing_vars)}. Check your .env file."
