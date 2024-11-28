@@ -1746,7 +1746,7 @@ def handle_request_payment(payment_form):
     # Redirect back to the 'Request Payment' tab
     return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
 
-@main.route('/mpesa/confirmation', methods=['POST'])
+@main.route('/payments/confirmation', methods=['POST'])
 def mpesa_confirmation():
     """Handle M-Pesa confirmation callback"""
     try:
@@ -1823,7 +1823,7 @@ def mpesa_confirmation():
             "ResultCode": "0",
             "ResultDesc": "Success"
         })
-@main.route('/mpesa/validation', methods=['POST'])
+@main.route('/payments/validation', methods=['POST'])
 def mpesa_validation():
     """Handle M-Pesa validation requests"""
     try:
