@@ -1100,8 +1100,15 @@ def send_sms_notifications():
             message=message,
             recipients=recipients
             )
-        print(f"SMS API Response: {response}") 
+        print(f"SMS API Response: {response}")
+        
+        # Check if response is None
+        if response is None:
+            flash("Message sent but no response received from SMS provider", "warning")
+            return redirect(url_for('main.host', active_tab='upcoming_block'))
+            
         response_data = response
+        print(f"SMS API Response Data: {response_data}") 
         
         # Check if all recipients have a statusCode of 101
         all_successful = all(recipient['statusCode'] == 101 for recipient in response_data['SMSMessageData']['Recipients'])
