@@ -992,8 +992,6 @@ class MpesaValidationResource(BaseResource):
     fields = mpesa_validation_fields
     args = mpesa_validation_args
 
-    @api.doc('mpesa_validation')
-    @api.marshal_with(mpesa_validation_fields)
     def post(self):
         """Handle M-Pesa validation requests"""
         try:
@@ -1047,8 +1045,6 @@ class MpesaConfirmationResource(BaseResource):
     fields = mpesa_confirmation_fields
     args = mpesa_confirmation_args
 
-    @api.doc('mpesa_confirmation')
-    @api.marshal_with(mpesa_confirmation_fields)
     def post(self):
         """Handle M-Pesa confirmation callback"""
         try:
