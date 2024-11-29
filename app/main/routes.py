@@ -748,7 +748,7 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
     message = f"""
 Dear Member,
 Upcoming block is hosted by {meeting_zone} and the host is {host}. 
-Paybill: {paybill_no}
+Paybill: 4145819
 Account Number: {event_id}
 When: {when}"""
 
