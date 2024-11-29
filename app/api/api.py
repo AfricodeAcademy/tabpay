@@ -985,16 +985,7 @@ class ZonesResource(BaseResource):
 
 
 
-# API routes
-api.add_resource(UsersResource, '/users/', '/users/<int:id>')
-api.add_resource(CommunicationsResource, '/communications/', '/communications/<int:id>')
-api.add_resource(BanksResource, '/banks/', '/banks/<int:id>')
-api.add_resource(PaymentsResource, '/payments/', '/payments/<int:id>')
-api.add_resource(BlocksResource, '/blocks/', '/blocks/<int:id>')
-api.add_resource(UmbrellasResource, '/umbrellas/', '/umbrellas/<int:id>')
-api.add_resource(ZonesResource, '/zones/', '/zones/<int:id>')
-api.add_resource(MeetingsResource, '/meetings/', '/meetings/<int:id>')
-api.add_resource(RolesResource, '/roles/','/roles/<int:id>')
+
 
 @api.route('/v1/payments/c2b/validation')
 class MpesaValidationResource(Resource):
@@ -1066,12 +1057,10 @@ class MpesaValidationResource(Resource):
                 "ResultDesc": "Internal server error"
             }, 200
 
-@api.route('/v1/payments/c2b/confirmation')
-class MpesaConfirmationResource(Resource):
-    def __init__(self):
-        self.args = mpesa_confirmation_args
-        self.fields = mpesa_confirmation_fields
-        super(MpesaConfirmationResource, self).__init__()
+class MpesaConfirmationResource(BaseResource):
+    model = PaymentModel
+    fields = mpesa_confirmation_fields
+    args = mpesa_confirmation_args
 
     @api.doc('mpesa_confirmation')
     @api.marshal_with(mpesa_confirmation_fields)
@@ -1082,33 +1071,15 @@ class MpesaConfirmationResource(Resource):
             args = self.args.parse_args()
             logger.info(f"Received M-Pesa confirmation: {args}")
             
-            # Extract transaction details
-            transaction_data = {
-                'mpesa_id': args['TransID'],
-                'transaction_type': args['TransactionType'],
-                'amount': float(args['TransAmount']),
-                'business_short_code': args['BusinessShortCode'],
-                'bill_ref_number': args['BillRefNumber'],
-                'invoice_number': args.get('InvoiceNumber'),
-                'source_phone_number': args['MSISDN'],
-                'first_name': args.get('FirstName'),
-                'middle_name': args.get('MiddleName'),
-                'last_name': args.get('LastName'),
-                'transaction_time': datetime.strptime(
-                    args.get('TransTime', ''), 
-                    '%Y%m%d%H%M%S'
-                ) if args.get('TransTime') else datetime.now(timezone.utc)
-            }
-            
             # Extract block_id and member_id from bill_ref_number
             try:
-                parts = transaction_data['bill_ref_number'].split('_')
-                transaction_data['block_id'] = int(parts[1])  # After "Block_"
-                transaction_data['payer_id'] = int(parts[3])  # After "Member_"
+                parts = args['BillRefNumber'].split('_')
+                block_id = int(parts[1])  # After "Block_"
+                payer_id = int(parts[3])  # After "Member_"
                 
                 # Verify block and member exist
-                block = BlockModel.query.get(transaction_data['block_id'])
-                member = UserModel.query.get(transaction_data['payer_id'])
+                block = BlockModel.query.get(block_id)
+                member = UserModel.query.get(payer_id)
                 
                 if not block or not member:
                     raise ValueError("Invalid block or member ID")
@@ -1118,58 +1089,72 @@ class MpesaConfirmationResource(Resource):
                 return {
                     "ResultCode": "C2B00012",
                     "ResultDesc": "Invalid bill reference number format"
-                }, 200
+                }
                 
             # Check for duplicate transaction
-            existing_payment = PaymentModel.query.filter_by(mpesa_id=transaction_data['mpesa_id']).first()
+            existing_payment = self.model.query.filter_by(mpesa_id=args['TransID']).first()
             if existing_payment:
-                logger.warning(f"Duplicate M-Pesa transaction: {transaction_data['mpesa_id']}")
+                logger.warning(f"Duplicate M-Pesa transaction: {args['TransID']}")
                 return {
                     "ResultCode": "0",
-                    "ResultDesc": "Success"
-                }, 200
+                    "ResultDesc": "Success",
+                    "payment": existing_payment
+                }
                 
             # Create new payment record
             try:
-                payment = PaymentModel(
-                    mpesa_id=transaction_data['mpesa_id'],
-                    account_number=transaction_data['bill_ref_number'],
-                    source_phone_number=transaction_data['source_phone_number'],
-                    amount=int(transaction_data['amount']),
-                    payment_date=transaction_data['transaction_time'],
+                payment = self.model(
+                    mpesa_id=args['TransID'],
+                    account_number=args['BillRefNumber'],
+                    source_phone_number=args['MSISDN'],
+                    amount=int(float(args['TransAmount'])),
+                    payment_date=datetime.strptime(args['TransTime'], '%Y%m%d%H%M%S') if args.get('TransTime') else datetime.now(timezone.utc),
                     transaction_status=True,
-                    transaction_type=transaction_data['transaction_type'],
-                    business_short_code=transaction_data['business_short_code'],
-                    invoice_number=transaction_data['invoice_number'],
-                    first_name=transaction_data['first_name'],
-                    middle_name=transaction_data['middle_name'],
-                    last_name=transaction_data['last_name'],
+                    transaction_type=args['TransactionType'],
+                    business_short_code=args['BusinessShortCode'],
+                    invoice_number=args.get('InvoiceNumber'),
+                    first_name=args.get('FirstName'),
+                    middle_name=args.get('MiddleName'),
+                    last_name=args.get('LastName'),
                     bank_id=1,  # Set default bank_id
-                    block_id=transaction_data['block_id'],
-                    payer_id=transaction_data['payer_id']
+                    block_id=block_id,
+                    payer_id=payer_id
                 )
                 
                 db.session.add(payment)
                 db.session.commit()
-                logger.info(f"Successfully saved payment: {transaction_data['mpesa_id']}")
+                logger.info(f"Successfully saved payment: {args['TransID']}")
+                
+                return {
+                    "ResultCode": "0",
+                    "ResultDesc": "Success",
+                    "payment": payment
+                }
                 
             except Exception as e:
                 logger.error(f"Error saving payment: {str(e)}")
                 db.session.rollback()
-                # Note: We still return success to M-Pesa to avoid duplicate transactions
+                return {
+                    "ResultCode": "1",
+                    "ResultDesc": "Internal server error"
+                }
                 
-            # Always acknowledge receipt to M-Pesa
-            return {
-                "ResultCode": "0",
-                "ResultDesc": "Success"
-            }, 200
-            
         except Exception as e:
             logger.error(f"Error processing M-Pesa confirmation: {str(e)}", exc_info=True)
             return {
-                "ResultCode": "0",
-                "ResultDesc": "Success"
-            }, 200
+                "ResultCode": "1",
+                "ResultDesc": f"Error: {str(e)}"
+            }
 
+# API routes
+api.add_resource(UsersResource, '/users/', '/users/<int:id>')
+api.add_resource(CommunicationsResource, '/communications/', '/communications/<int:id>')
+api.add_resource(BanksResource, '/banks/', '/banks/<int:id>')
+api.add_resource(PaymentsResource, '/payments/', '/payments/<int:id>')
+api.add_resource(BlocksResource, '/blocks/', '/blocks/<int:id>')
+api.add_resource(UmbrellasResource, '/umbrellas/', '/umbrellas/<int:id>')
+api.add_resource(ZonesResource, '/zones/', '/zones/<int:id>')
+api.add_resource(MeetingsResource, '/meetings/', '/meetings/<int:id>')
+api.add_resource(RolesResource, '/roles/','/roles/<int:id>')
 api.add_resource(MpesaValidationResource, '/v1/payments/c2b/validation')
 api.add_resource(MpesaConfirmationResource, '/v1/payments/c2b/confirmation')
