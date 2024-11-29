@@ -62,7 +62,7 @@ class MpesaAuthManager:
                         headers=headers,
                         params=params,
                         verify=True,
-                        timeout=30
+                        timeout=60
                     )
                 
                 if response.status_code != 200:
@@ -112,15 +112,26 @@ class MpesaC2B:
     def register_urls(
         self,
         confirmation_url: str,
+        validation_url: str,
         response_type: str = "Completed"
     ) -> Dict[str, Any]:
-        """Register confirmation URL for C2B payments"""
+        """Register confirmation and validation URLs for C2B payments
+        
+        Args:
+            confirmation_url (str): The URL that receives the confirmation request
+            validation_url (str): The URL that receives the validation request
+            response_type (str): Response type for the validation request
+            
+        Returns:
+            Dict[str, Any]: Response from the M-Pesa API
+        """
         url = f'{self.api_url}/mpesa/c2b/v1/registerurl'
         
         payload = {
             "ShortCode": self.credentials.shortcode,
             "ResponseType": response_type,
             "ConfirmationURL": confirmation_url,
+            "ValidationURL": validation_url
         }
         
         headers = {

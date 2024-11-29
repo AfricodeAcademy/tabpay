@@ -12,11 +12,11 @@ from .serializers import get_user_fields, user_args, communication_fields, \
     umbrella_fields, umbrella_args, zone_fields, zone_args, \
     meeting_fields, meeting_args,role_args,role_fields
 from ..utils import db
-# import logging
+import logging
 from ..main.routes import save_picture
 from sqlalchemy.orm import joinedload
 
-
+logger = logging.getLogger(__name__)
 
 api_bp = Blueprint('api', __name__)
 api = Api(api_bp)

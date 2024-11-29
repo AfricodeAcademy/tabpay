@@ -1362,58 +1362,25 @@ def render_reports_page(active_tab=None, error=None, host_id=None, member_id=Non
     # Set the choices for the zone field in the form
     schedule_form.zone.choices = [("", "--Choose a Zone--")] + [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
 
-    members = []
-    member_contributions = []
-    combined_member_contributions = []
-    host_name = 'Unknown Host'
-    meeting_date = 'Unknown Date'
-    block_contributions_data = {'block_contributions': []}
+    members,banks = [], []
     try:
-        # Fetch members
         members = get_members()
-
-        # Fetch contributions for the most recent meeting
-        contributions_data = get_member_contributions(host_id=host_id, member_id=member_id, status=status)
-        member_contributions = contributions_data['member_contributions']
-        host_name = contributions_data.get('host_name', host_name)
-        meeting_date = contributions_data.get('meeting_date', meeting_date)
-
-
-
-        # Combine member data with their contributions
-        for member in members:
-            contribution = next((c for c in member_contributions if c['full_name'] == member['full_name']), None)
-            if contribution:
-                combined_member_contributions.append({
-                    'full_name': member['full_name'],
-                    'amount': contribution['amount'],
-                    'status': contribution.get('status', 'Unknown'),
-                })
-            else:
-                combined_member_contributions.append({
-                    'full_name': member['full_name'],
-                    'amount': 0.0,
-                    'status': 'Pending',
-                })
-        block_contributions_data = get_block_contributions(host_id=host_id)
-        print(f'Block contributions: {block_contributions_data}')
-        if 'block_contributions' not in block_contributions_data:
-            block_contributions_data['block_contributions'] = {}
-
+        banks = get_banks()
     except Exception as e:
-        flash(f'Error fetching members or contributions. Please try again later.', 'danger')
+        print(f'payments error: {e}')
+        flash(f'An error occurred. Please try again later.', 'danger')
 
-    # Render the reports page
+    # Render the host page
     return render_template('block_reports.html', title='Block_Reports | Dashboard',
                            user=current_user,
-                           host_name=host_name,
-                           meeting_date=meeting_date,
-                           members=combined_member_contributions, 
-                           schedule_form=schedule_form,
-                        block_contributions=block_contributions_data.get('block_contributions', []),  
-                           blocks=blocks,
-                           active_tab=active_tab,
+                           members=members,
+                           schedule_form=schedule_form, 
+                           blocks=blocks,                          
+                           active_tab=active_tab, 
+                           banks=banks, 
                            error=error)
+
+
 
 @main.route('/block_reports', methods=['GET'])
 @login_required
@@ -1779,7 +1746,7 @@ def handle_request_payment(payment_form):
     # Redirect back to the 'Request Payment' tab
     return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
 
-@main.route('/mpesa/confirmation', methods=['POST'])
+@main.route('/payments/confirmation', methods=['POST'])
 def mpesa_confirmation():
     """Handle M-Pesa confirmation callback"""
     try:
@@ -1856,6 +1823,51 @@ def mpesa_confirmation():
             "ResultCode": "0",
             "ResultDesc": "Success"
         })
+@main.route('/payments/validation', methods=['POST'])
+def mpesa_validation():
+    """Handle M-Pesa validation requests"""
+    try:
+        # Get the transaction data from the request
+        transaction_data = request.get_json()
+        
+        # Log the validation request
+        current_app.logger.info(f"M-Pesa validation request received: {transaction_data}")
+        
+        # Perform validation checks
+        # 1. Check if the transaction amount is within acceptable range
+        amount = float(transaction_data.get('TransAmount', 0))
+        if amount <= 0:
+            response = {
+                "ResultCode": 1,  # Reject
+                "ResultDesc": "Invalid transaction amount"
+            }
+            return jsonify(response), 200
+            
+        # 2. Check if the account number/bill reference is valid
+        bill_ref = transaction_data.get('BillRefNumber')
+        if not bill_ref:
+            response = {
+                "ResultCode": 1,  # Reject
+                "ResultDesc": "Missing bill reference number"
+            }
+            return jsonify(response), 200
+            
+        # Add any additional validation logic here
+        
+        # If all validation passes, accept the transaction
+        response = {
+            "ResultCode": 0,  # Accept
+            "ResultDesc": "Accepted"
+        }
+        return jsonify(response), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Error in M-Pesa validation: {str(e)}")
+        response = {
+            "ResultCode": 1,  # Reject
+            "ResultDesc": "Internal server error"
+        }
+        return jsonify(response), 200  # Always return 200 to M-Pesa
 @main.route('/search',methods=['GET', 'POST'])
 def search():
     query = request.args.get('query')

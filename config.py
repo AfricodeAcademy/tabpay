@@ -98,11 +98,12 @@ class Config:
     MPESA_CONSUMER_SECRET = os.getenv('MPESA_CONSUMER_SECRET')
     MPESA_SHORTCODE = os.getenv('MPESA_SHORTCODE')
     MPESA_PASSKEY = os.getenv('MPESA_PASSKEY') 
-    MPESA_STK_PUSH_SHORTCODE = os.getenv('MPESA_STK_PUSH_SHORTCODE') #TODO - to add to .env
-    MPESA_STK_PUSH_PASSKEY = os.getenv('MPESA_STK_PUSH_PASSKEY') #TODO - to add to .env
+    MPESA_STK_PUSH_SHORTCODE = os.getenv('MPESA_STK_PUSH_SHORTCODE')
+    MPESA_STK_PUSH_PASSKEY = os.getenv('MPESA_STK_PUSH_PASSKEY')
 
     # M-Pesa Callback URLs
     MPESA_CALLBACK_URL = os.getenv('MPESA_CALLBACK_URL')
+    MPESA_VALIDATION_URL = os.getenv('MPESA_VALIDATION_URL')
     
     # Validate required environment variables with debugging
     missing_vars = []
@@ -111,7 +112,8 @@ class Config:
         'MPESA_CONSUMER_SECRET': MPESA_CONSUMER_SECRET,
         'MPESA_PASSKEY': MPESA_PASSKEY,
         'MPESA_SHORTCODE': MPESA_SHORTCODE,
-        'MPESA_CALLBACK_URL': MPESA_CALLBACK_URL
+        'MPESA_CALLBACK_URL': MPESA_CALLBACK_URL,
+        'MPESA_VALIDATION_URL': MPESA_VALIDATION_URL
     }
     
     print("Current environment variables status:")
@@ -120,7 +122,7 @@ class Config:
             missing_vars.append(var_name)
             print(f"Missing: {var_name}")
         else:
-            print(f"Found: {var_name}")
+            print(f"Found: {var_name[0]}{'*' * (len(var_name) - 1)}")
     
     if missing_vars:
         error_msg = f"Missing required M-Pesa configurations: {', '.join(missing_vars)}. Check your .env file."
