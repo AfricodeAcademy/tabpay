@@ -720,42 +720,16 @@ def statistics():
 
 
 # Helper function to render the host page with forms
-def render_host_page(active_tab=None, error=None, schedule_form=None, update_form=None):
-    def format_meeting_message(meeting_details):
-        """
-        Formats a standardized message for upcoming meeting details.
-        
-        Args:
-            meeting_details (dict): Dictionary containing meeting information
-        
-        Returns:
-            str: Formatted meeting message
-        """
-        if not meeting_details:
-            return "No meeting details available."
-        
-        # Extract relevant details with safe fallback
-        meeting_zone = meeting_details.get('meeting_zone', 'Unspecified Zone')
-        host = meeting_details.get('host', 'Unspecified Host')
-        when = meeting_details.get('when', 'TBD')
-        event_id = meeting_details.get('event_id', 'N/A')
-        
-        # Consistent formatting with line breaks and clear structure
-        message = (
-    f"Upcoming Meeting Details: Block Zone: {meeting_zone}, "
-    f"Host: {host}, Date & Time: {when}, "
-    f"Paybill: 4145819, Account Number: {event_id}. "
-    f"Please ensure timely attendance and payment."
-).strip()
+def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=None):
 
-        
-        return message
+    if schedule_form is None:
+        schedule_form = ScheduleForm()
 
-    # Initialize forms if not provided
-    schedule_form = schedule_form or ScheduleForm()
-    update_form = update_form or EditMemberForm()
+    if update_form is None:
+        update_form = EditMemberForm()
 
-    # Call API or database to get upcoming meeting details
+
+     # Call API or database to get upcoming meeting details
     meeting_details = get_upcoming_meeting_details()
 
     if meeting_details:
@@ -769,17 +743,21 @@ def render_host_page(active_tab=None, error=None, schedule_form=None, update_for
         meeting_id = meeting_details['meeting_id']
     else:
         meeting_block = meeting_zone = host = when = paybill_no = acc_number = event_id = meeting_id = None
-        flash('No upcoming meetings found.', 'warning')
+        flash('No upcoming meetings found.','warning')
     
-    # Use the new formatting function
-    message = format_meeting_message(meeting_details)
+    message = f"""
+Dear Member,
+Upcoming block is hosted by {meeting_zone} and the host is {host}. 
+Paybill: 4145819
+Account Number: {event_id}
+When: {when}"""
 
     try:
         user = get_user_from_api(current_user.id)
         if not user:
             flash('Unable to load user data.', 'danger')
     except Exception as e:
-        print(f'User Details Error: {e}')
+        print(f'User Details Error:{e}')
         flash('Error loading user details. Please try again later.', 'danger')
     
     umbrella = get_umbrella_by_user(current_user.id)
@@ -788,23 +766,26 @@ def render_host_page(active_tab=None, error=None, schedule_form=None, update_for
         flash('Please create an umbrella first to manage contributions!', 'danger')
         return redirect(url_for('main.settings', active_tab='umbrella'))
 
+
     # Fetch blocks associated with the umbrella
     blocks = get_blocks_by_umbrella()
     schedule_form.block.choices = [("", "--Choose a Block--")] + [(str(block['id']), block['name']) for block in blocks]
-    update_form.block_id.choices = [("", "--Choose an Additional Block--")] + [(str(block['id']), block['name']) for block in blocks]
+    update_form.block_id.choices =  [("", "--Choose an Additional Block--")] + [(str(block['id']), block['name']) for block in blocks]
 
-    # Prepare a mapping for zones with block names
-    zone_map = {}
+     # Prepare a mapping for zones with block names
+    zone_map = {}  # Store a mapping of zone_id to (zone_name, block_name)
     for block in blocks:
+        # Fetch zones associated with the current block       
         block_id = block['id']         
         block_zones = get_zones_by_block(block_id)
         block_name = block['name']  
         for zone in block_zones:
-            zone_map[zone['id']] = (zone['name'], block_name)
+            zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
 
     # Set the choices for the member_zone field in the form
     schedule_form.zone.choices = [("", "--Choose a Zone--")] + [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
-    update_form.member_zone.choices = [("", "--Choose an Additional Zone--")] + [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
+
+    update_form.member_zone.choices = [("", "--Choose an Additional Zone--")] +[(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
 
     # Fetch members
     members = get_members()
@@ -822,21 +803,13 @@ def render_host_page(active_tab=None, error=None, schedule_form=None, update_for
     return render_template('host.html', title='Host | Dashboard',
                            update_form=update_form,
                            user=current_user,
-                           meeting_id=(meeting_details or {}).get('meeting_id', ''),
+                            meeting_id=(meeting_details or {}).get('meeting_id', ''),
                            schedule_form=schedule_form,
-                           blocks=blocks,
-                           message=message,
-                           zones=zone_map.keys(),
-                           acc_number=acc_number,
-                           paybill_no=paybill_no,
+                           blocks=blocks,message=message,
+                           zones=zone_map.keys(),acc_number=acc_number,paybill_no=paybill_no,
                            members=members,
                            active_tab=active_tab,  
-                           error=error,
-                           meeting_block=meeting_block,
-                           host=host,
-                           meeting_zone=meeting_zone,
-                           when=when,
-                           event_id=event_id)
+                           error=error,meeting_block=meeting_block,host=host,meeting_zone=meeting_zone,when=when,event_id=event_id)
 
 @main.route('/host', methods=['GET', 'POST'])
 @login_required
