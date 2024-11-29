@@ -765,8 +765,9 @@ class MeetingsResource(BaseResource):
                             'host': meeting.host.full_name if meeting.host else 'Unknown Host',
                             'paybill_no': paybill_no,
                             'acc_number': acc_number,
+                            'meeting_id':meeting.id,
                             'when': meeting.date.strftime('%a, %d %b %Y %H:%M:%S'),
-                            'meeting_id': meeting.unique_id
+                            'event_id': meeting.unique_id
                         }
                         meeting_details.append(details)
                     # logging.info(f"Meeting details: {meeting_details}")
@@ -791,9 +792,10 @@ class MeetingsResource(BaseResource):
                             'meeting_block': meeting.block.name if meeting.block else 'Unknown Block',
                             'meeting_zone': meeting.zone.name if meeting.zone else 'Unknown Zone',
                             'host': meeting.host.full_name if meeting.host else 'Unknown Host',
-                            'meeting_id': meeting.unique_id,
+                            'event_id': meeting.unique_id,
                             'paybill_no': paybill_no,
                             'acc_number': acc_number,
+                            'meeting_id':meeting.id,
                             'when': meeting.date.strftime('%a, %d %b %Y %H:%M:%S')
                         }
                         meeting_details.append(details)
@@ -830,7 +832,8 @@ class MeetingsResource(BaseResource):
                             'host': meeting.host.full_name if meeting.host else 'Unknown Host',
                             'paybill_no': paybill_no,
                             'acc_number': acc_number,
-                            'meeting_id': meeting.unique_id,
+                            'meeting_id':meeting.id,
+                            'event_id': meeting.unique_id,
                             'when': meeting.date.strftime('%a, %d %b %Y %H:%M:%S')
                         }
                         meeting_details.append(details)
