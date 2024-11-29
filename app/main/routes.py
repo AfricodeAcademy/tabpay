@@ -12,11 +12,14 @@ from app.main.models import UserModel, BlockModel, PaymentModel, ZoneModel
 from app.auth.decorators import approval_required, umbrella_required
 from ..utils.umbrella import get_umbrella_by_user, get_blocks_by_umbrella
 from functools import wraps
+import logging
 from ..utils.mpesa import get_mpesa_client
 
 main = Blueprint('main', __name__)
 
 sms = SendSMS()
+
+logger = logging.getLogger(__name__)
 
 
 
