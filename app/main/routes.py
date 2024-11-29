@@ -741,14 +741,15 @@ def render_host_page(active_tab=None, error=None, schedule_form=None, update_for
         event_id = meeting_details.get('event_id', 'N/A')
         
         # Consistent formatting with line breaks and clear structure
-        message = f"""\
-                    Upcoming Meeting Details:
-                    Block Zone: {meeting_zone}
-                    Host: {host}
-                    Date & Time: {when}
-                    Paybill: 4145819
-                    Account Number: {event_id}
-                    Please ensure timely attendance and payment.""".strip()
+        message = \
+f"""
+Upcoming Meeting Details:
+Block Zone: {meeting_zone}
+Host: {host}
+Date & Time: {when}
+Paybill: 4145819
+Account Number: {event_id}
+Please ensure timely attendance and payment.""".strip()
         
         return message
 
