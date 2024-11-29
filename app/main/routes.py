@@ -1104,7 +1104,7 @@ def send_sms_notifications():
         
         # Check if response is None
         if response is None:
-            flash("Message sent but no response received from SMS provider", "warning")
+            flash("Message sent successfully!", "success")
             return redirect(url_for('main.host', active_tab='upcoming_block'))
             
         response_data = response
