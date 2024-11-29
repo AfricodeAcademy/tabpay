@@ -982,15 +982,13 @@ class ZonesResource(BaseResource):
             # logging.error(f"Error in ZonesResource.get: {str(e)}", exc_info=True)
             return self.handle_error(e)
 
-
-
-
-
-
 class MpesaValidationResource(BaseResource):
     model = PaymentModel
     fields = mpesa_validation_fields
     args = mpesa_validation_args
+
+    def get(self, id=None):
+        return super().get(id)
 
     def post(self):
         """Handle M-Pesa validation requests"""
@@ -1040,10 +1038,19 @@ class MpesaValidationResource(BaseResource):
                 "ResultDesc": "Internal server error"
             }
 
+    def patch(self, id):
+        return super().patch(id)
+
+    def delete(self, id):
+        return super().delete(id)
+
 class MpesaConfirmationResource(BaseResource):
     model = PaymentModel
     fields = mpesa_confirmation_fields
     args = mpesa_confirmation_args
+
+    def get(self, id=None):
+        return super().get(id)
 
     def post(self):
         """Handle M-Pesa confirmation callback"""
@@ -1146,7 +1153,11 @@ class MpesaConfirmationResource(BaseResource):
                 "ResultDesc": f"Error: {str(e)}"
             }
 
-{{ ... }}
+    def patch(self, id):
+        return super().patch(id)
+
+    def delete(self, id):
+        return super().delete(id)
 
 # API routes
 api.add_resource(UsersResource, '/users/', '/users/<int:id>')
@@ -1161,4 +1172,3 @@ api.add_resource(ZonesResource, '/zones/', '/zones/<int:id>')
 api.add_resource(MpesaValidationResource, '/v1/payments/c2b/validation')
 api.add_resource(MpesaConfirmationResource, '/v1/payments/c2b/confirmation')
 
-{{ ... }}
