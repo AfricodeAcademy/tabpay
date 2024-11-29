@@ -886,7 +886,9 @@ class MeetingsResource(BaseResource):
             week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59)
 
              # Check if there's already a meeting scheduled in any block for this week
-            existing_meeting = self.model.query.filter(
+            existing_meeting = self.model.query.join(
+                BlockModel, self.model.block_id == BlockModel.id
+            ).filter(
                 MeetingModel.block_id == block_id,
                 MeetingModel.zone_id == zone_id,
                 BlockModel.parent_umbrella_id == block.parent_umbrella_id,
