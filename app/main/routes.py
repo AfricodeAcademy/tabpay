@@ -746,11 +746,10 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
         flash('No upcoming meetings found.','warning')
     
     message = (
-    f"Dear Member,"
-    f"Upcoming block is hosted by {meeting_zone} and the host is {host}. "
-    f"Paybill: 4145819"
-    f"Paybill: 4145819, Account Number: {event_id}. "
-    f"PWhen: {when}"
+    f"Dear Member, \n"
+    f"Upcoming block is hosted by {meeting_zone} and the host is {host}. \n"
+    f"Paybill: 4145819, Account Number: {event_id}. \n"
+    f"When: {when}"
 ).strip()
     try:
         user = get_user_from_api(current_user.id)
