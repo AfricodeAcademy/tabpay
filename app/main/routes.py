@@ -1420,7 +1420,7 @@ def get_block_contributions(meeting_id=None, host_id=None):
     try:
         # Fetch all blocks under the umbrella
         blocks_response = requests.get(
-            f"{current_app.config['API_BASE_URL']}/api/v1/blocks/",
+            f"{current_app.config['API_BASE_URL']}/api/v1/blocks/", 
             params={'parent_umbrella_id': umbrella['id']}  # Use parent_umbrella_id instead of umbrella_id
         )
 
@@ -1757,7 +1757,7 @@ def handle_request_payment(payment_form):
     # Redirect back to the 'Request Payment' tab
     return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
 
-@main.route('/payments/confirmation', methods=['POST'])
+@main.route('/api/v1/payments/c2b/confirmation', methods=['POST'])
 def mpesa_confirmation():
     """Handle M-Pesa confirmation callback"""
     try:
@@ -1782,7 +1782,7 @@ def mpesa_confirmation():
             'trans_time': datetime.strptime(callback_data.get('TransTime', ''), '%Y%m%d%H%M%S'),
             'trans_amount': float(callback_data.get('TransAmount')),
             'business_short_code': callback_data.get('BusinessShortCode'),
-            'bill_ref_number': callback_data.get('BillRefNumber'),
+            'event_id': callback_data.get('BillRefNumber'),  # Store the event_id from BillRefNumber
             'invoice_number': callback_data.get('InvoiceNumber'),
             'msisdn': callback_data.get('MSISDN'),
             'first_name': callback_data.get('FirstName'),
@@ -1791,11 +1791,24 @@ def mpesa_confirmation():
             'status': 'COMPLETED'
         }
 
+        # Extract block_id and member_id from event_id
+        try:
+            event_id_parts = transaction_data['event_id'].split('_')
+            block_id = event_id_parts[1]  # After "Block_"
+            member_id = event_id_parts[3]  # After "Member_"
+            transaction_data['block_id'] = block_id
+            transaction_data['member_id'] = member_id
+        except (IndexError, AttributeError) as e:
+            logger.error(f"Error parsing event_id: {str(e)}")
+            return jsonify({
+                "ResultCode": "C2B00012",
+                "ResultDesc": "Invalid event_id format"
+            }), 400
         # Save transaction to PaymentModel
         try:
             payment = PaymentModel(
                 mpesa_id=transaction_data['trans_id'],
-                account_number=transaction_data['bill_ref_number'],
+                account_number=transaction_data['event_id'],
                 source_phone_number=transaction_data['msisdn'],
                 amount=int(float(transaction_data['trans_amount'])),
                 transaction_status=True,
@@ -1807,8 +1820,8 @@ def mpesa_confirmation():
                 last_name=transaction_data['last_name'],
                 # You'll need to set these based on your business logic
                 bank_id=1,  # Set appropriate bank_id
-                block_id=1,  # Set appropriate block_id
-                payer_id=1,  # Set appropriate payer_id
+                block_id=transaction_data['block_id'],  # Set appropriate block_id
+                payer_id=transaction_data['member_id'],  # Set appropriate payer_id
             )
             db.session.add(payment)
             db.session.commit()
@@ -1834,7 +1847,7 @@ def mpesa_confirmation():
             "ResultCode": "0",
             "ResultDesc": "Success"
         })
-@main.route('/payments/validation', methods=['POST'])
+@main.route('/api/v1/payments/c2b/validation', methods=['POST'])
 def mpesa_validation():
     """Handle M-Pesa validation requests"""
     try:
