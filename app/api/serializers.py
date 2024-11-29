@@ -225,3 +225,38 @@ meeting_args.add_argument('block_id', type=int, required=True, help='Block ID is
 meeting_args.add_argument('zone_id', type=int, required=True, help='Zone ID is required')
 meeting_args.add_argument('organizer_id', type=int, required=True, help='Organizer ID is required')
 meeting_args.add_argument('date', type=str, required=True, help='Meeting date is required (format: YYYY-MM-DD HH:MM:SS)')
+
+# M-Pesa validation fields
+mpesa_validation_fields = {
+    "ResultCode": fields.Integer,
+    "ResultDesc": fields.String
+}
+
+# M-Pesa confirmation fields
+mpesa_confirmation_fields = {
+    "ResultCode": fields.String,
+    "ResultDesc": fields.String
+}
+
+# M-Pesa validation request parser
+mpesa_validation_args = reqparse.RequestParser()
+mpesa_validation_args.add_argument('TransactionType', type=str, required=True, help='Transaction Type is required')
+mpesa_validation_args.add_argument('TransAmount', type=str, required=True, help='Transaction Amount is required')
+mpesa_validation_args.add_argument('BillRefNumber', type=str, required=True, help='Bill Reference Number is required')
+mpesa_validation_args.add_argument('MSISDN', type=str, required=True, help='Phone Number (MSISDN) is required')
+mpesa_validation_args.add_argument('TransID', type=str)
+
+# M-Pesa confirmation request parser
+mpesa_confirmation_args = reqparse.RequestParser()
+mpesa_confirmation_args.add_argument('TransID', type=str, required=True, help='Transaction ID is required')
+mpesa_confirmation_args.add_argument('TransactionType', type=str, required=True, help='Transaction Type is required')
+mpesa_confirmation_args.add_argument('TransAmount', type=str, required=True, help='Transaction Amount is required')
+mpesa_confirmation_args.add_argument('BusinessShortCode', type=str, required=True, help='Business Short Code is required')
+mpesa_confirmation_args.add_argument('BillRefNumber', type=str, required=True, help='Bill Reference Number is required')
+mpesa_confirmation_args.add_argument('InvoiceNumber', type=str)
+mpesa_confirmation_args.add_argument('MSISDN', type=str, required=True, help='Phone Number (MSISDN) is required')
+mpesa_confirmation_args.add_argument('FirstName', type=str)
+mpesa_confirmation_args.add_argument('MiddleName', type=str)
+mpesa_confirmation_args.add_argument('LastName', type=str)
+mpesa_confirmation_args.add_argument('TransTime', type=str)
+mpesa_confirmation_args.add_argument('OrgAccountBalance', type=str)

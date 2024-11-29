@@ -1757,141 +1757,36 @@ def handle_request_payment(payment_form):
     # Redirect back to the 'Request Payment' tab
     return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
 
-@main.route('/api/v1/payments/c2b/confirmation', methods=['POST'])
+@main.route('/payments/confirmation', methods=['POST'])
 def mpesa_confirmation():
-    """Handle M-Pesa confirmation callback"""
+    """Handle M-Pesa confirmation callback by forwarding to API endpoint"""
     try:
-        # Get the callback data from M-Pesa
-        callback_data = request.get_json()
-        logger.info(f"Received M-Pesa confirmation: {callback_data}")
-
-        # Validate required fields
-        required_fields = ['TransID', 'TransAmount', 'BusinessShortCode', 'BillRefNumber', 'MSISDN']
-        for field in required_fields:
-            if not callback_data.get(field):
-                logger.error(f"Missing required field: {field}")
-                return jsonify({
-                    "ResultCode": "C2B00011",
-                    "ResultDesc": "Invalid confirmation request"
-                }), 400
-
-        # Extract transaction details
-        transaction_data = {
-            'transaction_type': callback_data.get('TransactionType'),
-            'trans_id': callback_data.get('TransID'),
-            'trans_time': datetime.strptime(callback_data.get('TransTime', ''), '%Y%m%d%H%M%S'),
-            'trans_amount': float(callback_data.get('TransAmount')),
-            'business_short_code': callback_data.get('BusinessShortCode'),
-            'event_id': callback_data.get('BillRefNumber'),  # Store the event_id from BillRefNumber
-            'invoice_number': callback_data.get('InvoiceNumber'),
-            'msisdn': callback_data.get('MSISDN'),
-            'first_name': callback_data.get('FirstName'),
-            'middle_name': callback_data.get('MiddleName'),
-            'last_name': callback_data.get('LastName'),
-            'status': 'COMPLETED'
-        }
-
-        # Extract block_id and member_id from event_id
-        try:
-            event_id_parts = transaction_data['event_id'].split('_')
-            block_id = event_id_parts[1]  # After "Block_"
-            member_id = event_id_parts[3]  # After "Member_"
-            transaction_data['block_id'] = block_id
-            transaction_data['member_id'] = member_id
-        except (IndexError, AttributeError) as e:
-            logger.error(f"Error parsing event_id: {str(e)}")
-            return jsonify({
-                "ResultCode": "C2B00012",
-                "ResultDesc": "Invalid event_id format"
-            }), 400
-        # Save transaction to PaymentModel
-        try:
-            payment = PaymentModel(
-                mpesa_id=transaction_data['trans_id'],
-                account_number=transaction_data['event_id'],
-                source_phone_number=transaction_data['msisdn'],
-                amount=int(float(transaction_data['trans_amount'])),
-                transaction_status=True,
-                transaction_type=transaction_data['transaction_type'],
-                business_short_code=transaction_data['business_short_code'],
-                invoice_number=transaction_data['invoice_number'],
-                first_name=transaction_data['first_name'],
-                middle_name=transaction_data['middle_name'],
-                last_name=transaction_data['last_name'],
-                # You'll need to set these based on your business logic
-                bank_id=1,  # Set appropriate bank_id
-                block_id=transaction_data['block_id'],  # Set appropriate block_id
-                payer_id=transaction_data['member_id'],  # Set appropriate payer_id
-            )
-            db.session.add(payment)
-            db.session.commit()
-            logger.info(f"Successfully saved payment: {transaction_data['trans_id']}")
-
-        except Exception as e:
-            logger.error(f"Error saving payment: {str(e)}")
-            db.session.rollback()
-            # Note: We still return success to M-Pesa
-            # Handle the database error internally and retry later
-
-        # Always acknowledge receipt to M-Pesa
-        return jsonify({
-            "ResultCode": "0",
-            "ResultDesc": "Success"
-        })
-
+        # Forward the request to the API endpoint
+        api_url = f"{current_app.config['API_BASE_URL']}/api/v1/payments/c2b/confirmation"
+        response = requests.post(api_url, json=request.get_json())
+        return jsonify(response.json()), response.status_code
     except Exception as e:
-        logger.error(f"Error processing M-Pesa confirmation: {str(e)}")
-        # Always acknowledge receipt to M-Pesa, even on error
-        # Handle errors internally
+        logger.error(f"Error forwarding M-Pesa confirmation to API: {str(e)}")
         return jsonify({
             "ResultCode": "0",
             "ResultDesc": "Success"
-        })
-@main.route('/api/v1/payments/c2b/validation', methods=['POST'])
+        }), 200
+
+@main.route('/payments/validation', methods=['POST'])
 def mpesa_validation():
-    """Handle M-Pesa validation requests"""
+    """Handle M-Pesa validation requests by forwarding to API endpoint"""
     try:
-        # Get the transaction data from the request
-        transaction_data = request.get_json()
-        
-        # Log the validation request
-        current_app.logger.info(f"M-Pesa validation request received: {transaction_data}")
-        
-        # Perform validation checks
-        # 1. Check if the transaction amount is within acceptable range
-        amount = float(transaction_data.get('TransAmount', 0))
-        if amount <= 0:
-            response = {
-                "ResultCode": 1,  # Reject
-                "ResultDesc": "Invalid transaction amount"
-            }
-            return jsonify(response), 200
-            
-        # 2. Check if the account number/bill reference is valid
-        bill_ref = transaction_data.get('BillRefNumber')
-        if not bill_ref:
-            response = {
-                "ResultCode": 1,  # Reject
-                "ResultDesc": "Missing bill reference number"
-            }
-            return jsonify(response), 200
-            
-        # Add any additional validation logic here
-        
-        # If all validation passes, accept the transaction
-        response = {
-            "ResultCode": 0,  # Accept
-            "ResultDesc": "Accepted"
-        }
-        return jsonify(response), 200
-        
+        # Forward the request to the API endpoint
+        api_url = f"{current_app.config['API_BASE_URL']}/api/v1/payments/c2b/validation"
+        response = requests.post(api_url, json=request.get_json())
+        return jsonify(response.json()), response.status_code
     except Exception as e:
-        current_app.logger.error(f"Error in M-Pesa validation: {str(e)}")
-        response = {
-            "ResultCode": 1,  # Reject
+        logger.error(f"Error forwarding M-Pesa validation to API: {str(e)}")
+        return jsonify({
+            "ResultCode": 1,
             "ResultDesc": "Internal server error"
-        }
-        return jsonify(response), 200  # Always return 200 to M-Pesa
+        }), 200
+
 @main.route('/search',methods=['GET', 'POST'])
 def search():
     query = request.args.get('query')

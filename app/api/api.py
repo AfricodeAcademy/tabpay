@@ -10,7 +10,7 @@ from .serializers import get_user_fields, user_args, communication_fields, \
     communication_args, payment_fields, payment_args, payment_update_args, \
     bank_fields, bank_args, block_fields, block_args, \
     umbrella_fields, umbrella_args, zone_fields, zone_args, \
-    meeting_fields, meeting_args,role_args,role_fields
+    meeting_fields, meeting_args,role_args,role_fields, mpesa_validation_args, mpesa_validation_fields, mpesa_confirmation_args, mpesa_confirmation_fields
 from ..utils import db
 import logging
 from ..main.routes import save_picture
@@ -995,3 +995,181 @@ api.add_resource(UmbrellasResource, '/umbrellas/', '/umbrellas/<int:id>')
 api.add_resource(ZonesResource, '/zones/', '/zones/<int:id>')
 api.add_resource(MeetingsResource, '/meetings/', '/meetings/<int:id>')
 api.add_resource(RolesResource, '/roles/','/roles/<int:id>')
+
+@api.route('/v1/payments/c2b/validation')
+class MpesaValidationResource(Resource):
+    def __init__(self):
+        self.args = mpesa_validation_args
+        self.fields = mpesa_validation_fields
+        super(MpesaValidationResource, self).__init__()
+
+    @api.doc('mpesa_validation')
+    @api.marshal_with(mpesa_validation_fields)
+    def post(self):
+        """Handle M-Pesa validation requests"""
+        try:
+            # Parse and validate incoming data
+            args = self.args.parse_args()
+            logger.info(f"Received M-Pesa validation request: {args}")
+            
+            # Extract key fields
+            transaction_type = args['TransactionType']
+            amount = args['TransAmount']
+            bill_ref_number = args['BillRefNumber']
+            phone_number = args['MSISDN']
+            
+            # Validate amount is positive
+            try:
+                amount = float(amount)
+                if amount <= 0:
+                    raise ValueError("Amount must be positive")
+            except (ValueError, TypeError):
+                logger.error(f"Invalid amount in validation request: {amount}")
+                return {
+                    "ResultCode": 1,
+                    "ResultDesc": "Invalid amount"
+                }, 200
+                
+            # Validate bill reference number format (Block_X_Member_Y_TIMESTAMP)
+            try:
+                parts = bill_ref_number.split('_')
+                if len(parts) != 5 or parts[0] != 'Block' or parts[2] != 'Member':
+                    raise ValueError("Invalid bill reference format")
+                block_id = int(parts[1])
+                member_id = int(parts[3])
+                
+                # Verify block and member exist
+                block = BlockModel.query.get(block_id)
+                member = UserModel.query.get(member_id)
+                
+                if not block or not member:
+                    raise ValueError("Invalid block or member ID")
+                    
+            except (IndexError, ValueError) as e:
+                logger.error(f"Invalid bill reference number format: {bill_ref_number} - {str(e)}")
+                return {
+                    "ResultCode": 1,
+                    "ResultDesc": "Invalid bill reference number"
+                }, 200
+                
+            # All validations passed
+            logger.info(f"Validation successful for transaction: {args.get('TransID')}")
+            return {
+                "ResultCode": 0,
+                "ResultDesc": "Validation successful"
+            }, 200
+            
+        except Exception as e:
+            logger.error(f"Error in validation endpoint: {str(e)}", exc_info=True)
+            return {
+                "ResultCode": 1,
+                "ResultDesc": "Internal server error"
+            }, 200
+
+@api.route('/v1/payments/c2b/confirmation')
+class MpesaConfirmationResource(Resource):
+    def __init__(self):
+        self.args = mpesa_confirmation_args
+        self.fields = mpesa_confirmation_fields
+        super(MpesaConfirmationResource, self).__init__()
+
+    @api.doc('mpesa_confirmation')
+    @api.marshal_with(mpesa_confirmation_fields)
+    def post(self):
+        """Handle M-Pesa confirmation callback"""
+        try:
+            # Parse and validate incoming data
+            args = self.args.parse_args()
+            logger.info(f"Received M-Pesa confirmation: {args}")
+            
+            # Extract transaction details
+            transaction_data = {
+                'mpesa_id': args['TransID'],
+                'transaction_type': args['TransactionType'],
+                'amount': float(args['TransAmount']),
+                'business_short_code': args['BusinessShortCode'],
+                'bill_ref_number': args['BillRefNumber'],
+                'invoice_number': args.get('InvoiceNumber'),
+                'source_phone_number': args['MSISDN'],
+                'first_name': args.get('FirstName'),
+                'middle_name': args.get('MiddleName'),
+                'last_name': args.get('LastName'),
+                'transaction_time': datetime.strptime(
+                    args.get('TransTime', ''), 
+                    '%Y%m%d%H%M%S'
+                ) if args.get('TransTime') else datetime.now(timezone.utc)
+            }
+            
+            # Extract block_id and member_id from bill_ref_number
+            try:
+                parts = transaction_data['bill_ref_number'].split('_')
+                transaction_data['block_id'] = int(parts[1])  # After "Block_"
+                transaction_data['payer_id'] = int(parts[3])  # After "Member_"
+                
+                # Verify block and member exist
+                block = BlockModel.query.get(transaction_data['block_id'])
+                member = UserModel.query.get(transaction_data['payer_id'])
+                
+                if not block or not member:
+                    raise ValueError("Invalid block or member ID")
+                    
+            except (IndexError, ValueError) as e:
+                logger.error(f"Error parsing bill reference number: {str(e)}")
+                return {
+                    "ResultCode": "C2B00012",
+                    "ResultDesc": "Invalid bill reference number format"
+                }, 200
+                
+            # Check for duplicate transaction
+            existing_payment = PaymentModel.query.filter_by(mpesa_id=transaction_data['mpesa_id']).first()
+            if existing_payment:
+                logger.warning(f"Duplicate M-Pesa transaction: {transaction_data['mpesa_id']}")
+                return {
+                    "ResultCode": "0",
+                    "ResultDesc": "Success"
+                }, 200
+                
+            # Create new payment record
+            try:
+                payment = PaymentModel(
+                    mpesa_id=transaction_data['mpesa_id'],
+                    account_number=transaction_data['bill_ref_number'],
+                    source_phone_number=transaction_data['source_phone_number'],
+                    amount=int(transaction_data['amount']),
+                    payment_date=transaction_data['transaction_time'],
+                    transaction_status=True,
+                    transaction_type=transaction_data['transaction_type'],
+                    business_short_code=transaction_data['business_short_code'],
+                    invoice_number=transaction_data['invoice_number'],
+                    first_name=transaction_data['first_name'],
+                    middle_name=transaction_data['middle_name'],
+                    last_name=transaction_data['last_name'],
+                    bank_id=1,  # Set default bank_id
+                    block_id=transaction_data['block_id'],
+                    payer_id=transaction_data['payer_id']
+                )
+                
+                db.session.add(payment)
+                db.session.commit()
+                logger.info(f"Successfully saved payment: {transaction_data['mpesa_id']}")
+                
+            except Exception as e:
+                logger.error(f"Error saving payment: {str(e)}")
+                db.session.rollback()
+                # Note: We still return success to M-Pesa to avoid duplicate transactions
+                
+            # Always acknowledge receipt to M-Pesa
+            return {
+                "ResultCode": "0",
+                "ResultDesc": "Success"
+            }, 200
+            
+        except Exception as e:
+            logger.error(f"Error processing M-Pesa confirmation: {str(e)}", exc_info=True)
+            return {
+                "ResultCode": "0",
+                "ResultDesc": "Success"
+            }, 200
+
+api.add_resource(MpesaValidationResource, '/v1/payments/c2b/validation')
+api.add_resource(MpesaConfirmationResource, '/v1/payments/c2b/confirmation')
