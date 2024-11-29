@@ -740,8 +740,9 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
         acc_number = meeting_details['acc_number']
         paybill_no = meeting_details['paybill_no']
         id_meeting = meeting_details['meeting_id']
+        meeting_id = meeting_details['id']
     else:
-        meeting_block = meeting_zone = host = when = paybill_no = acc_number = id_meeting = None
+        meeting_block = meeting_zone = host = when = paybill_no = acc_number = id_meeting = meeting_id = None
         flash('No upcoming meetings found.','warning')
     
     message = f"""
@@ -1050,6 +1051,7 @@ def get_upcoming_meeting_details():
                     'meeting_block': first_meeting.get('meeting_block', 'Unknown Block'),
                     'meeting_zone': first_meeting.get('meeting_zone', 'Unknown Zone'),
                     'host': first_meeting.get('host', 'Unknown Host'),
+                    'id': first_meeting.get('id', 'Unknown id'),
                     'when': meeting_date_str,
                     'meeting_id': first_meeting.get('meeting_id', 'Unknown meeting ID'),
                     'paybill_no': first_meeting.get('paybill_no', 'Unknown Paybill'),

@@ -765,6 +765,7 @@ class MeetingsResource(BaseResource):
                             'host': meeting.host.full_name if meeting.host else 'Unknown Host',
                             'paybill_no': paybill_no,
                             'acc_number': acc_number,
+                            'id':meeting.id,
                             'when': meeting.date.strftime('%a, %d %b %Y %H:%M:%S'),
                             'meeting_id': meeting.unique_id
                         }
@@ -794,6 +795,7 @@ class MeetingsResource(BaseResource):
                             'meeting_id': meeting.unique_id,
                             'paybill_no': paybill_no,
                             'acc_number': acc_number,
+                            'id':meeting.id,
                             'when': meeting.date.strftime('%a, %d %b %Y %H:%M:%S')
                         }
                         meeting_details.append(details)
@@ -830,6 +832,7 @@ class MeetingsResource(BaseResource):
                             'host': meeting.host.full_name if meeting.host else 'Unknown Host',
                             'paybill_no': paybill_no,
                             'acc_number': acc_number,
+                            'id':meeting.id,
                             'meeting_id': meeting.unique_id,
                             'when': meeting.date.strftime('%a, %d %b %Y %H:%M:%S')
                         }
