@@ -739,17 +739,17 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
         when = meeting_details['when']
         acc_number = meeting_details['acc_number']
         paybill_no = meeting_details['paybill_no']
-        id_meeting = meeting_details['meeting_id']
-        meeting_id = meeting_details['id']
+        event_id = meeting_details['event_id']
+        meeting_id = meeting_details['meeting_id']
     else:
-        meeting_block = meeting_zone = host = when = paybill_no = acc_number = id_meeting = meeting_id = None
+        meeting_block = meeting_zone = host = when = paybill_no = acc_number = event_id = meeting_id = None
         flash('No upcoming meetings found.','warning')
     
     message = f"""
 Dear Member,
 Upcoming block is hosted by {meeting_zone} and the host is {host}. 
 Paybill: {paybill_no}
-Account Number: {id_meeting}
+Account Number: {event_id}
 When: {when}"""
 
     try:
@@ -809,7 +809,7 @@ When: {when}"""
                            zones=zone_map.keys(),acc_number=acc_number,paybill_no=paybill_no,
                            members=members,
                            active_tab=active_tab,  
-                           error=error,meeting_block=meeting_block,host=host,meeting_zone=meeting_zone,when=when,id_meeting=id_meeting)
+                           error=error,meeting_block=meeting_block,host=host,meeting_zone=meeting_zone,when=when,event_id=event_id)
 
 @main.route('/host', methods=['GET', 'POST'])
 @login_required
@@ -1051,9 +1051,9 @@ def get_upcoming_meeting_details():
                     'meeting_block': first_meeting.get('meeting_block', 'Unknown Block'),
                     'meeting_zone': first_meeting.get('meeting_zone', 'Unknown Zone'),
                     'host': first_meeting.get('host', 'Unknown Host'),
-                    'id': first_meeting.get('id', 'Unknown id'),
+                    'meeting_id': first_meeting.get('meeting_id', 'Unknown meeting id'),
                     'when': meeting_date_str,
-                    'meeting_id': first_meeting.get('meeting_id', 'Unknown meeting ID'),
+                    'event_id': first_meeting.get('event_id', 'Unknown event ID'),
                     'paybill_no': first_meeting.get('paybill_no', 'Unknown Paybill'),
                     'acc_number': first_meeting.get('acc_number', 'Unknown Account')
                 }
