@@ -239,7 +239,7 @@ class MeetingModel(db.Model):
     def __repr__(self):
         return f"<Meeting {self.unique_id} on {self.date}>"
 
-def generate_unique_meeting_id(length=10):
+def generate_unique_meeting_id(length=5):
     """Generates a unique alphanumeric ID for a meeting."""
     characters = string.ascii_uppercase + string.digits
     while True:
