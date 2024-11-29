@@ -253,7 +253,7 @@ mpesa_confirmation_fields = {
 # M-Pesa validation request parser
 mpesa_validation_args = reqparse.RequestParser()
 mpesa_validation_args.add_argument('TransactionType', type=str, required=True, help='Transaction Type is required')
-mpesa_validation_args.add_argument('TransAmount', type=str, required=True, help='Transaction Amount is required')
+mpesa_validation_args.add_argument('TransAmount', type=float, required=True, help='Transaction Amount is required')
 mpesa_validation_args.add_argument('BillRefNumber', type=str, required=True, help='Bill Reference Number is required')
 mpesa_validation_args.add_argument('MSISDN', type=str, required=True, help='Phone Number (MSISDN) is required')
 mpesa_validation_args.add_argument('TransID', type=str)

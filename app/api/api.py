@@ -987,12 +987,10 @@ class ZonesResource(BaseResource):
 
 
 
-@api.route('/v1/payments/c2b/validation')
-class MpesaValidationResource(Resource):
-    def __init__(self):
-        self.args = mpesa_validation_args
-        self.fields = mpesa_validation_fields
-        super(MpesaValidationResource, self).__init__()
+class MpesaValidationResource(BaseResource):
+    model = PaymentModel
+    fields = mpesa_validation_fields
+    args = mpesa_validation_args
 
     @api.doc('mpesa_validation')
     @api.marshal_with(mpesa_validation_fields)
@@ -1001,33 +999,21 @@ class MpesaValidationResource(Resource):
         try:
             # Parse and validate incoming data
             args = self.args.parse_args()
-            logger.info(f"Received M-Pesa validation request: {args}")
-            
-            # Extract key fields
-            transaction_type = args['TransactionType']
-            amount = args['TransAmount']
-            bill_ref_number = args['BillRefNumber']
-            phone_number = args['MSISDN']
+            logger.info(f"Received M-Pesa validation: {args}")
             
             # Validate amount is positive
-            try:
-                amount = float(amount)
-                if amount <= 0:
-                    raise ValueError("Amount must be positive")
-            except (ValueError, TypeError):
-                logger.error(f"Invalid amount in validation request: {amount}")
+            if args['TransAmount'] <= 0:
+                logger.error("Invalid amount: must be positive")
                 return {
-                    "ResultCode": 1,
-                    "ResultDesc": "Invalid amount"
-                }, 200
-                
-            # Validate bill reference number format (Block_X_Member_Y_TIMESTAMP)
+                    "ResultCode": "C2B00012",
+                    "ResultDesc": "Invalid amount: must be positive"
+                }
+            
+            # Extract block_id and member_id from bill_ref_number
             try:
-                parts = bill_ref_number.split('_')
-                if len(parts) != 5 or parts[0] != 'Block' or parts[2] != 'Member':
-                    raise ValueError("Invalid bill reference format")
-                block_id = int(parts[1])
-                member_id = int(parts[3])
+                parts = args['BillRefNumber'].split('_')
+                block_id = int(parts[1])  # After "Block_"
+                member_id = int(parts[3])  # After "Member_"
                 
                 # Verify block and member exist
                 block = BlockModel.query.get(block_id)
@@ -1037,25 +1023,24 @@ class MpesaValidationResource(Resource):
                     raise ValueError("Invalid block or member ID")
                     
             except (IndexError, ValueError) as e:
-                logger.error(f"Invalid bill reference number format: {bill_ref_number} - {str(e)}")
+                logger.error(f"Error parsing bill reference number: {str(e)}")
                 return {
-                    "ResultCode": 1,
-                    "ResultDesc": "Invalid bill reference number"
-                }, 200
+                    "ResultCode": "C2B00012",
+                    "ResultDesc": "Invalid bill reference number format"
+                }
                 
-            # All validations passed
-            logger.info(f"Validation successful for transaction: {args.get('TransID')}")
+            # Validation successful
             return {
-                "ResultCode": 0,
-                "ResultDesc": "Validation successful"
-            }, 200
+                "ResultCode": "0",
+                "ResultDesc": "Success"
+            }
             
         except Exception as e:
             logger.error(f"Error in validation endpoint: {str(e)}", exc_info=True)
             return {
-                "ResultCode": 1,
+                "ResultCode": "1",
                 "ResultDesc": "Internal server error"
-            }, 200
+            }
 
 class MpesaConfirmationResource(BaseResource):
     model = PaymentModel
@@ -1070,6 +1055,25 @@ class MpesaConfirmationResource(BaseResource):
             # Parse and validate incoming data
             args = self.args.parse_args()
             logger.info(f"Received M-Pesa confirmation: {args}")
+            
+            # Validate amount is positive
+            if args['TransAmount'] <= 0:
+                logger.error("Invalid amount: must be positive")
+                return {
+                    "ResultCode": "C2B00012",
+                    "ResultDesc": "Invalid amount: must be positive"
+                }
+            
+            # Validate TransTime format if provided
+            if args.get('TransTime'):
+                try:
+                    datetime.strptime(args['TransTime'], '%Y%m%d%H%M%S')
+                except ValueError:
+                    logger.error(f"Invalid transaction time format: {args['TransTime']}")
+                    return {
+                        "ResultCode": "C2B00012",
+                        "ResultDesc": "Invalid transaction time format"
+                    }
             
             # Extract block_id and member_id from bill_ref_number
             try:
@@ -1146,6 +1150,8 @@ class MpesaConfirmationResource(BaseResource):
                 "ResultDesc": f"Error: {str(e)}"
             }
 
+{{ ... }}
+
 # API routes
 api.add_resource(UsersResource, '/users/', '/users/<int:id>')
 api.add_resource(CommunicationsResource, '/communications/', '/communications/<int:id>')
@@ -1153,8 +1159,10 @@ api.add_resource(BanksResource, '/banks/', '/banks/<int:id>')
 api.add_resource(PaymentsResource, '/payments/', '/payments/<int:id>')
 api.add_resource(BlocksResource, '/blocks/', '/blocks/<int:id>')
 api.add_resource(UmbrellasResource, '/umbrellas/', '/umbrellas/<int:id>')
-api.add_resource(ZonesResource, '/zones/', '/zones/<int:id>')
+api.add_resource(RolesResource, '/roles/', '/roles/<int:id>')
 api.add_resource(MeetingsResource, '/meetings/', '/meetings/<int:id>')
-api.add_resource(RolesResource, '/roles/','/roles/<int:id>')
+api.add_resource(ZonesResource, '/zones/', '/zones/<int:id>')
 api.add_resource(MpesaValidationResource, '/v1/payments/c2b/validation')
 api.add_resource(MpesaConfirmationResource, '/v1/payments/c2b/confirmation')
+
+{{ ... }}
