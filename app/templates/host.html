@@ -355,9 +355,7 @@ Regular Block Hosting {% endblock %} {% block content %}
                     rows="6"
                     style="height: 150px"
                     readonly
-                  >
-                  {{ message }}
-                  </textarea>
+                  >{{ message }}</textarea>
                   <input type="hidden" name="message" value="{{ message }}" />
 
                   <button class="submit-btn" name="send_sms" type="submit">
