@@ -9,6 +9,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+
 # C extensions
 *.so
 
@@ -28,7 +29,7 @@ venv.bak/
 instance/
 *.ini
 # *.cfg  # Commenting out to allow babel.cfg
-config.py
+
 # Pytest cache
 .pytest_cache/
 
