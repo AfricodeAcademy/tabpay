@@ -55,8 +55,9 @@
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
+                  <!-- For Cascade dropdown - AJAX -->
                   {{ payment_form.block.label }} {{
-                  payment_form.block(class="form-control") }} {% if
+                  payment_form.block(class="form-control", id="block-request") }} {% if
                   payment_form.block.errors %}
                   <div class="text-danger">
                     {% for error in payment_form.block.errors %}
@@ -68,8 +69,9 @@
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
+                  <!-- For Cascade dropdown - AJAX -->
                   {{ payment_form.member.label }} {{
-                  payment_form.member(class="form-control") }} {% if
+                  payment_form.member(class="form-control", id="member-request") }} {% if
                   payment_form.member.errors %}
                   <div class="text-danger">
                     {% for error in payment_form.member.errors %}
@@ -119,7 +121,7 @@
               <div class="col-md-6">
                 <div class="mb-3">
                   {{ payment_form.block.label() }} {{
-                  payment_form.block(class="form-control") }} {% if
+                  payment_form.block(class="form-control", id="block-bank") }} {% if
                   payment_form.block.errors %}
                   <div class="text-danger">
                     {% for error in payment_form.block.errors %}
@@ -132,7 +134,7 @@
               <div class="col-md-6">
                 <div class="mb-3">
                   {{ payment_form.member.label() }} {{
-                  payment_form.member(class="form-control") }} {% if
+                  payment_form.member(class="form-control", id="member-bank") }} {% if
                   payment_form.member.errors %}
                   <div class="text-danger">
                     {% for error in payment_form.member.errors %}
@@ -209,5 +211,92 @@
     </div>
   </div>
 </div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Get the dropdown elements for Request Payment tab
+    const blockSelectRequest = document.getElementById('block-request');
+    const memberSelectRequest = document.getElementById('member-request');
+
+    // Get the dropdown elements for Send to Bank tab
+    const blockSelectBank = document.getElementById('block-bank');
+    const memberSelectBank = document.getElementById('member-bank');
+
+    // Function to reset options of a select element
+    function resetSelect(select, defaultText = "Choose an option") {
+      select.innerHTML = `<option value="">${defaultText}</option>`;
+      select.disabled = true;
+    }
+
+    // Function to populate a select element with options
+    function populateSelect(select, data, defaultText) {
+      select.innerHTML = `<option value="">${defaultText}</option>`;
+      data.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = item.name;
+        select.appendChild(option);
+      });
+      select.disabled = false;
+    }
+
+    // Function to handle block selection
+    function handleBlockSelection(blockSelect, memberSelect) {
+      const blockId = blockSelect.value;
+      resetSelect(memberSelect, "Choose a Member");
+      
+      if (blockId) {
+        // First get zones for the block
+        fetch(`/get_zones/${blockId}`)
+          .then(response => response.json())
+          .then(zones => {
+            // For each zone, get its members
+            Promise.all(zones.map(zone => 
+              fetch(`/get_members/${zone.id}`).then(res => res.json())
+            )).then(membersArrays => {
+              // Combine all members from different zones
+              const allMembers = membersArrays.flat();
+              // Remove duplicates based on member id
+              const uniqueMembers = Array.from(new Map(allMembers.map(item => 
+                [item.id, item])).values());
+              populateSelect(memberSelect, uniqueMembers, "Choose a Member");
+            });
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            alert('Error fetching members. Please try again.');
+          });
+      }
+    }
+
+    // Handle block selection for Request Payment tab
+    if (blockSelectRequest) {
+      blockSelectRequest.addEventListener('change', function() {
+        handleBlockSelection(this, memberSelectRequest);
+      });
+      resetSelect(memberSelectRequest, "Choose a Member");
+    }
+
+    // Handle block selection for Send to Bank tab
+    if (blockSelectBank) {
+      blockSelectBank.addEventListener('change', function() {
+        handleBlockSelection(this, memberSelectBank);
+      });
+      resetSelect(memberSelectBank, "Choose a Member");
+    }
+
+    // Additional functionality for Send to Bank tab
+    if (memberSelectBank) {
+      memberSelectBank.addEventListener('change', function() {
+        const memberId = this.value;
+        if (memberId) {
+          // You can add an endpoint to fetch member's bank details
+          // and populate the bank and account number fields
+        }
+      });
+    }
+  });
+</script>
 
 {% endblock %}
