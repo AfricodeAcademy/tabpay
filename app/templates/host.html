@@ -239,7 +239,8 @@ Regular Block Hosting {% endblock %} {% block content %}
                               <div class="col-md-6">
                                 <div class="mb-3">
                                   {{ schedule_form.block.label }} {{
-                                  schedule_form.block(class="select", id="block") }} {% if
+                                  schedule_form.block(class="select",
+                                  id="block") }} {% if
                                   schedule_form.block.errors %}
                                   <div class="text-danger">
                                     {% for error in schedule_form.block.errors
@@ -254,8 +255,8 @@ Regular Block Hosting {% endblock %} {% block content %}
                               <div class="col-md-6">
                                 <div class="mb-3">
                                   {{ schedule_form.zone.label }} {{
-                                  schedule_form.zone(class="select", id="zone") }} {% if
-                                  schedule_form.zone.errors %}
+                                  schedule_form.zone(class="select", id="zone")
+                                  }} {% if schedule_form.zone.errors %}
                                   <div class="text-danger">
                                     {% for error in schedule_form.zone.errors %}
                                     <small>{{ error }}</small>
@@ -269,7 +270,8 @@ Regular Block Hosting {% endblock %} {% block content %}
                             <div class="row">
                               <div class="col-md-6">
                                 {{ schedule_form.member.label }} {{
-                                schedule_form.member(class="select", id="member") }} {% if
+                                schedule_form.member(class="select",
+                                id="member") }} {% if
                                 schedule_form.member.errors %}
                                 <div class="text-danger">
                                   {% for error in schedule_form.member.errors %}
@@ -284,7 +286,8 @@ Regular Block Hosting {% endblock %} {% block content %}
                                 <div class="input-with-icon">
                                   <i class="fas fa-calendar-alt"></i>
                                   {{ schedule_form.date(class="input",
-                                  placeholder="YYYY-MM-DD HH:MM:SS", id="date") }}
+                                  placeholder="YYYY-MM-DD HH:MM:SS", id="date")
+                                  }}
                                 </div>
                                 {% if schedule_form.date.errors %}
                                 <div class="text-danger">
@@ -355,7 +358,9 @@ Regular Block Hosting {% endblock %} {% block content %}
                     rows="6"
                     style="height: 150px"
                     readonly
-                  >{{ message }}</textarea>
+                  >
+{{ message }}</textarea
+                  >
                   <input type="hidden" name="message" value="{{ message }}" />
 
                   <button class="submit-btn" name="send_sms" type="submit">
@@ -650,13 +655,13 @@ Regular Block Hosting {% endblock %} {% block content %}
     flatpickr("#date", {
       enableTime: true,
       dateFormat: "Y-m-d H:i:S",
-      minDate: "today"
+      minDate: "today",
     });
 
     // Get the dropdown elements
-    const blockSelect = document.getElementById('block');
-    const zoneSelect = document.getElementById('zone');
-    const memberSelect = document.getElementById('member');
+    const blockSelect = document.getElementById("block");
+    const zoneSelect = document.getElementById("zone");
+    const memberSelect = document.getElementById("member");
 
     // Function to reset options of a select element
     function resetSelect(select, defaultText = "Choose an option") {
@@ -667,8 +672,8 @@ Regular Block Hosting {% endblock %} {% block content %}
     // Function to populate a select element with options
     function populateSelect(select, data, defaultText) {
       select.innerHTML = `<option value="">${defaultText}</option>`;
-      data.forEach(item => {
-        const option = document.createElement('option');
+      data.forEach((item) => {
+        const option = document.createElement("option");
         option.value = item.id;
         option.textContent = item.name;
         select.appendChild(option);
@@ -677,38 +682,38 @@ Regular Block Hosting {% endblock %} {% block content %}
     }
 
     // Handle block selection
-    blockSelect.addEventListener('change', function() {
+    blockSelect.addEventListener("change", function () {
       const blockId = this.value;
       resetSelect(zoneSelect, "Choose a Zone");
       resetSelect(memberSelect, "Choose a Member");
-      
+
       if (blockId) {
         fetch(`/get_zones/${blockId}`)
-          .then(response => response.json())
-          .then(data => {
+          .then((response) => response.json())
+          .then((data) => {
             populateSelect(zoneSelect, data, "Choose a Zone");
           })
-          .catch(error => {
-            console.error('Error:', error);
-            alert('Error fetching zones. Please try again.');
+          .catch((error) => {
+            console.error("Error:", error);
+            alert("Error fetching zones. Please try again.");
           });
       }
     });
 
     // Handle zone selection
-    zoneSelect.addEventListener('change', function() {
+    zoneSelect.addEventListener("change", function () {
       const zoneId = this.value;
       resetSelect(memberSelect, "Choose a Member");
-      
+
       if (zoneId) {
         fetch(`/get_members/${zoneId}`)
-          .then(response => response.json())
-          .then(data => {
+          .then((response) => response.json())
+          .then((data) => {
             populateSelect(memberSelect, data, "Choose a Member");
           })
-          .catch(error => {
-            console.error('Error:', error);
-            alert('Error fetching members. Please try again.');
+          .catch((error) => {
+            console.error("Error:", error);
+            alert("Error fetching members. Please try again.");
           });
       }
     });

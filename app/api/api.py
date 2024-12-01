@@ -138,8 +138,6 @@ class UsersResource(BaseResource):
                     return {"message": "User not found"}, 404
                 return marshal(user, self.fields), 200
 
-
-
             # Check for query parameters: role, id_number, umbrella_id, and zone_id
             role_name = request.args.get('role')
             id_number = request.args.get('id_number')
@@ -153,22 +151,17 @@ class UsersResource(BaseResource):
                     return {"message": "User not found"}, 404
                 return marshal(user, self.fields), 200
 
-            # Fetch users by role, umbrella, and zone if all are provided
-            if role_name and umbrella_id:
+            # Fetch users by role and zone_id
+            if role_name and zone_id:
                 users = (
                     self.model.query
                     .join(UserModel.roles)
-                    .join(UserModel.block_memberships)
-                    .filter(RoleModel.name == role_name)
-                    .filter(BlockModel.parent_umbrella_id == umbrella_id)
+                    .filter(RoleModel.name == role_name, UserModel.zone_id == zone_id)
                     .all()
                 )
-                if zone_id:
-                    query = query.filter(UserModel.zone_id == zone_id)
-
                 return marshal(users, self.fields), 200
 
-            # Fetch users by role and umbrella if both are provided
+            # Fetch users by role and umbrella_id if both are provided
             if role_name and umbrella_id:
                 users = (
                     self.model.query
@@ -179,10 +172,20 @@ class UsersResource(BaseResource):
                     .all()
                 )
                 return marshal(users, self.fields), 200
+            # Fetch users by role, zone_id, and umbrella_id
+            if role_name and zone_id and umbrella_id:
+                users = (
+                    self.model.query
+                    .join(UserModel.roles)
+                    .join(UserModel.block_memberships)
+                    .filter(RoleModel.name == role_name)
+                    .filter(UserModel.zone_id == zone_id)
+                    .filter(BlockModel.parent_umbrella_id == umbrella_id)
+                    .all()
+                )
+                return marshal(users, self.fields), 200
 
-
-
-            # Fetch users by role if role_name is provided (without umbrella)
+            # Fetch users by role if role_name is provided (without umbrella or zone)
             if role_name:
                 users = self.model.query.join(UserModel.roles).filter(RoleModel.name == role_name).all()
                 return marshal(users, self.fields), 200
@@ -201,6 +204,7 @@ class UsersResource(BaseResource):
 
         except Exception as e:
             return self.handle_error(e)
+
 
     def post(self):
         try:

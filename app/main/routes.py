@@ -688,7 +688,7 @@ def get_zones_by_block(block_id):
 # Helper function to get members of a specific zone
 def get_members_by_zone(zone_id,umbrella_id):
     """Fetches members associated with the specified zone via API."""
-    response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'zone_id': zone_id,'umbrella_id': umbrella_id})
+    response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role':'Member','zone_id': zone_id,'umbrella_id': umbrella_id})
 
     if response.status_code == 200:
         return response.json()
@@ -1287,6 +1287,8 @@ def get_members():
             return []
     except Exception as e:
         return []
+
+
 
 
 # Fetch and display committee members
@@ -1914,18 +1916,18 @@ def get_members_for_zone(zone_id):
     except Exception as e:
         return jsonify([]), 500
 
-@main.route('/get_zones/<block_id>')
-@login_required
-def get_zones(block_id):
-    """Endpoint to get zones for a specific block"""
-    try:
-        # Query zones for the given block
-        zones = Zone.query.filter_by(parent_block=block_id).all()
+# @main.route('/get_zones/<block_id>')
+# @login_required
+# def get_zones(block_id):
+#     """Endpoint to get zones for a specific block"""
+#     try:
+#         # Query zones for the given block
+#         zones = Zone.query.filter_by(parent_block=block_id).all()
         
-        # Format zones for JSON response
-        zones_list = [{'id': zone.id, 'name': zone.zone_name} for zone in zones]
+#         # Format zones for JSON response
+#         zones_list = [{'id': zone.id, 'name': zone.zone_name} for zone in zones]
         
-        return jsonify(zones_list)
-    except Exception as e:
-        print(f"Error fetching zones: {str(e)}")
-        return jsonify({'error': 'Error fetching zones'}), 500
+#         return jsonify(zones_list)
+#     except Exception as e:
+#         print(f"Error fetching zones: {str(e)}")
+#         return jsonify({'error': 'Error fetching zones'}), 500
