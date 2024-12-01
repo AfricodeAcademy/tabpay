@@ -465,28 +465,44 @@ class PaymentsResource(BaseResource):
         """Get a single payment or list all payments"""
         try:
             if id:
-                payment = db.session.get(PaymentModel, id)
-                if not payment:
-                    abort(404, message=f"Payment with id {id} not found")
-                return marshal(payment, payment_fields), 200
+                return super().get(id)
             
-            # Get query parameters for filtering
-            args = request.args
-            query = PaymentModel.query
-
-            # Apply filters if provided
-            if args.get('payer_id'):
-                query = query.filter_by(payer_id=args.get('payer_id'))
-            if args.get('block_id'):
-                query = query.filter_by(block_id=args.get('block_id'))
-            if args.get('meeting_id'):
-                query = query.filter_by(meeting_id=args.get('meeting_id'))
-            if args.get('mpesa_id'):
-                query = query.filter_by(mpesa_id=args.get('mpesa_id'))
             
-            # Get all payments with applied filters
-            payments = query.all()
-            return marshal(payments, payment_fields), 200
+            # Check if a meeting_id query parameter is provided
+            meeting_id = request.args.get('meeting_id', None)
+            if meeting_id:
+                try:
+                    logger.info(f"Fetching payments for meeting ID: {meeting_id}")
+                    # Query payments by meeting_id and join payer (user) and block tables
+                    payments = PaymentModel.query \
+                        .filter_by(meeting_id=meeting_id) \
+                        .join(UserModel, PaymentModel.payer_id == UserModel.id) \
+                        .join(BlockModel, PaymentModel.block_id == BlockModel.id) \
+                        .options(joinedload(PaymentModel.payer), joinedload(PaymentModel.block)) \
+                        .all()
+                    logger.info(f"Payments fetched for meeting ID {meeting_id}: {payments}")
+                    payment_data = []
+                    for payment in payments:
+                        logger.debug(f"Processing payment: ID {payment.id}, Payer {payment.payer.full_name}, Block {payment.block.name}")
+                        payment_data.append({
+                        "mpesa_id": payment.mpesa_id,
+                        "amount": payment.amount,
+                        "transaction_status": payment.transaction_status,
+                        "payer_id": payment.payer.id,  # Payer ID
+                        "payer_full_name": payment.payer.full_name,  # Payer Full Name
+                        "block_id": payment.block.id,  # Block ID
+                        "block_name": payment.block.name,  # Block Name
+                        "payment_date": payment.payment_date,
+                        "status": "Contributed" if payment.transaction_status else "Pending"
+                    })
+                    logger.info(f"Payments query result: {payment_data}")
+                    return marshal(payments, self.fields), 200
+                except Exception as e:
+                    logger.error(f'Payments error: {e}')
+                    return self.handle_error(e)
+            else:
+                # Handle other queries for fetching all payments or specific payment by ID
+                return super().get()
             
         except Exception as e:
             logger.error(f"Error retrieving payment(s): {str(e)}", exc_info=True)
