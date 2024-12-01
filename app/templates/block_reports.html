@@ -60,19 +60,21 @@ block content %}
             <div class="flex-container mt-4">
               <div class="row">
                 <div class="col-md-3">
-                  <select id="block" name="block">
+                  <!-- For Cascade dropdown - AJAX -->
+                  <select id="block-filter" name="block" class="form-control">
+                    <option value="">-- Select Block --</option>
                     {% for block in blocks %}
-                    <option value="{{ block.name }}">{{ block.name }}</option>
+                    <!-- For Cascade dropdown - AJAX -->
+                    <option value="{{ block.id }}">{{ block.name }}</option>
                     {% endfor %}
                   </select>
                 </div>
 
                  <div class="col-md-3">
-                  <select id="host" name="host">
+                  <!-- For Cascade dropdown - AJAX -->
+                  <select id="host-filter" name="host" class="form-control">
+                    <option value="">-- Select Host --</option>
                     <option value="all_hosts">All Hosts</option>
-                    {% for host in hosts %}
-                    <option value="{{ host.name }}">{{ host.name }}</option>
-                    {% endfor %}
                   </select>
                 </div>
 
@@ -150,35 +152,45 @@ block content %}
 
           <div class="flex-container mt-4">
             <div class="row">
+              <!-- For Cascade dropdown - AJAX -->
+              <!-- Filter by Block -->
+              <div class="col-md-3">
+                <select id="block-member" name="block" class="form-control">
+                  <option value="">-- Select Block --</option>
+                  {% for block in blocks %}
+                  <option value="{{ block.id }}">{{ block.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <!-- Filter by Zone -->
+              <div class="col-md-3">
+                <select id="zone-member" name="zone" class="form-control" disabled>
+                  <option value="">-- Select Zone --</option>
+                </select>
+              </div>
+
               <!-- Filter by Meeting Host -->
               <div class="col-md-3">
-                <select id="host" name="host" onchange="filterContributions()">
+                <!-- For Cascade dropdown - AJAX -->
+                <select id="host-member" name="host" class="form-control" disabled>
                   <option value="">-- Select Host --</option>
-                  <option value="all_hosts">All Hosts</option> <!-- Shows all members who have hosted -->
-                  {% for host in hosts %}
-                  <option value="{{ host.id }}">{{ host.full_name }}</option>
-                  {% endfor %}
+                  <option value="all_hosts">All Hosts</option>
                 </select>
               </div>
 
               <!-- Filter by Member -->
               <div class="col-md-3">
-                <select id="member" name="member" onchange="filterContributions()">
+                <!-- For Cascade dropdown - AJAX -->
+                <select id="member-filter" name="member" class="form-control" disabled>
                   <option value="">-- Select Member --</option>
                   <option value="all_members">All Members</option>
-                  {% for member in members %}
-                  <option value="{{ member.id }}">{{ member.full_name }}</option>
-                  {% endfor %}
                 </select>
               </div>
-
+<!-- For Cascade dropdown - AJAX -->
               <!-- Filter by Contribution Status -->
-              <div class="col-md-3">
-                <select
-                  id="status"
-                  name="status"
-                  onchange="filterContributions()"
-                >
+              <div class="col-md-3 mt-3">
+                <select id="status-filter" name="status" class="form-control">
                   <option value="">-- Select Status --</option>
                   <option value="Pending">Pending</option>
                   <option value="Contributed">Contributed</option>
@@ -337,6 +349,134 @@ block content %}
     </div>
   </div>
 </div>
+<!-- For Cascade dropdown - AJAX -->
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Block Contribution Tab Elements
+    const blockFilter = document.getElementById('block-filter');
+    const hostFilter = document.getElementById('host-filter');
+
+    // Member Contribution Tab Elements
+    const blockMember = document.getElementById('block-member');
+    const zoneMember = document.getElementById('zone-member');
+    const hostMember = document.getElementById('host-member');
+    const memberFilter = document.getElementById('member-filter');
+    const statusFilter = document.getElementById('status-filter');
+
+    // Function to reset options of a select element
+    function resetSelect(select, defaultText = "-- Select an option --") {
+      select.innerHTML = `<option value="">${defaultText}</option>`;
+      select.disabled = true;
+    }
+
+    // Function to populate a select element with options
+    function populateSelect(select, data, defaultText, includeAll = false) {
+      select.innerHTML = `<option value="">${defaultText}</option>`;
+      if (includeAll) {
+        select.innerHTML += `<option value="all">All ${defaultText.replace('Select ', '')}</option>`;
+      }
+      data.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = item.name;
+        select.appendChild(option);
+      });
+      select.disabled = false;
+    }
+
+    // Handle block selection in Block Contribution tab
+    if (blockFilter) {
+      blockFilter.addEventListener('change', function() {
+        const blockId = this.value;
+        resetSelect(hostFilter, "-- Select Host --");
+        
+        if (blockId) {
+          fetch(`/get_zones/${blockId}`)
+            .then(response => response.json())
+            .then(zones => {
+              // For each zone, get its members who have hosted
+              Promise.all(zones.map(zone => 
+                fetch(`/get_members/${zone.id}`).then(res => res.json())
+              )).then(membersArrays => {
+                const allMembers = membersArrays.flat();
+                const uniqueMembers = Array.from(new Map(allMembers.map(item => 
+                  [item.id, item])).values());
+                populateSelect(hostFilter, uniqueMembers, "-- Select Host --", true);
+              });
+            })
+            .catch(error => {
+              console.error('Error:', error);
+              alert('Error fetching hosts. Please try again.');
+            });
+        }
+      });
+    }
+
+    // Handle block selection in Member Contribution tab
+    if (blockMember) {
+      blockMember.addEventListener('change', function() {
+        const blockId = this.value;
+        resetSelect(zoneMember, "-- Select Zone --");
+        resetSelect(hostMember, "-- Select Host --");
+        resetSelect(memberFilter, "-- Select Member --");
+        
+        if (blockId) {
+          fetch(`/get_zones/${blockId}`)
+            .then(response => response.json())
+            .then(zones => {
+              populateSelect(zoneMember, zones, "-- Select Zone --");
+            })
+            .catch(error => {
+              console.error('Error:', error);
+              alert('Error fetching zones. Please try again.');
+            });
+        }
+      });
+    }
+
+    // Handle zone selection in Member Contribution tab
+    if (zoneMember) {
+      zoneMember.addEventListener('change', function() {
+        const zoneId = this.value;
+        resetSelect(memberFilter, "-- Select Member --");
+        resetSelect(hostMember, "-- Select Host --");
+        
+        if (zoneId) {
+          fetch(`/get_members/${zoneId}`)
+            .then(response => response.json())
+            .then(members => {
+              populateSelect(memberFilter, members, "-- Select Member --", true);
+              populateSelect(hostMember, members, "-- Select Host --", true);
+            })
+            .catch(error => {
+              console.error('Error:', error);
+              alert('Error fetching members. Please try again.');
+            });
+        }
+      });
+    }
+
+    // Function to filter contributions based on selected values
+    function filterContributions() {
+      const selectedHost = hostMember.value;
+      const selectedMember = memberFilter.value;
+      const selectedStatus = statusFilter.value;
+      
+      // You can implement the filtering logic here
+      // This might involve making an API call with the selected filters
+      // and updating the table content
+    }
+
+    // Add event listeners for filter changes
+    [hostMember, memberFilter, statusFilter].forEach(filter => {
+      if (filter) {
+        filter.addEventListener('change', filterContributions);
+      }
+    });
+  });
+</script>
 
 <script>
   setTimeout(function () {
