@@ -1872,3 +1872,24 @@ def view_all_blocks():
         })
 
     return render_template('all_blocks.html', blocks=block_data)
+
+
+#For Cascade dropdown - AJAX
+@main.route('/get_zones/<block_id>')
+@login_required
+def get_zones_for_block(block_id):
+    try:
+        zones = get_zones_by_block(block_id)
+        return jsonify([{"id": str(zone["id"]), "name": zone["name"]} for zone in zones])
+    except Exception as e:
+        return jsonify([]), 500
+
+@main.route('/get_members/<zone_id>')
+@login_required
+def get_members_for_zone(zone_id):
+    try:
+        umbrella = get_umbrella_by_user(current_user.id)
+        members = get_members_by_zone(zone_id, umbrella.get('id')) if umbrella else []
+        return jsonify([{"id": str(member["id"]), "name": member["full_name"]} for member in members])
+    except Exception as e:
+        return jsonify([]), 500
