@@ -1,5 +1,5 @@
 import requests
-from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify, session
 from flask_security import login_required, current_user, roles_accepted, user_registered
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm,PaymentForm
 import logging
@@ -49,7 +49,11 @@ def forbidden_error(error):
 
 
 # Helper function to render the settings page with forms
-def render_settings_page(active_tab=None,umbrella_form=None,errors=None,block_form=None,committee_form=None,zone_form=None,error=None, member_form=None):
+def render_settings_page(umbrella_form=None, block_form=None, zone_form=None,
+                        member_form=None, committee_form=None, active_tab='profile',
+                        selected_block='', selected_zone=''):
+    """Helper function to render settings page with all necessary forms and data"""
+    blocks = get_blocks_by_umbrella()
     # Instantiate all forms
     profile_form = ProfileForm()
 
@@ -78,7 +82,7 @@ def render_settings_page(active_tab=None,umbrella_form=None,errors=None,block_fo
     except Exception as e:
         flash('Error loading user details. Please try again later.', 'danger')
 
-    blocks, zones =  [], []
+    zones =  []
     # API call to get umbrella by user
     try:
         umbrella = get_umbrella_by_user(current_user.id)
@@ -139,9 +143,9 @@ def render_settings_page(active_tab=None,umbrella_form=None,errors=None,block_fo
                            user=current_user,
                            blocks=blocks,
                            zones=zones,
-                           error=error,
                            active_tab=active_tab,  
-                           errors=errors)
+                           selected_block=selected_block,
+                           selected_zone=selected_zone)
 
 # Single route to handle all settings form submissions
 @main.route('/settings', methods=['GET', 'POST'])
@@ -167,13 +171,29 @@ def settings():
     elif 'zone_submit' in request.form:
         return handle_zone_creation(zone_form=zone_form)
     elif 'member_submit' in request.form:
-        return handle_member_creation(member_form=member_form)
-    
+        try:
+            # For Cascade dropdown - AJAX
+            # Get the block_id from the form data
+            block_id = request.form.get('block')
+            zone_id = member_form.member_zone.data
+            
+            # Store in session
+            session['selected_block'] = block_id
+            session['selected_zone'] = zone_id
+            
+            return handle_member_creation(member_form=member_form)
+        except Exception as e:
+            flash(f'Error adding member: {str(e)}', 'danger')
+    # For Cascade dropdown - AJAX 
     # Default GET request rendering the settings page
-    return render_settings_page(                           
+    # Get stored values from session
+    selected_block = session.get('selected_block', '')
+    selected_zone = session.get('selected_zone', '')
+    
+    return render_settings_page(
+    #For Cascade dropdown - AJAX                           
         umbrella_form=umbrella_form,block_form=block_form,zone_form=zone_form,member_form=member_form,committee_form=committee_form,
-active_tab=request.args.get('active_tab', 'profile'))
-
+active_tab=request.args.get('active_tab', 'profile'), selected_block=selected_block, selected_zone=selected_zone)
 
 
 
@@ -1893,3 +1913,19 @@ def get_members_for_zone(zone_id):
         return jsonify([{"id": str(member["id"]), "name": member["full_name"]} for member in members])
     except Exception as e:
         return jsonify([]), 500
+
+@main.route('/get_zones/<block_id>')
+@login_required
+def get_zones(block_id):
+    """Endpoint to get zones for a specific block"""
+    try:
+        # Query zones for the given block
+        zones = Zone.query.filter_by(parent_block=block_id).all()
+        
+        # Format zones for JSON response
+        zones_list = [{'id': zone.id, 'name': zone.zone_name} for zone in zones]
+        
+        return jsonify(zones_list)
+    except Exception as e:
+        print(f"Error fetching zones: {str(e)}")
+        return jsonify({'error': 'Error fetching zones'}), 500
