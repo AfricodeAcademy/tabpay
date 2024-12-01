@@ -368,7 +368,7 @@ render_field(field) %}
                   <select class="form-control" id="member-block" name="block">
                     <option value="">-- Select Block --</option>
                     {% for block in blocks %}
-                    <option value="{{ block.id }}">{{ block.name }}</option>
+                    <option value="{{ block.id }}" {% if selected_block == block.id|string %}selected{% endif %}>{{ block.name }}</option>
                     {% endfor %}
                   </select>
                 </div>
@@ -438,72 +438,40 @@ render_field(field) %}
     }
 
     // Function to populate a select element with options
-    function populateSelect(select, data, defaultText) {
+    function populateSelect(select, data, defaultText, selectedValue = '') {
       select.innerHTML = `<option value="">${defaultText}</option>`;
       data.forEach(item => {
         const option = document.createElement('option');
         option.value = item.id;
         option.textContent = item.name;
+        if (selectedValue && item.id.toString() === selectedValue.toString()) {
+          option.selected = true;
+        }
         select.appendChild(option);
       });
       select.disabled = false;
     }
 
-    // Handle block selection in Committee tab
-    if (committeeBlock) {
-      committeeBlock.addEventListener('change', function() {
-        const blockId = this.value;
-        resetSelect(committeeRole, "-- Select Role --");
-        
-        if (blockId) {
-          // You can add an endpoint to fetch available roles for the block
-          const roles = [
-            { id: 'Chairman', name: 'Chairman' },
-            { id: 'Secretary', name: 'Secretary' },
-            { id: 'Treasurer', name: 'Treasurer' }
-          ];
-          populateSelect(committeeRole, roles, "-- Select Role --");
-        }
-      });
-    }
-
-    // Handle block selection in Zone Definition tab
-    if (zoneBlock) {
-      zoneBlock.addEventListener('change', function() {
-        const blockId = this.value;
-        // You can add validation or additional functionality here
-      });
-    }
-
-    // Handle zone selection in Add Members tab
-    if (memberZone) {
-      memberZone.addEventListener('change', function() {
-        const zoneId = this.value;
-        resetSelect(memberBank, "-- Select Bank --");
-        
-        if (zoneId) {
-          // Fetch banks from your backend
-          fetch('/get_banks')
-            .then(response => response.json())
-            .then(banks => {
-              populateSelect(memberBank, banks, "-- Select Bank --");
-            })
-            .catch(error => {
-              console.error('Error:', error);
-              alert('Error fetching banks. Please try again.');
-            });
-        }
-      });
-    }
-
     // Handle block selection in Add Members tab
     if (memberBlock) {
+      // Load zones if block is pre-selected
+      if (memberBlock.value) {
+        fetch(`/get_zones/${memberBlock.value}`)
+          .then(response => response.json())
+          .then(zones => {
+            populateSelect(memberZone, zones, "-- Select Zone --", "{{ selected_zone }}");
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            alert('Error fetching zones. Please try again.');
+          });
+      }
+
       memberBlock.addEventListener('change', function() {
         const blockId = this.value;
         resetSelect(memberZone, "-- Select Zone --");
         
         if (blockId) {
-          // Fetch zones for the selected block
           fetch(`/get_zones/${blockId}`)
             .then(response => response.json())
             .then(zones => {
@@ -517,10 +485,9 @@ render_field(field) %}
       });
     }
 
-    // Initialize disabled states
-    if (committeeRole) resetSelect(committeeRole, "-- Select Role --");
-    if (memberBank) resetSelect(memberBank, "-- Select Bank --");
-    if (memberZone) resetSelect(memberZone, "-- Select Zone --");
+    // Initialize disabled states only if no pre-selected values
+    if (committeeRole && !committeeRole.value) resetSelect(committeeRole, "-- Select Role --");
+    if (memberZone && !memberBlock.value) resetSelect(memberZone, "-- Select Zone --");
   });
 
   // Keep the existing CSRF token function
