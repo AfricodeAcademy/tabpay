@@ -1966,11 +1966,11 @@ def get_contribution_stats(block_id, zone_id=None):
         users = base_query.all()
         total_users = len(users)
 
-        # Count users who have made contributions
+        # Count users who have made payments
         contributed = 0
         for user in users:
-            # Check if user has any contributions
-            if user.contributions.filter_by(block_id=block_id).first():
+            # Check if user has any payments in this block
+            if user.payments.filter_by(block_id=block_id).first():
                 contributed += 1
 
         pending = total_users - contributed
