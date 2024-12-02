@@ -1953,6 +1953,6 @@ def get_filtered_members(block_id, zone_id=None):
             f"{block.name} ({zone.name})"
             for block, zone in zip(member.block_memberships, member.zone_memberships)
         ]),
-        'bank_name': member.bank_name,
-        'acc_number': member.acc_number
+        'bank_name': member.bank.name if member.bank else '',
+        'acc_number': member.acc_number or ''
     } for member in members])
