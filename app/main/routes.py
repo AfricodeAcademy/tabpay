@@ -1373,23 +1373,60 @@ def render_reports_page(active_tab=None, error=None, host_id=None, member_id=Non
     # Set the choices for the zone field in the form
     schedule_form.zone.choices = [("", "--Choose a Zone--")] + [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
 
-    members,banks = [], []
+    members = []
+    member_contributions = []
+    combined_member_contributions = []
+    host_name = 'Unknown Host'
+    meeting_date = 'Unknown Date'
+    block_contributions_data = {'block_contributions': []}
     try:
+        # Fetch members
         members = get_members()
-        banks = get_banks()
-    except Exception as e:
-        print(f'payments error: {e}')
-        flash(f'An error occurred. Please try again later.', 'danger')
 
-    # Render the host page
+        # Fetch contributions for the most recent meeting
+        contributions_data = get_member_contributions(host_id=host_id, member_id=member_id, status=status)
+        member_contributions = contributions_data['member_contributions']
+        host_name = contributions_data.get('host_name', host_name)
+        meeting_date = contributions_data.get('meeting_date', meeting_date)
+
+
+
+        # Combine member data with their contributions
+        for member in members:
+            contribution = next((c for c in member_contributions if c['full_name'] == member['full_name']), None)
+            if contribution:
+                combined_member_contributions.append({
+                    'full_name': member['full_name'],
+                    'amount': contribution['amount'],
+                    'status': contribution.get('status', 'Unknown'),
+                })
+            else:
+                combined_member_contributions.append({
+                    'full_name': member['full_name'],
+                    'amount': 0.0,
+                    'status': 'Pending',
+                })
+        block_contributions_data = get_block_contributions(host_id=host_id)
+        print(f'Block contributions: {block_contributions_data}')
+        if 'block_contributions' not in block_contributions_data:
+            block_contributions_data['block_contributions'] = {}
+
+
+    except Exception as e:
+        flash(f'Error fetching members or contributions. Please try again later.', 'danger')
+
+    # Render the reports page
     return render_template('block_reports.html', title='Block_Reports | Dashboard',
                            user=current_user,
-                           members=members,
-                           schedule_form=schedule_form, 
-                           blocks=blocks,                          
-                           active_tab=active_tab, 
-                           banks=banks, 
+                           host_name=host_name,
+                           meeting_date=meeting_date,
+                           members=combined_member_contributions, 
+                           schedule_form=schedule_form,
+                        block_contributions=block_contributions_data.get('block_contributions', []),  
+                           blocks=blocks,
+                           active_tab=active_tab,
                            error=error)
+
 
 
 
