@@ -725,18 +725,40 @@ def create_zone(payload):
 @main.route('/statistics', methods=['GET'])
 @login_required
 @approval_required
-@roles_accepted('SuperUser', 'Administrator', 'Chairman', 'Secretary','Treasurer')
+@roles_accepted('SuperUser', 'Administrator', 'Chairman', 'Secretary', 'Treasurer')
 def statistics():
-    
-    umbrella_id = get_umbrella_by_user(current_user.id)
-    # print(f'fetched umbrella: {umbrella_id}')
+    # Fetch all members
+    all_members = get_members() 
 
-    total_members = len(get_members())
+    try:
+        # Fetch all meetings to identify hosts
+        response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/meetings/")
+        if response.status_code == 200:
+            meetings = response.json()  
+        else:
+            flash("Failed to fetch meetings data from the API.", "danger")
+            meetings = []
+    except Exception as e:
+        print(f"Error fetching meetings data: {e}")
+        flash("An error occurred while retrieving meetings data.", "danger")
+        meetings = []
 
+    # Extract the IDs of members who have hosted
+    hosted_member_ids = {meeting['host_id'] for meeting in meetings}
+
+    # Identify members who haven't hosted
+    yet_to_host = [member for member in all_members if member['id'] not in hosted_member_ids]
+
+    total_members = len(all_members)
     total_blocks = len(get_blocks_by_umbrella())
 
-    return render_template('statistics.html', title='Statistics | Dashboard ', total_members=total_members,
-        total_blocks=total_blocks, user=current_user
+    return render_template(
+        'statistics.html',
+        title='Statistics | Dashboard',
+        total_members=total_members,
+        total_blocks=total_blocks,
+        yet_to_host=len(yet_to_host),
+        user=current_user
     )
 
 
@@ -808,7 +830,10 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
     schedule_form.zone.choices = [("", "--Choose a Zone--")] + [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
 
     update_form.member_zone.choices = [("", "--Choose an Additional Zone--")] +[(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
+    # Get current page from request arguments (default is page 1)
 
+    current_page = int(request.args.get('page', 1))
+    members_per_page = 5  # Number of members per page
     # Fetch members
     members = get_members()
     if members:
@@ -817,6 +842,23 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
             schedule_form.member.choices = [("", "--Choose a Member--")] + [(str(member['id']), member['full_name']) for member in members]
     else:
         schedule_form.member.choice = []
+
+    total_members = len(members)
+    total_pages = (total_members + members_per_page - 1) // members_per_page
+
+    # Apply slicing for pagination
+    start = (current_page - 1) * members_per_page
+    end = start + members_per_page
+    paginated_members = members[start:end]
+
+    # Prepare pagination metadata
+    pagination = {
+        "current_page": current_page,
+        "total_pages": total_pages,
+        "has_prev": current_page > 1,
+        "has_next": current_page < total_pages
+    }
+
 
     banks = get_banks()
     update_form.bank_id.choices = [("", "--Choose Bank--")] + [(str(bank['id']), bank['name']) for bank in banks]
@@ -829,7 +871,8 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
                            schedule_form=schedule_form,
                            blocks=blocks,message=message,
                            zones=zone_map.keys(),acc_number=acc_number,paybill_no=paybill_no,
-                           members=members,
+                            members=paginated_members,
+                            pagination=pagination,
                            active_tab=active_tab,  
                            error=error,meeting_block=meeting_block,host=host,meeting_zone=meeting_zone,when=when,event_id=event_id)
 
@@ -1259,7 +1302,7 @@ def remove_member(user_id):
 
 
 # Helper function to fetch members by role "Member"
-def get_members():
+def get_members(page=1, per_page=5):
     """Fetches members associated with the specified umbrella."""
     # Retrieve the umbrella details for the current user
     umbrella = get_umbrella_by_user(current_user.id)  
@@ -1275,7 +1318,7 @@ def get_members():
         # Fetch members associated with the umbrella
         response = requests.get(
             f"{current_app.config['API_BASE_URL']}/api/v1/users/",
-            params={'role': 'Member', 'umbrella_id': umbrella_id} 
+            params={'role': 'Member', 'umbrella_id': umbrella_id,"page": page, "per_page": per_page} 
         )
         
         if response.status_code == 200:
@@ -1365,7 +1408,7 @@ def remove_committee_role(user_id, active_tab):
 def render_reports_page(active_tab=None, error=None, host_id=None, member_id=None, status=None, umbrella=None):
     schedule_form = ScheduleForm()
 
-    # API call to get user details
+    # Fetch user and umbrella details
     try:
         user = get_user_from_api(current_user.id)
         if not user:
@@ -1373,16 +1416,16 @@ def render_reports_page(active_tab=None, error=None, host_id=None, member_id=Non
     except Exception as e:
         print(f'User Details Error:{e}')
         flash('Error loading user details. Please try again later.', 'danger')
-    
+
     if not umbrella:
         flash('You need to create an umbrella before getting block reports!', 'danger')
         return redirect(url_for('main.settings', active_tab='umbrella'))
 
-    # Fetch blocks associated with the umbrella
+    # Fetch blocks and populate form choices
     blocks = get_blocks_by_umbrella()
     schedule_form.block.choices = [("", "--Choose a Block--")] + [(str(block['id']), block['name']) for block in blocks]
 
-    # Prepare a mapping for zones with block names
+    # Mapping zones to blocks
     zone_map = {}
     for block in blocks:
         block_id = block['id']
@@ -1391,26 +1434,77 @@ def render_reports_page(active_tab=None, error=None, host_id=None, member_id=Non
         for zone in block_zones:
             zone_map[zone['id']] = (zone['name'], block_name)
 
-    # Set the choices for the zone field in the form
     schedule_form.zone.choices = [("", "--Choose a Zone--")] + [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
 
-    members,banks = [], []
-    try:
-        members = get_members()
-        banks = get_banks()
-    except Exception as e:
-        print(f'payments error: {e}')
-        flash(f'An error occurred. Please try again later.', 'danger')
+    current_page = int(request.args.get('page', 1))
+    members_per_page = 5  # Number of members per page
 
-    # Render the host page
-    return render_template('block_reports.html', title='Block_Reports | Dashboard',
+    combined_member_contributions = []
+    host_name = 'Unknown Host'
+    meeting_date = 'Unknown Date'
+    block_contributions_data = {'block_contributions': []}
+
+    try:
+        # Fetch all members and contributions
+        all_members = get_members()
+        contributions_data = get_member_contributions(host_id=host_id, member_id=member_id, status=status)
+        member_contributions = contributions_data['member_contributions']
+        host_name = contributions_data.get('host_name', host_name)
+        meeting_date = contributions_data.get('meeting_date', meeting_date)
+
+        # Slice members for pagination
+        total_members = len(all_members)
+        total_pages = (total_members + members_per_page - 1) // members_per_page
+        start = (current_page - 1) * members_per_page
+        end = start + members_per_page
+        paginated_members = all_members[start:end]
+
+        # Combine paginated members with their contributions
+        for member in paginated_members:
+            contribution = next((c for c in member_contributions if c['full_name'] == member['full_name']), None)
+            if contribution:
+                combined_member_contributions.append({
+                    'full_name': member['full_name'],
+                    'amount': contribution['amount'],
+                    'status': contribution.get('status', 'Unknown'),
+                })
+            else:
+                combined_member_contributions.append({
+                    'full_name': member['full_name'],
+                    'amount': 0.0,
+                    'status': 'Pending',
+                })
+
+        # Fetch block contributions
+        block_contributions_data = get_block_contributions(host_id=host_id)
+
+    except Exception as e:
+        print(f"Error fetching members or contributions: {e}")
+        flash('Error fetching data. Please try again later.', 'danger')
+
+    # Pagination metadata
+    pagination = {
+        "current_page": current_page,
+        "total_pages": total_pages,
+        "has_prev": current_page > 1,
+        "has_next": current_page < total_pages,
+    }
+
+    # Render the reports page
+    return render_template('block_reports.html',
+                           title='Block Reports | Dashboard',
                            user=current_user,
-                           members=members,
-                           schedule_form=schedule_form, 
-                           blocks=blocks,                          
-                           active_tab=active_tab, 
-                           banks=banks, 
+                           host_name=host_name,
+                           meeting_date=meeting_date,
+                           members=combined_member_contributions,
+                           pagination=pagination,
+                           schedule_form=schedule_form,
+                           block_contributions=block_contributions_data.get('block_contributions', []),
+                           blocks=blocks,
+                           active_tab=active_tab,
                            error=error)
+
+
 
 
 
