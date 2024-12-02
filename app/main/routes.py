@@ -1027,7 +1027,6 @@ def handle_schedule_creation(schedule_form):
     return render_host_page(schedule_form=schedule_form,active_tab='schedule_meeting')
 
 
-
 def get_upcoming_meeting_details():
     today = datetime.now()
     week_start = today.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -1264,7 +1263,7 @@ def get_members():
     """Fetches members associated with the specified umbrella."""
     # Retrieve the umbrella details for the current user
     umbrella = get_umbrella_by_user(current_user.id)  
-
+    
     if umbrella is None or not umbrella.get('id'):
         # If no umbrella is associated, return an empty list
         print('No umbrella found.')
@@ -1969,8 +1968,12 @@ def get_contribution_stats(block_id, zone_id=None):
         # Count users who have made payments
         contributed = 0
         for user in users:
-            # Check if user has any payments in this block
-            if user.payments.filter_by(block_id=block_id).first():
+            # Use PaymentModel to check if user has payments
+            payment_exists = PaymentModel.query.filter_by(
+                payer_id=user.id,
+                block_id=block_id
+            ).first() is not None
+            if payment_exists:
                 contributed += 1
 
         pending = total_users - contributed
