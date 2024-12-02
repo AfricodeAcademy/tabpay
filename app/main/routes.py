@@ -1416,14 +1416,15 @@ def remove_committee_role(user_id, active_tab):
 def render_reports_page(active_tab=None, error=None, host_id=None, member_id=None, status=None, umbrella=None):
     schedule_form = ScheduleForm()
     total_pages = 1  # Initialize with default value
-    # Fetch user and umbrella details
-    try:
-        user = get_user_from_api(current_user.id)
-        if not user:
-            flash('Unable to load user data.', 'danger')
-    except Exception as e:
-        print(f'User Details Error:{e}')
-        flash('Error loading user details. Please try again later.', 'danger')
+    
+    # Initialize variables that might be used in template
+    meeting_block = None
+    host = None
+    meeting_zone = None
+    when = None
+    event_id = None
+    
+    umbrella = get_umbrella_by_user(current_user.id)
 
     if not umbrella:
         flash('You need to create an umbrella before getting block reports!', 'danger')
