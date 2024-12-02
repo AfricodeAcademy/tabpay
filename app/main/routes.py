@@ -744,7 +744,7 @@ def statistics():
         if response.status_code == 200:
             meetings = response.json()  
         else:
-            flash("Failed to fetch meetings data from the API.", "danger")
+            print("Failed to fetch meetings data from the API.")
             meetings = []
     except Exception as e:
         print(f"Error fetching meetings data: {e}")
@@ -850,10 +850,9 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
             schedule_form.member.choices = [("", "--Choose a Member--")] + [(str(member['id']), member['full_name']) for member in members]
     else:
         schedule_form.member.choice = []
-
-    total_members = len(members)
     total_pages = 1  # Initialize with default value
-
+    total_members = len(members)
+    total_pages = (total_members + members_per_page - 1) // members_per_page
     # Apply slicing for pagination
     start = (current_page - 1) * members_per_page
     end = start + members_per_page
