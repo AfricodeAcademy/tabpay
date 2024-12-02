@@ -1931,3 +1931,28 @@ def get_members_for_zone(zone_id):
 #     except Exception as e:
 #         print(f"Error fetching zones: {str(e)}")
 #         return jsonify({'error': 'Error fetching zones'}), 500
+
+@main.route('/get_filtered_members/<int:block_id>', methods=['GET'])
+@main.route('/get_filtered_members/<int:block_id>/<int:zone_id>', methods=['GET'])
+def get_filtered_members(block_id, zone_id=None):
+    if zone_id:
+        # Filter by both block and zone
+        members = UserModel.query.join(UserModel.block_memberships).join(UserModel.zone_memberships)\
+            .filter(BlockModel.id == block_id, ZoneModel.id == zone_id).all()
+    else:
+        # Filter by block only
+        members = UserModel.query.join(UserModel.block_memberships)\
+            .filter(BlockModel.id == block_id).all()
+
+    return jsonify([{
+        'id': member.id,
+        'full_name': member.full_name,
+        'phone_number': member.phone_number,
+        'id_number': member.id_number,
+        'membership_info': ' '.join([
+            f"{block.name} ({zone.name})"
+            for block, zone in zip(member.block_memberships, member.zone_memberships)
+        ]),
+        'bank_name': member.bank_name,
+        'acc_number': member.acc_number
+    } for member in members])
