@@ -1916,22 +1916,6 @@ def get_members_for_zone(zone_id):
     except Exception as e:
         return jsonify([]), 500
 
-# @main.route('/get_zones/<block_id>')
-# @login_required
-# def get_zones(block_id):
-#     """Endpoint to get zones for a specific block"""
-#     try:
-#         # Query zones for the given block
-#         zones = Zone.query.filter_by(parent_block=block_id).all()
-        
-#         # Format zones for JSON response
-#         zones_list = [{'id': zone.id, 'name': zone.zone_name} for zone in zones]
-        
-#         return jsonify(zones_list)
-#     except Exception as e:
-#         print(f"Error fetching zones: {str(e)}")
-#         return jsonify({'error': 'Error fetching zones'}), 500
-
 @main.route('/get_filtered_members/<int:block_id>', methods=['GET'])
 @main.route('/get_filtered_members/<int:block_id>/<int:zone_id>', methods=['GET'])
 def get_filtered_members(block_id, zone_id=None):
@@ -1956,3 +1940,29 @@ def get_filtered_members(block_id, zone_id=None):
         'bank_name': member.bank.name if member.bank else '',
         'acc_number': member.acc_number or ''
     } for member in members])
+
+@main.route('/get_contribution_stats/<int:block_id>', methods=['GET'])
+@main.route('/get_contribution_stats/<int:block_id>/<int:zone_id>', methods=['GET'])
+def get_contribution_stats(block_id, zone_id=None):
+    # Base query to get contributions
+    base_query = UserModel.query.join(UserModel.block_memberships)
+
+    # Filter by block and optionally by zone
+    if zone_id:
+        base_query = base_query.join(UserModel.zone_memberships)\
+            .filter(BlockModel.id == block_id, ZoneModel.id == zone_id)
+    else:
+        base_query = base_query.filter(BlockModel.id == block_id)
+
+    # Get all users in the block/zone
+    users = base_query.all()
+    
+    # Calculate contribution statistics
+    contributed = sum(1 for user in users if user.has_contributed)
+    total_users = len(users)
+    pending = total_users - contributed
+
+    return jsonify({
+        'contributed': contributed,
+        'pending': pending
+    })
