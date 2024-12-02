@@ -10,7 +10,7 @@ from .serializers import get_user_fields, user_args, communication_fields, \
     communication_args, payment_fields, payment_args, payment_update_args, \
     bank_fields, bank_args, block_fields, block_args, \
     umbrella_fields, umbrella_args, zone_fields, zone_args, \
-    meeting_fields, meeting_args,role_args,role_fields
+    meeting_fields, meeting_args,role_args,role_fields, mpesa_validation_args, mpesa_validation_fields, mpesa_confirmation_args, mpesa_confirmation_fields
 from ..utils import db
 import logging
 from ..main.routes import save_picture
@@ -138,8 +138,6 @@ class UsersResource(BaseResource):
                     return {"message": "User not found"}, 404
                 return marshal(user, self.fields), 200
 
-
-
             # Check for query parameters: role, id_number, umbrella_id, and zone_id
             role_name = request.args.get('role')
             id_number = request.args.get('id_number')
@@ -153,22 +151,17 @@ class UsersResource(BaseResource):
                     return {"message": "User not found"}, 404
                 return marshal(user, self.fields), 200
 
-            # Fetch users by role, umbrella, and zone if all are provided
-            if role_name and umbrella_id:
+            # Fetch users by role and zone_id
+            if role_name and zone_id:
                 users = (
                     self.model.query
                     .join(UserModel.roles)
-                    .join(UserModel.block_memberships)
-                    .filter(RoleModel.name == role_name)
-                    .filter(BlockModel.parent_umbrella_id == umbrella_id)
+                    .filter(RoleModel.name == role_name, UserModel.zone_id == zone_id)
                     .all()
                 )
-                if zone_id:
-                    query = query.filter(UserModel.zone_id == zone_id)
-
                 return marshal(users, self.fields), 200
 
-            # Fetch users by role and umbrella if both are provided
+            # Fetch users by role and umbrella_id if both are provided
             if role_name and umbrella_id:
                 users = (
                     self.model.query
@@ -179,10 +172,20 @@ class UsersResource(BaseResource):
                     .all()
                 )
                 return marshal(users, self.fields), 200
+            # Fetch users by role, zone_id, and umbrella_id
+            if role_name and zone_id and umbrella_id:
+                users = (
+                    self.model.query
+                    .join(UserModel.roles)
+                    .join(UserModel.block_memberships)
+                    .filter(RoleModel.name == role_name)
+                    .filter(UserModel.zone_id == zone_id)
+                    .filter(BlockModel.parent_umbrella_id == umbrella_id)
+                    .all()
+                )
+                return marshal(users, self.fields), 200
 
-
-
-            # Fetch users by role if role_name is provided (without umbrella)
+            # Fetch users by role if role_name is provided (without umbrella or zone)
             if role_name:
                 users = self.model.query.join(UserModel.roles).filter(RoleModel.name == role_name).all()
                 return marshal(users, self.fields), 200
@@ -201,6 +204,7 @@ class UsersResource(BaseResource):
 
         except Exception as e:
             return self.handle_error(e)
+
 
     def post(self):
         try:
@@ -998,8 +1002,182 @@ class ZonesResource(BaseResource):
             # logging.error(f"Error in ZonesResource.get: {str(e)}", exc_info=True)
             return self.handle_error(e)
 
+class MpesaValidationResource(BaseResource):
+    model = PaymentModel
+    fields = mpesa_validation_fields
+    args = mpesa_validation_args
 
+    def get(self, id=None):
+        return super().get(id)
 
+    def post(self):
+        """Handle M-Pesa validation requests"""
+        try:
+            # Parse and validate incoming data
+            args = self.args.parse_args()
+            logger.info(f"Received M-Pesa validation: {args}")
+            
+            # Validate amount is positive
+            if args['TransAmount'] <= 0:
+                logger.error("Invalid amount: must be positive")
+                return {
+                    "ResultCode": "C2B00012",
+                    "ResultDesc": "Invalid amount: must be positive"
+                }
+            
+            # Extract block_id and member_id from bill_ref_number
+            try:
+                parts = args['BillRefNumber'].split('_')
+                block_id = int(parts[1])  # After "Block_"
+                member_id = int(parts[3])  # After "Member_"
+                
+                # Verify block and member exist
+                block = BlockModel.query.get(block_id)
+                member = UserModel.query.get(member_id)
+                
+                if not block or not member:
+                    raise ValueError("Invalid block or member ID")
+                    
+            except (IndexError, ValueError) as e:
+                logger.error(f"Error parsing bill reference number: {str(e)}")
+                return {
+                    "ResultCode": "C2B00012",
+                    "ResultDesc": "Invalid bill reference number format"
+                }
+                
+            # Validation successful
+            return {
+                "ResultCode": "0",
+                "ResultDesc": "Success"
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in validation endpoint: {str(e)}", exc_info=True)
+            return {
+                "ResultCode": "1",
+                "ResultDesc": "Internal server error"
+            }
+
+    def patch(self, id):
+        return super().patch(id)
+
+    def delete(self, id):
+        return super().delete(id)
+
+class MpesaConfirmationResource(BaseResource):
+    model = PaymentModel
+    fields = mpesa_confirmation_fields
+    args = mpesa_confirmation_args
+
+    def get(self, id=None):
+        return super().get(id)
+
+    def post(self):
+        """Handle M-Pesa confirmation callback"""
+        try:
+            # Parse and validate incoming data
+            args = self.args.parse_args()
+            logger.info(f"Received M-Pesa confirmation: {args}")
+            
+            # Validate amount is positive
+            if args['TransAmount'] <= 0:
+                logger.error("Invalid amount: must be positive")
+                return {
+                    "ResultCode": "C2B00012",
+                    "ResultDesc": "Invalid amount: must be positive"
+                }
+            
+            # Validate TransTime format if provided
+            if args.get('TransTime'):
+                try:
+                    datetime.strptime(args['TransTime'], '%Y%m%d%H%M%S')
+                except ValueError:
+                    logger.error(f"Invalid transaction time format: {args['TransTime']}")
+                    return {
+                        "ResultCode": "C2B00012",
+                        "ResultDesc": "Invalid transaction time format"
+                    }
+            
+            # Extract block_id and member_id from bill_ref_number
+            try:
+                parts = args['BillRefNumber'].split('_')
+                block_id = int(parts[1])  # After "Block_"
+                payer_id = int(parts[3])  # After "Member_"
+                
+                # Verify block and member exist
+                block = BlockModel.query.get(block_id)
+                member = UserModel.query.get(payer_id)
+                
+                if not block or not member:
+                    raise ValueError("Invalid block or member ID")
+                    
+            except (IndexError, ValueError) as e:
+                logger.error(f"Error parsing bill reference number: {str(e)}")
+                return {
+                    "ResultCode": "C2B00012",
+                    "ResultDesc": "Invalid bill reference number format"
+                }
+                
+            # Check for duplicate transaction
+            existing_payment = self.model.query.filter_by(mpesa_id=args['TransID']).first()
+            if existing_payment:
+                logger.warning(f"Duplicate M-Pesa transaction: {args['TransID']}")
+                return {
+                    "ResultCode": "0",
+                    "ResultDesc": "Success",
+                    "payment": existing_payment
+                }
+                
+            # Create new payment record
+            try:
+                payment = self.model(
+                    mpesa_id=args['TransID'],
+                    account_number=args['BillRefNumber'],
+                    source_phone_number=args['MSISDN'],
+                    amount=int(float(args['TransAmount'])),
+                    payment_date=datetime.strptime(args['TransTime'], '%Y%m%d%H%M%S') if args.get('TransTime') else datetime.now(timezone.utc),
+                    transaction_status=True,
+                    transaction_type=args['TransactionType'],
+                    business_short_code=args['BusinessShortCode'],
+                    invoice_number=args.get('InvoiceNumber'),
+                    first_name=args.get('FirstName'),
+                    middle_name=args.get('MiddleName'),
+                    last_name=args.get('LastName'),
+                    bank_id=1,  # Set default bank_id
+                    block_id=block_id,
+                    payer_id=payer_id
+                )
+                
+                db.session.add(payment)
+                db.session.commit()
+                logger.info(f"Successfully saved payment: {args['TransID']}")
+                
+                return {
+                    "ResultCode": "0",
+                    "ResultDesc": "Success",
+                    "payment": payment
+                }
+                
+            except Exception as e:
+                logger.error(f"Error saving payment: {str(e)}")
+                db.session.rollback()
+                return {
+                    "ResultCode": "1",
+                    "ResultDesc": "Internal server error"
+                }
+                
+        except Exception as e:
+            logger.error(f"Error processing M-Pesa confirmation: {str(e)}", exc_info=True)
+            return {
+                "ResultCode": "1",
+                "ResultDesc": f"Error: {str(e)}"
+            }
+
+    def patch(self, id):
+        return super().patch(id)
+
+    def delete(self, id):
+        return super().delete(id)
 
 # API routes
 api.add_resource(UsersResource, '/users/', '/users/<int:id>')
@@ -1008,6 +1186,9 @@ api.add_resource(BanksResource, '/banks/', '/banks/<int:id>')
 api.add_resource(PaymentsResource, '/payments/', '/payments/<int:id>')
 api.add_resource(BlocksResource, '/blocks/', '/blocks/<int:id>')
 api.add_resource(UmbrellasResource, '/umbrellas/', '/umbrellas/<int:id>')
-api.add_resource(ZonesResource, '/zones/', '/zones/<int:id>')
+api.add_resource(RolesResource, '/roles/', '/roles/<int:id>')
 api.add_resource(MeetingsResource, '/meetings/', '/meetings/<int:id>')
-api.add_resource(RolesResource, '/roles/','/roles/<int:id>')
+api.add_resource(ZonesResource, '/zones/', '/zones/<int:id>')
+api.add_resource(MpesaValidationResource, '/v1/payments/c2b/validation')
+api.add_resource(MpesaConfirmationResource, '/v1/payments/c2b/confirmation')
+

@@ -158,16 +158,45 @@ render_field(field) %}
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  {{ render_field(committee_form.id_number) }}
+                  <!-- For Cascade dropdown - AJAX -->
+                  {{ committee_form.id_number.label(class="form-label") }}
+                  {{ committee_form.id_number(class="form-control") }}
+                  {% if committee_form.id_number.errors %}
+                  <div class="invalid-feedback">
+                    {% for error in committee_form.id_number.errors %}
+                    {{ error }}
+                    {% endfor %}
+                  </div>
+                  {% endif %}
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  {{ render_field(committee_form.block_id) }}
+                  <!-- For Cascade dropdown - AJAX -->
+                  {{ committee_form.block_id.label(class="form-label") }}
+                  {{ committee_form.block_id(class="form-control", id="committee-block") }}
+                  {% if committee_form.block_id.errors %}
+                  <div class="invalid-feedback">
+                    {% for error in committee_form.block_id.errors %}
+                    {{ error }}
+                    {% endfor %}
+                  </div>
+                  {% endif %}
                 </div>
               </div>
             </div>
-            <div class="mb-3">{{ render_field(committee_form.role_id) }}</div>
+            <!-- For Cascade dropdown - AJAX -->
+            <div class="mb-3">
+              {{ committee_form.role_id.label(class="form-label") }}
+              {{ committee_form.role_id(class="form-control", id="committee-role") }}
+              {% if committee_form.role_id.errors %}
+              <div class="invalid-feedback">
+                {% for error in committee_form.role_id.errors %}
+                {{ error }}
+                {% endfor %}
+              </div>
+              {% endif %}
+            </div>
             <button
               type="submit"
               name="committee_submit"
@@ -281,7 +310,16 @@ render_field(field) %}
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  {{ render_field(zone_form.parent_block)}}
+                  <!-- For Cascade  dropdown - AJAX -->
+                  {{ zone_form.parent_block.label(class="form-label") }}
+                  {{ zone_form.parent_block(class="form-control", id="zone-block") }}
+                  {% if zone_form.parent_block.errors %}
+                  <div class="invalid-feedback">
+                    {% for error in zone_form.parent_block.errors %}
+                    {{ error }}
+                    {% endfor %}
+                  </div>
+                  {% endif %}
                 </div>
               </div>
             </div>
@@ -326,14 +364,37 @@ render_field(field) %}
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  {{ render_field(member_form.member_zone)}}
+                  <label class="form-label">Select Block</label>
+                  <select class="form-control" id="member-block" name="block">
+                    <option value="">-- Select Block --</option>
+                    {% for block in blocks %}
+                    <option value="{{ block.id }}" {% if selected_block == block.id|string %}selected{% endif %}>{{ block.name }}</option>
+                    {% endfor %}
+                  </select>
                 </div>
               </div>
             </div>
             <div class="row">
               <div class="col-md-6">
-                <div class="mb-3">{{ render_field(member_form.bank_id)}}</div>
+                <div class="mb-3">
+                  <label class="form-label">Select Zone</label>
+                  {{ member_form.member_zone(class="form-control", id="member-zone") }}
+                  {% if member_form.member_zone.errors %}
+                  <div class="invalid-feedback">
+                    {% for error in member_form.member_zone.errors %}
+                    {{ error }}
+                    {% endfor %}
+                  </div>
+                  {% endif %}
+                </div>
               </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  {{ render_field(member_form.bank_id)}}
+                </div>
+              </div>
+            </div>
+            <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
                   {{ render_field(member_form.acc_number)}}
@@ -353,8 +414,83 @@ render_field(field) %}
     </div>
   </div>
 </div>
+<!-- For Cascade dropdown - AJAX -->
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Committee Tab Elements
+    const committeeBlock = document.getElementById('committee-block');
+    const committeeRole = document.getElementById('committee-role');
+
+    // Zone Definition Tab Elements
+    const zoneBlock = document.getElementById('zone-block');
+
+    // Add Members Tab Elements
+    const memberZone = document.getElementById('member-zone');
+    const memberBank = document.getElementById('member-bank');
+    const memberBlock = document.getElementById('member-block');
+
+    // Function to reset options of a select element
+    function resetSelect(select, defaultText = "-- Select an option --") {
+      select.innerHTML = `<option value="">${defaultText}</option>`;
+      select.disabled = true;
+    }
+
+    // Function to populate a select element with options
+    function populateSelect(select, data, defaultText, selectedValue = '') {
+      select.innerHTML = `<option value="">${defaultText}</option>`;
+      data.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = item.name;
+        if (selectedValue && item.id.toString() === selectedValue.toString()) {
+          option.selected = true;
+        }
+        select.appendChild(option);
+      });
+      select.disabled = false;
+    }
+
+    // Handle block selection in Add Members tab
+    if (memberBlock) {
+      // Load zones if block is pre-selected
+      if (memberBlock.value) {
+        fetch(`/get_zones/${memberBlock.value}`)
+          .then(response => response.json())
+          .then(zones => {
+            populateSelect(memberZone, zones, "-- Select Zone --", "{{ selected_zone }}");
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            alert('Error fetching zones. Please try again.');
+          });
+      }
+
+      memberBlock.addEventListener('change', function() {
+        const blockId = this.value;
+        resetSelect(memberZone, "-- Select Zone --");
+        
+        if (blockId) {
+          fetch(`/get_zones/${blockId}`)
+            .then(response => response.json())
+            .then(zones => {
+              populateSelect(memberZone, zones, "-- Select Zone --");
+            })
+            .catch(error => {
+              console.error('Error:', error);
+              alert('Error fetching zones. Please try again.');
+            });
+        }
+      });
+    }
+
+    // Initialize disabled states only if no pre-selected values
+    if (committeeRole && !committeeRole.value) resetSelect(committeeRole, "-- Select Role --");
+    if (memberZone && !memberBlock.value) resetSelect(memberZone, "-- Select Zone --");
+  });
+
+  // Keep the existing CSRF token function
   function getCsrfToken() {
     return document
       .querySelector('meta[name="csrf-token"]')
@@ -362,4 +498,5 @@ render_field(field) %}
   }
 </script>
 
+<!-- End For Cascade dropdown - AJAX -->
 {% endblock %}

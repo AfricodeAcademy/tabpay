@@ -183,8 +183,6 @@ payment_args.add_argument('bank_id', type=int, required=True, help='Bank ID is r
 payment_args.add_argument('block_id', type=int, required=True, help='Block ID is required')
 payment_args.add_argument('payer_id', type=int, required=True, help='Payer ID is required')
 payment_args.add_argument('meeting_id', type=int)
-
-# Additional M-Pesa fields
 payment_args.add_argument('transaction_type', type=str)
 payment_args.add_argument('business_short_code', type=str)
 payment_args.add_argument('invoice_number', type=str)
@@ -225,3 +223,53 @@ meeting_args.add_argument('block_id', type=int, required=True, help='Block ID is
 meeting_args.add_argument('zone_id', type=int, required=True, help='Zone ID is required')
 meeting_args.add_argument('organizer_id', type=int, required=True, help='Organizer ID is required')
 meeting_args.add_argument('date', type=str, required=True, help='Meeting date is required (format: YYYY-MM-DD HH:MM:SS)')
+
+# M-Pesa validation fields
+mpesa_validation_fields = {
+    "ResultCode": fields.Integer,
+    "ResultDesc": fields.String
+}
+
+# M-Pesa confirmation fields
+mpesa_confirmation_fields = {
+    "ResultCode": fields.String,
+    "ResultDesc": fields.String,
+    "TransactionType": fields.String,
+    "TransID": fields.String,
+    "TransAmount": fields.Float,
+    "BusinessShortCode": fields.String,
+    "BillRefNumber": fields.String,
+    "InvoiceNumber": fields.String,
+    "OrgAccountBalance": fields.Float,
+    "ThirdPartyTransID": fields.String,
+    "MSISDN": fields.String,
+    "FirstName": fields.String,
+    "MiddleName": fields.String,
+    "LastName": fields.String,
+    "TransTime": fields.String,
+    "payment": fields.Nested(payment_fields)
+}
+
+# M-Pesa validation request parser
+mpesa_validation_args = reqparse.RequestParser()
+mpesa_validation_args.add_argument('TransactionType', type=str, required=True, help='Transaction Type is required')
+mpesa_validation_args.add_argument('TransAmount', type=float, required=True, help='Transaction Amount is required')
+mpesa_validation_args.add_argument('BillRefNumber', type=str, required=True, help='Bill Reference Number is required')
+mpesa_validation_args.add_argument('MSISDN', type=str, required=True, help='Phone Number (MSISDN) is required')
+mpesa_validation_args.add_argument('TransID', type=str)
+
+# M-Pesa confirmation request parser
+mpesa_confirmation_args = reqparse.RequestParser()
+mpesa_confirmation_args.add_argument('TransactionType', type=str, required=True, help='Transaction Type is required')
+mpesa_confirmation_args.add_argument('TransID', type=str, required=True, help='Transaction ID is required')
+mpesa_confirmation_args.add_argument('TransAmount', type=float, required=True, help='Transaction Amount is required')
+mpesa_confirmation_args.add_argument('BusinessShortCode', type=str, required=True, help='Business Short Code is required')
+mpesa_confirmation_args.add_argument('BillRefNumber', type=str, required=True, help='Bill Reference Number is required')
+mpesa_confirmation_args.add_argument('InvoiceNumber', type=str)
+mpesa_confirmation_args.add_argument('OrgAccountBalance', type=float)
+mpesa_confirmation_args.add_argument('ThirdPartyTransID', type=str)
+mpesa_confirmation_args.add_argument('MSISDN', type=str, required=True, help='Phone Number is required')
+mpesa_confirmation_args.add_argument('FirstName', type=str)
+mpesa_confirmation_args.add_argument('MiddleName', type=str)
+mpesa_confirmation_args.add_argument('LastName', type=str)
+mpesa_confirmation_args.add_argument('TransTime', type=str)

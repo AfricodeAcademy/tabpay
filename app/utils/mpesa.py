@@ -161,17 +161,39 @@ class MpesaC2B:
         """Initiate a C2B payment request"""
         if self.credentials.environment == 'sandbox':
             url = f'{self.api_url}/mpesa/c2b/v1/simulate'
+            payload = {
+                "ShortCode": self.credentials.shortcode,
+                "CommandID": command_id,
+                "Amount": int(amount),
+                "Msisdn": str(phone_number),
+                "BillRefNumber": bill_ref_number
+            }
         else:
-            # In production, we'd use STK Push instead of simulation
-            url = f'{self.api_url}/mpesa/stkpush/v1/processrequest'
+            # In production, we use STK Push
+            timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+            password = self.generate_password(timestamp)
             
-        payload = {
-            "ShortCode": self.credentials.shortcode,
-            "CommandID": command_id,
-            "Amount": int(amount),
-            "Msisdn": str(phone_number),
-            "BillRefNumber": bill_ref_number
-        }
+            # Format phone number (remove leading 0 or +254)
+            if phone_number.startswith('+254'):
+                phone_number = phone_number[4:]
+            elif phone_number.startswith('0'):
+                phone_number = phone_number[1:]
+            phone_number = '254' + phone_number
+            
+            url = f'{self.api_url}/mpesa/stkpush/v1/processrequest'
+            payload = {
+                "BusinessShortCode": self.credentials.stk_push_shortcode,
+                "Password": password,
+                "Timestamp": timestamp,
+                "TransactionType": "CustomerPayBillOnline",
+                "Amount": int(amount),
+                "PartyA": int(phone_number),
+                "PartyB": self.credentials.stk_push_shortcode,
+                "PhoneNumber": int(phone_number),
+                "CallBackURL": current_app.config['MPESA_STK_CALLBACK_URL'],
+                "AccountReference": bill_ref_number,
+                "TransactionDesc": "Payment for TabPay"
+            }
         
         headers = {
             'Content-Type': 'application/json',
@@ -187,6 +209,8 @@ class MpesaC2B:
             return result
         except requests.exceptions.RequestException as e:
             logger.error(f"Error initiating payment: {str(e)}")
+            if hasattr(e.response, 'text'):
+                logger.error(f"Response content: {e.response.text}")
             raise
 
     def generate_password(self, timestamp: str) -> str:

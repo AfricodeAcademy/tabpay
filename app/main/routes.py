@@ -1,5 +1,5 @@
 import requests
-from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify, session
 from flask_security import login_required, current_user, roles_accepted, user_registered
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm,PaymentForm
 import logging
@@ -49,7 +49,11 @@ def forbidden_error(error):
 
 
 # Helper function to render the settings page with forms
-def render_settings_page(active_tab=None,umbrella_form=None,errors=None,block_form=None,committee_form=None,zone_form=None,error=None, member_form=None):
+def render_settings_page(umbrella_form=None, block_form=None, zone_form=None,
+                        member_form=None, committee_form=None, active_tab='profile',
+                        selected_block='', selected_zone=''):
+    """Helper function to render settings page with all necessary forms and data"""
+    blocks = get_blocks_by_umbrella()
     # Instantiate all forms
     profile_form = ProfileForm()
 
@@ -78,7 +82,7 @@ def render_settings_page(active_tab=None,umbrella_form=None,errors=None,block_fo
     except Exception as e:
         flash('Error loading user details. Please try again later.', 'danger')
 
-    blocks, zones =  [], []
+    zones =  []
     # API call to get umbrella by user
     try:
         umbrella = get_umbrella_by_user(current_user.id)
@@ -139,9 +143,9 @@ def render_settings_page(active_tab=None,umbrella_form=None,errors=None,block_fo
                            user=current_user,
                            blocks=blocks,
                            zones=zones,
-                           error=error,
                            active_tab=active_tab,  
-                           errors=errors)
+                           selected_block=selected_block,
+                           selected_zone=selected_zone)
 
 # Single route to handle all settings form submissions
 @main.route('/settings', methods=['GET', 'POST'])
@@ -167,13 +171,29 @@ def settings():
     elif 'zone_submit' in request.form:
         return handle_zone_creation(zone_form=zone_form)
     elif 'member_submit' in request.form:
-        return handle_member_creation(member_form=member_form)
-    
+        try:
+            # For Cascade dropdown - AJAX
+            # Get the block_id from the form data
+            block_id = request.form.get('block')
+            zone_id = member_form.member_zone.data
+            
+            # Store in session
+            session['selected_block'] = block_id
+            session['selected_zone'] = zone_id
+            
+            return handle_member_creation(member_form=member_form)
+        except Exception as e:
+            flash(f'Error adding member: {str(e)}', 'danger')
+    # For Cascade dropdown - AJAX 
     # Default GET request rendering the settings page
-    return render_settings_page(                           
+    # Get stored values from session
+    selected_block = session.get('selected_block', '')
+    selected_zone = session.get('selected_zone', '')
+    
+    return render_settings_page(
+    #For Cascade dropdown - AJAX                           
         umbrella_form=umbrella_form,block_form=block_form,zone_form=zone_form,member_form=member_form,committee_form=committee_form,
-active_tab=request.args.get('active_tab', 'profile'))
-
+active_tab=request.args.get('active_tab', 'profile'), selected_block=selected_block, selected_zone=selected_zone)
 
 
 
@@ -668,7 +688,7 @@ def get_zones_by_block(block_id):
 # Helper function to get members of a specific zone
 def get_members_by_zone(zone_id,umbrella_id):
     """Fetches members associated with the specified zone via API."""
-    response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'zone_id': zone_id,'umbrella_id': umbrella_id})
+    response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/", params={'role':'Member','zone_id': zone_id,'umbrella_id': umbrella_id})
 
     if response.status_code == 200:
         return response.json()
@@ -707,9 +727,6 @@ def create_zone(payload):
 @approval_required
 @roles_accepted('SuperUser', 'Administrator', 'Chairman', 'Secretary','Treasurer')
 def statistics():
-    
-    umbrella_id = get_umbrella_by_user(current_user.id)
-    # print(f'fetched umbrella: {umbrella_id}')
 
     total_members = len(get_members())
 
@@ -788,7 +805,10 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
     schedule_form.zone.choices = [("", "--Choose a Zone--")] + [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
 
     update_form.member_zone.choices = [("", "--Choose an Additional Zone--")] +[(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
+    # Get current page from request arguments (default is page 1)
 
+    current_page = int(request.args.get('page', 1))
+    members_per_page = 5  # Number of members per page
     # Fetch members
     members = get_members()
     if members:
@@ -797,6 +817,23 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
             schedule_form.member.choices = [("", "--Choose a Member--")] + [(str(member['id']), member['full_name']) for member in members]
     else:
         schedule_form.member.choice = []
+
+    total_members = len(members)
+    total_pages = (total_members + members_per_page - 1) // members_per_page
+
+    # Apply slicing for pagination
+    start = (current_page - 1) * members_per_page
+    end = start + members_per_page
+    paginated_members = members[start:end]
+
+    # Prepare pagination metadata
+    pagination = {
+        "current_page": current_page,
+        "total_pages": total_pages,
+        "has_prev": current_page > 1,
+        "has_next": current_page < total_pages
+    }
+
 
     banks = get_banks()
     update_form.bank_id.choices = [("", "--Choose Bank--")] + [(str(bank['id']), bank['name']) for bank in banks]
@@ -809,7 +846,8 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
                            schedule_form=schedule_form,
                            blocks=blocks,message=message,
                            zones=zone_map.keys(),acc_number=acc_number,paybill_no=paybill_no,
-                           members=members,
+                            members=paginated_members,
+                            pagination=pagination,
                            active_tab=active_tab,  
                            error=error,meeting_block=meeting_block,host=host,meeting_zone=meeting_zone,when=when,event_id=event_id)
 
@@ -1240,7 +1278,7 @@ def remove_member(user_id):
 
 
 # Helper function to fetch members by role "Member"
-def get_members():
+def get_members(page=1, per_page=5):
     """Fetches members associated with the specified umbrella."""
     # Retrieve the umbrella details for the current user
     umbrella = get_umbrella_by_user(current_user.id)  
@@ -1256,7 +1294,7 @@ def get_members():
         # Fetch members associated with the umbrella
         response = requests.get(
             f"{current_app.config['API_BASE_URL']}/api/v1/users/",
-            params={'role': 'Member', 'umbrella_id': umbrella_id} 
+            params={'role': 'Member', 'umbrella_id': umbrella_id,"page": page, "per_page": per_page} 
         )
         
         if response.status_code == 200:
@@ -1267,6 +1305,8 @@ def get_members():
             return []
     except Exception as e:
         return []
+
+
 
 
 # Fetch and display committee members
@@ -1794,141 +1834,36 @@ def handle_request_payment(payment_form):
     # Redirect back to the 'Request Payment' tab
     return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
 
-@main.route('/api/v1/payments/c2b/confirmation', methods=['POST'])
+@main.route('/payments/confirmation', methods=['POST'])
 def mpesa_confirmation():
-    """Handle M-Pesa confirmation callback"""
+    """Handle M-Pesa confirmation callback by forwarding to API endpoint"""
     try:
-        # Get the callback data from M-Pesa
-        callback_data = request.get_json()
-        logger.info(f"Received M-Pesa confirmation: {callback_data}")
-
-        # Validate required fields
-        required_fields = ['TransID', 'TransAmount', 'BusinessShortCode', 'BillRefNumber', 'MSISDN']
-        for field in required_fields:
-            if not callback_data.get(field):
-                logger.error(f"Missing required field: {field}")
-                return jsonify({
-                    "ResultCode": "C2B00011",
-                    "ResultDesc": "Invalid confirmation request"
-                }), 400
-
-        # Extract transaction details
-        transaction_data = {
-            'transaction_type': callback_data.get('TransactionType'),
-            'trans_id': callback_data.get('TransID'),
-            'trans_time': datetime.strptime(callback_data.get('TransTime', ''), '%Y%m%d%H%M%S'),
-            'trans_amount': float(callback_data.get('TransAmount')),
-            'business_short_code': callback_data.get('BusinessShortCode'),
-            'event_id': callback_data.get('BillRefNumber'),  # Store the event_id from BillRefNumber
-            'invoice_number': callback_data.get('InvoiceNumber'),
-            'msisdn': callback_data.get('MSISDN'),
-            'first_name': callback_data.get('FirstName'),
-            'middle_name': callback_data.get('MiddleName'),
-            'last_name': callback_data.get('LastName'),
-            'status': 'COMPLETED'
-        }
-
-        # Extract block_id and member_id from event_id
-        try:
-            event_id_parts = transaction_data['event_id'].split('_')
-            block_id = event_id_parts[1]  # After "Block_"
-            member_id = event_id_parts[3]  # After "Member_"
-            transaction_data['block_id'] = block_id
-            transaction_data['member_id'] = member_id
-        except (IndexError, AttributeError) as e:
-            logger.error(f"Error parsing event_id: {str(e)}")
-            return jsonify({
-                "ResultCode": "C2B00012",
-                "ResultDesc": "Invalid event_id format"
-            }), 400
-        # Save transaction to PaymentModel
-        try:
-            payment = PaymentModel(
-                mpesa_id=transaction_data['trans_id'],
-                account_number=transaction_data['event_id'],
-                source_phone_number=transaction_data['msisdn'],
-                amount=int(float(transaction_data['trans_amount'])),
-                transaction_status=True,
-                transaction_type=transaction_data['transaction_type'],
-                business_short_code=transaction_data['business_short_code'],
-                invoice_number=transaction_data['invoice_number'],
-                first_name=transaction_data['first_name'],
-                middle_name=transaction_data['middle_name'],
-                last_name=transaction_data['last_name'],
-                # You'll need to set these based on your business logic
-                bank_id=1,  # Set appropriate bank_id
-                block_id=transaction_data['block_id'],  # Set appropriate block_id
-                payer_id=transaction_data['member_id'],  # Set appropriate payer_id
-            )
-            db.session.add(payment)
-            db.session.commit()
-            logger.info(f"Successfully saved payment: {transaction_data['trans_id']}")
-
-        except Exception as e:
-            logger.error(f"Error saving payment: {str(e)}")
-            db.session.rollback()
-            # Note: We still return success to M-Pesa
-            # Handle the database error internally and retry later
-
-        # Always acknowledge receipt to M-Pesa
-        return jsonify({
-            "ResultCode": "0",
-            "ResultDesc": "Success"
-        })
-
+        # Forward the request to the API endpoint
+        api_url = f"{current_app.config['API_BASE_URL']}/api/v1/payments/c2b/confirmation"
+        response = requests.post(api_url, json=request.get_json())
+        return jsonify(response.json()), response.status_code
     except Exception as e:
-        logger.error(f"Error processing M-Pesa confirmation: {str(e)}")
-        # Always acknowledge receipt to M-Pesa, even on error
-        # Handle errors internally
+        logger.error(f"Error forwarding M-Pesa confirmation to API: {str(e)}")
         return jsonify({
             "ResultCode": "0",
             "ResultDesc": "Success"
-        })
-@main.route('/api/v1/payments/c2b/validation', methods=['POST'])
+        }), 200
+
+@main.route('/payments/validation', methods=['POST'])
 def mpesa_validation():
-    """Handle M-Pesa validation requests"""
+    """Handle M-Pesa validation requests by forwarding to API endpoint"""
     try:
-        # Get the transaction data from the request
-        transaction_data = request.get_json()
-        
-        # Log the validation request
-        current_app.logger.info(f"M-Pesa validation request received: {transaction_data}")
-        
-        # Perform validation checks
-        # 1. Check if the transaction amount is within acceptable range
-        amount = float(transaction_data.get('TransAmount', 0))
-        if amount <= 0:
-            response = {
-                "ResultCode": 1,  # Reject
-                "ResultDesc": "Invalid transaction amount"
-            }
-            return jsonify(response), 200
-            
-        # 2. Check if the account number/bill reference is valid
-        bill_ref = transaction_data.get('BillRefNumber')
-        if not bill_ref:
-            response = {
-                "ResultCode": 1,  # Reject
-                "ResultDesc": "Missing bill reference number"
-            }
-            return jsonify(response), 200
-            
-        # Add any additional validation logic here
-        
-        # If all validation passes, accept the transaction
-        response = {
-            "ResultCode": 0,  # Accept
-            "ResultDesc": "Accepted"
-        }
-        return jsonify(response), 200
-        
+        # Forward the request to the API endpoint
+        api_url = f"{current_app.config['API_BASE_URL']}/api/v1/payments/c2b/validation"
+        response = requests.post(api_url, json=request.get_json())
+        return jsonify(response.json()), response.status_code
     except Exception as e:
-        current_app.logger.error(f"Error in M-Pesa validation: {str(e)}")
-        response = {
-            "ResultCode": 1,  # Reject
+        logger.error(f"Error forwarding M-Pesa validation to API: {str(e)}")
+        return jsonify({
+            "ResultCode": 1,
             "ResultDesc": "Internal server error"
-        }
-        return jsonify(response), 200  # Always return 200 to M-Pesa
+        }), 200
+
 @main.route('/search',methods=['GET', 'POST'])
 def search():
     query = request.args.get('query')
@@ -2014,3 +1949,24 @@ def view_all_blocks():
         })
 
     return render_template('all_blocks.html', blocks=block_data)
+
+
+#For Cascade dropdown - AJAX
+@main.route('/get_zones/<block_id>')
+@login_required
+def get_zones_for_block(block_id):
+    try:
+        zones = get_zones_by_block(block_id)
+        return jsonify([{"id": str(zone["id"]), "name": zone["name"]} for zone in zones])
+    except Exception as e:
+        return jsonify([]), 500
+
+@main.route('/get_members/<zone_id>')
+@login_required
+def get_members_for_zone(zone_id):
+    try:
+        umbrella = get_umbrella_by_user(current_user.id)
+        members = get_members_by_zone(zone_id, umbrella.get('id')) if umbrella else []
+        return jsonify([{"id": str(member["id"]), "name": member["full_name"]} for member in members])
+    except Exception as e:
+        return jsonify([]), 500
