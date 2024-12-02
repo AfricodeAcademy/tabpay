@@ -732,13 +732,21 @@ Regular Block Hosting {% endblock %} {% block content %}
 
       if (blockId) {
         fetch(`/get_zones/${blockId}`)
-          .then((response) => response.json())
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
+            }
+            return response.json();
+          })
           .then((data) => {
-            populateSelect(zoneSelect, data, "Choose a Zone");
+            // Check if data is an array
+            const zones = Array.isArray(data) ? data : [];
+            populateSelect(zoneSelect, zones, "Choose a Zone");
           })
           .catch((error) => {
             console.error("Error:", error);
             alert("Error fetching zones. Please try again.");
+            resetSelect(zoneSelect, "Choose a Zone");
           });
       }
     });
@@ -750,13 +758,21 @@ Regular Block Hosting {% endblock %} {% block content %}
 
       if (zoneId) {
         fetch(`/get_members/${zoneId}`)
-          .then((response) => response.json())
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
+            }
+            return response.json();
+          })
           .then((data) => {
-            populateSelect(memberSelect, data, "Choose a Member");
+            // Check if data is an array
+            const members = Array.isArray(data) ? data : [];
+            populateSelect(memberSelect, members, "Choose a Member");
           })
           .catch((error) => {
             console.error("Error:", error);
             alert("Error fetching members. Please try again.");
+            resetSelect(memberSelect, "Choose a Member");
           });
       }
     });

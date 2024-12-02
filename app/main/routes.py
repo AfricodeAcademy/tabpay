@@ -2008,7 +2008,7 @@ def get_zones(block_id):
         # Format zones for JSON response
         zones_list = [{'id': zone.id, 'name': zone.name} for zone in zones]
         
-        return jsonify({'zones': zones_list})
+        return jsonify(zones_list)
     except Exception as e:
         logging.error(f"Error fetching zones for block {block_id}: {str(e)}")
         return jsonify({'error': 'Error fetching zones. Please try again.'}), 500
