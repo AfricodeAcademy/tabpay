@@ -2006,7 +2006,7 @@ def get_zones(block_id):
         # Format zones for JSON response
         zones_list = [{'id': zone.id, 'name': zone.name} for zone in zones]
         
-        return jsonify(zones_list)
+        return jsonify({'zones': zones_list})
     except Exception as e:
         print(f"Error fetching zones: {str(e)}")
         return jsonify({'error': 'Error fetching zones'}), 500
