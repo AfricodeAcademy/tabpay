@@ -1449,8 +1449,8 @@ def render_reports_page(active_tab=None, error=None, host_id=None, member_id=Non
     members_per_page = 5  # Number of members per page
 
     combined_member_contributions = []
-    host_name = 'Unknown Host'
-    meeting_date = 'Unknown Date'
+    host_name = 'No hosting scheduled'
+    meeting_date = ''
     block_contributions_data = {'block_contributions': []}
 
     try:
