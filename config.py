@@ -2,23 +2,12 @@ import os
 import secrets
 from datetime import timedelta
 from dotenv import load_dotenv
-
 # Load environment variables from .env file
 load_dotenv()
-
 class Config:
     SECRET_KEY = secrets.token_hex(32)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECURITY_PASSWORD_SALT = '201343284857125688191020663358661879047'
-    
-    # M-Pesa Settings
-    MPESA_ENVIRONMENT = os.environ.get('MPESA_ENVIRONMENT', 'production')
-    MPESA_CONSUMER_KEY = os.environ.get('MPESA_CONSUMER_KEY')
-    MPESA_CONSUMER_SECRET = os.environ.get('MPESA_CONSUMER_SECRET')
-    MPESA_SHORTCODE = os.environ.get('MPESA_SHORTCODE')
-    MPESA_STK_PUSH_SHORTCODE = os.environ.get('MPESA_STK_PUSH_SHORTCODE')
-    MPESA_STK_PUSH_PASSKEY = os.environ.get('MPESA_STK_PUSH_PASSKEY')
-    MPESA_STK_CALLBACK_URL = os.environ.get('MPESA_STK_CALLBACK_URL')
     
     # Flask-Security settings
     SECURITY_REGISTERABLE = True
@@ -95,13 +84,19 @@ class Config:
     MAIL_USE_SSL = True
     MAIL_USE_TLS = False
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_USERNAME', 'admissions@africodeacademy.com')
-
     # Configuration for Africastalking API
     AT_USERNAME='africode'
     AT_API_KEY='atsk_26b6fd63c4ab81592df201a60a3b3c3b221234128dc34046355f0cd9198e1a7afc6e724a'
     AT_SENDER_ID='Africode'
-
     # M-Pesa Configuration
+    MPESA_ENVIRONMENT = os.getenv('MPESA_ENVIRONMENT', 'production')
+    MPESA_CONSUMER_KEY = os.getenv('MPESA_CONSUMER_KEY')
+    MPESA_CONSUMER_SECRET = os.getenv('MPESA_CONSUMER_SECRET')
+    MPESA_SHORTCODE = os.getenv('MPESA_SHORTCODE')
+    MPESA_PASSKEY = os.getenv('MPESA_PASSKEY') 
+    MPESA_STK_PUSH_SHORTCODE = os.getenv('MPESA_STK_PUSH_SHORTCODE')
+    MPESA_STK_PUSH_PASSKEY = os.getenv('MPESA_STK_PUSH_PASSKEY')
+    # M-Pesa Callback URLs
     MPESA_CALLBACK_URL = os.getenv('MPESA_CALLBACK_URL')
     MPESA_VALIDATION_URL = os.getenv('MPESA_VALIDATION_URL')
     
@@ -110,10 +105,8 @@ class Config:
     env_vars = {
         'MPESA_CONSUMER_KEY': MPESA_CONSUMER_KEY,
         'MPESA_CONSUMER_SECRET': MPESA_CONSUMER_SECRET,
+        'MPESA_PASSKEY': MPESA_PASSKEY,
         'MPESA_SHORTCODE': MPESA_SHORTCODE,
-        'MPESA_STK_PUSH_SHORTCODE': MPESA_STK_PUSH_SHORTCODE,
-        'MPESA_STK_PUSH_PASSKEY': MPESA_STK_PUSH_PASSKEY,
-        'MPESA_STK_CALLBACK_URL': MPESA_STK_CALLBACK_URL,
         'MPESA_CALLBACK_URL': MPESA_CALLBACK_URL,
         'MPESA_VALIDATION_URL': MPESA_VALIDATION_URL
     }
@@ -132,17 +125,13 @@ class Config:
         print(f"Current working directory: {os.getcwd()}")
         print(f"Environment file location: {os.path.join(os.getcwd(), '.env')}")
         raise ValueError(error_msg)
-
     # API Base URL from environment variable
     API_BASE_URL = os.getenv('API_BASE_URL', 'https://tabpay.africa')  # Default to production URL if not set
-
     # Flask-Admin settings
     FLASK_ADMIN_SWATCH = 'cyborg'
     FLASK_ADMIN_FLUID_LAYOUT = True
     ADMIN_NAME = 'TabPay Admin'
     ADMIN_TEMPLATE_MODE = 'bootstrap4'
-
-
 class DevelopmentConfig(Config):
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///tabpay.db'
@@ -157,8 +146,6 @@ class DevelopmentConfig(Config):
     SECURITY_CSRF_COOKIE = {'key': 'csrf_token', 'httponly': False, 'samesite': 'Lax', 'secure': False}
     SECURITY_CSRF_COOKIE_NAME = 'tabpay_csrf_token'
     SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = True
-
-
 class ProductionConfig(Config):
     DEBUG = False
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'postgresql://tabpay:tabpay@localhost:5432/tabpay')
@@ -210,15 +197,12 @@ class ProductionConfig(Config):
     WTF_CSRF_SSL_STRICT = True
     WTF_CSRF_TIME_LIMIT = 3600
     WTF_CSRF_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE']
-
-
 class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'  # Use in-memory SQLite for testing
     WTF_CSRF_ENABLED = False
     SECURITY_PASSWORD_HASH = 'plaintext'  # For faster testing
     SERVER_NAME = 'localhost:5000'  # Required for URL generation in tests
-
 config = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
