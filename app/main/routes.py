@@ -1064,12 +1064,16 @@ def handle_schedule_creation(schedule_form):
 
         # Create meeting via API
         try:
+            print(f"Attempting to schedule meeting with payload: {payload}")
             response = requests.post(f"{current_app.config['API_BASE_URL']}/api/v1/meetings/", json=payload)
+            print(f"API Response Status: {response.status_code}")
+            print(f"API Response Content: {response.text}")
             if response.status_code == 201:
                 flash("Meeting has been scheduled successfully!", "success")
                 return redirect(url_for('main.host', active_tab='schedule_meeting'))
             else:
-                flash('Meeting scheduling failed. Please try again later.', 'danger')
+                error_msg = response.json().get('error', 'Meeting scheduling failed. Please try again later.')
+                flash(error_msg, 'danger')
         except Exception as e:
             print(f"Meeting scheduling error: {e}")
             flash('Error creating meeting. Please try again later.', 'danger') 
