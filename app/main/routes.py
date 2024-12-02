@@ -2,18 +2,17 @@ import requests
 from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify, session
 from flask_security import login_required, current_user, roles_accepted, user_registered
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm,PaymentForm
-import logging
-import os
+from app.main.models import UserModel, BlockModel, PaymentModel, ZoneModel
+from app.auth.decorators import approval_required, umbrella_required
 from ..utils import save_picture, db
 from flask import current_app
 from datetime import datetime,timedelta
 from ..utils.send_sms import SendSMS
-from app.main.models import UserModel, BlockModel, PaymentModel, ZoneModel
-from app.auth.decorators import approval_required, umbrella_required
-from ..utils.umbrella import get_umbrella_by_user, get_blocks_by_umbrella
-from functools import wraps
-import logging
 from ..utils.mpesa import get_mpesa_client
+from ..utils.umbrella import get_umbrella_by_user, get_blocks_by_umbrella
+import logging
+import os
+from functools import wraps
 
 main = Blueprint('main', __name__)
 
@@ -2003,13 +2002,16 @@ def get_zones(block_id):
         # Query zones for the given block using ZoneModel
         zones = ZoneModel.query.filter_by(parent_block_id=block_id).all()
         
+        if not zones:
+            return jsonify({'zones': [], 'message': 'No zones found for this block'}), 200
+            
         # Format zones for JSON response
         zones_list = [{'id': zone.id, 'name': zone.name} for zone in zones]
         
         return jsonify({'zones': zones_list})
     except Exception as e:
-        print(f"Error fetching zones: {str(e)}")
-        return jsonify({'error': 'Error fetching zones'}), 500
+        logging.error(f"Error fetching zones for block {block_id}: {str(e)}")
+        return jsonify({'error': 'Error fetching zones. Please try again.'}), 500
 
 @main.route('/get_members/<zone_id>')
 @login_required
