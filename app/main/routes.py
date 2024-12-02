@@ -1897,14 +1897,21 @@ def view_all_blocks():
 
 
 #For Cascade dropdown - AJAX
-@main.route('/get_zones/<block_id>')
+@main.route('/get_zones/<int:block_id>')
 @login_required
-def get_zones_for_block(block_id):
+def get_zones(block_id):
+    """Endpoint to get zones for a specific block"""
     try:
-        zones = get_zones_by_block(block_id)
-        return jsonify([{"id": str(zone["id"]), "name": zone["name"]} for zone in zones])
+        # Query zones for the given block using ZoneModel
+        zones = ZoneModel.query.filter_by(block_id=block_id).all()
+        
+        # Format zones for JSON response
+        zones_list = [{'id': zone.id, 'name': zone.name} for zone in zones]
+        
+        return jsonify(zones_list)
     except Exception as e:
-        return jsonify([]), 500
+        print(f"Error fetching zones: {str(e)}")
+        return jsonify({'error': 'Error fetching zones'}), 500
 
 @main.route('/get_members/<zone_id>')
 @login_required
@@ -1944,25 +1951,34 @@ def get_filtered_members(block_id, zone_id=None):
 @main.route('/get_contribution_stats/<int:block_id>', methods=['GET'])
 @main.route('/get_contribution_stats/<int:block_id>/<int:zone_id>', methods=['GET'])
 def get_contribution_stats(block_id, zone_id=None):
-    # Base query to get contributions
-    base_query = UserModel.query.join(UserModel.block_memberships)
+    try:
+        # Base query to get users
+        base_query = UserModel.query.join(UserModel.block_memberships)
 
-    # Filter by block and optionally by zone
-    if zone_id:
-        base_query = base_query.join(UserModel.zone_memberships)\
-            .filter(BlockModel.id == block_id, ZoneModel.id == zone_id)
-    else:
-        base_query = base_query.filter(BlockModel.id == block_id)
+        # Filter by block and optionally by zone
+        if zone_id:
+            base_query = base_query.join(UserModel.zone_memberships)\
+                .filter(BlockModel.id == block_id, ZoneModel.id == zone_id)
+        else:
+            base_query = base_query.filter(BlockModel.id == block_id)
 
-    # Get all users in the block/zone
-    users = base_query.all()
-    
-    # Calculate contribution statistics
-    contributed = sum(1 for user in users if user.has_contributed)
-    total_users = len(users)
-    pending = total_users - contributed
+        # Get all users in the block/zone
+        users = base_query.all()
+        total_users = len(users)
 
-    return jsonify({
-        'contributed': contributed,
-        'pending': pending
-    })
+        # Count users who have made contributions
+        contributed = 0
+        for user in users:
+            # Check if user has any contributions
+            if user.contributions.filter_by(block_id=block_id).first():
+                contributed += 1
+
+        pending = total_users - contributed
+
+        return jsonify({
+            'contributed': contributed,
+            'pending': pending
+        })
+    except Exception as e:
+        print(f"Error getting contribution stats: {str(e)}")
+        return jsonify({'error': 'Error getting contribution stats'}), 500
