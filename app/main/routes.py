@@ -1070,7 +1070,6 @@ def handle_schedule_creation(schedule_form):
     return render_host_page(schedule_form=schedule_form,active_tab='schedule_meeting')
 
 
-
 def get_upcoming_meeting_details():
     today = datetime.now()
     week_start = today.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -1307,7 +1306,7 @@ def get_members(page=1, per_page=5):
     """Fetches members associated with the specified umbrella."""
     # Retrieve the umbrella details for the current user
     umbrella = get_umbrella_by_user(current_user.id)  
-
+    
     if umbrella is None or not umbrella.get('id'):
         # If no umbrella is associated, return an empty list
         print('No umbrella found.')
@@ -1991,14 +1990,21 @@ def view_all_blocks():
 
 
 #For Cascade dropdown - AJAX
-@main.route('/get_zones/<block_id>')
+@main.route('/get_zones/<int:block_id>')
 @login_required
-def get_zones_for_block(block_id):
+def get_zones(block_id):
+    """Endpoint to get zones for a specific block"""
     try:
-        zones = get_zones_by_block(block_id)
-        return jsonify([{"id": str(zone["id"]), "name": zone["name"]} for zone in zones])
+        # Query zones for the given block using ZoneModel
+        zones = ZoneModel.query.filter_by(parent_block_id=block_id).all()
+        
+        # Format zones for JSON response
+        zones_list = [{'id': zone.id, 'name': zone.name} for zone in zones]
+        
+        return jsonify(zones_list)
     except Exception as e:
-        return jsonify([]), 500
+        print(f"Error fetching zones: {str(e)}")
+        return jsonify({'error': 'Error fetching zones'}), 500
 
 @main.route('/get_members/<zone_id>')
 @login_required
@@ -2009,3 +2015,67 @@ def get_members_for_zone(zone_id):
         return jsonify([{"id": str(member["id"]), "name": member["full_name"]} for member in members])
     except Exception as e:
         return jsonify([]), 500
+
+@main.route('/get_filtered_members/<int:block_id>', methods=['GET'])
+@main.route('/get_filtered_members/<int:block_id>/<int:zone_id>', methods=['GET'])
+def get_filtered_members(block_id, zone_id=None):
+    if zone_id:
+        # Filter by both block and zone
+        members = UserModel.query.join(UserModel.block_memberships).join(UserModel.zone_memberships)\
+            .filter(BlockModel.id == block_id, ZoneModel.id == zone_id).all()
+    else:
+        # Filter by block only
+        members = UserModel.query.join(UserModel.block_memberships)\
+            .filter(BlockModel.id == block_id).all()
+
+    return jsonify([{
+        'id': member.id,
+        'full_name': member.full_name,
+        'phone_number': member.phone_number,
+        'id_number': member.id_number,
+        'membership_info': ' '.join([
+            f"{block.name} ({zone.name})"
+            for block, zone in zip(member.block_memberships, member.zone_memberships)
+        ]),
+        'bank_name': member.bank.name if member.bank else '',
+        'acc_number': member.acc_number or ''
+    } for member in members])
+
+@main.route('/get_contribution_stats/<int:block_id>', methods=['GET'])
+@main.route('/get_contribution_stats/<int:block_id>/<int:zone_id>', methods=['GET'])
+def get_contribution_stats(block_id, zone_id=None):
+    try:
+        # Base query to get users
+        base_query = UserModel.query.join(UserModel.block_memberships)
+
+        # Filter by block and optionally by zone
+        if zone_id:
+            base_query = base_query.join(UserModel.zone_memberships)\
+                .filter(BlockModel.id == block_id, ZoneModel.id == zone_id)
+        else:
+            base_query = base_query.filter(BlockModel.id == block_id)
+
+        # Get all users in the block/zone
+        users = base_query.all()
+        total_users = len(users)
+
+        # Count users who have made payments
+        contributed = 0
+        for user in users:
+            # Use PaymentModel to check if user has payments
+            payment_exists = PaymentModel.query.filter_by(
+                payer_id=user.id,
+                block_id=block_id
+            ).first() is not None
+            if payment_exists:
+                contributed += 1
+
+        pending = total_users - contributed
+
+        return jsonify({
+            'contributed': contributed,
+            'pending': pending
+        })
+    except Exception as e:
+        print(f"Error getting contribution stats: {str(e)}")
+        return jsonify({'error': 'Error getting contribution stats'}), 500

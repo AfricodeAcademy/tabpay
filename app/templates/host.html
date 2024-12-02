@@ -395,11 +395,11 @@ Regular Block Hosting {% endblock %} {% block content %}
             <div class="row">
               <div class="col-md-3" style="max-width: fit-content">
                 {{ schedule_form.block.label }} {{
-                schedule_form.block(class="select", id="block") }}
+                schedule_form.block(class="select member-tab-block", id="block") }}
               </div>
               <div class="col-md-3" style="max-width: fit-content">
                 {{ schedule_form.zone.label }} {{
-                schedule_form.zone(class="select", id="zone") }}
+                schedule_form.zone(class="select member-tab-zone", id="zone") }}
               </div>
             </div>
           </div>
@@ -774,6 +774,117 @@ Regular Block Hosting {% endblock %} {% block content %}
     flatpickr("input[name='date']", {
       enableTime: true,
       dateFormat: "Y-m-d H:i:S",
+    });
+  });
+</script>
+
+<!-- For Member Tab Cascade Dropdowns -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const memberTabBlockSelects = document.querySelectorAll('.member-tab-block');
+    const memberTabZoneSelects = document.querySelectorAll('.member-tab-zone');
+    const membersTable = document.getElementById('membersTable');
+
+    function resetMemberTabSelect(select, defaultText = "Choose an option") {
+      select.innerHTML = `<option value="">${defaultText}</option>`;
+      select.disabled = true;
+    }
+
+    function populateMemberTabSelect(select, data, defaultText) {
+      select.innerHTML = `<option value="">${defaultText}</option>`;
+      data.forEach((item) => {
+        const option = document.createElement("option");
+        option.value = item.id;
+        option.textContent = item.name;
+        select.appendChild(option);
+      });
+      select.disabled = false;
+    }
+
+    function updateMembersTable(blockId, zoneId) {
+      const tbody = membersTable.querySelector('tbody');
+      const url = zoneId 
+        ? `/get_filtered_members/${blockId}/${zoneId}`
+        : `/get_filtered_members/${blockId}`;
+
+      fetch(url)
+        .then(response => response.json())
+        .then(members => {
+          tbody.innerHTML = '';
+          members.forEach(member => {
+            const row = `
+              <tr>
+                <td>${member.full_name}</td>
+                <td>${member.phone_number}</td>
+                <td>${member.id_number}</td>
+                <td>${member.membership_info}</td>
+                <td>${member.bank_name}</td>
+                <td>${member.acc_number}</td>
+                <td>
+                  <button class="btn" style="color: green; background-color: white; font-size: 25px; padding: 0; margin: 0;"
+                    data-bs-toggle="modal" data-bs-target="#editModal${member.id}">
+                    <i class="bi bi-pencil-square"></i>
+                  </button>
+                </td>
+                <td>
+                  <button class="btn" style="color: white; background-color: rgb(200, 26, 26); border-radius: 20px;"
+                    data-bs-toggle="modal" data-bs-target="#removeModal${member.id}">
+                    <i class="bi bi-trash3-fill"></i>
+                  </button>
+                </td>
+              </tr>`;
+            tbody.insertAdjacentHTML('beforeend', row);
+          });
+        })
+        .catch(error => {
+          console.error("Error fetching members:", error);
+          alert("Error fetching members. Please try again.");
+        });
+    }
+
+    // Handle block selection for each block select in member tab
+    memberTabBlockSelects.forEach((blockSelect, index) => {
+      const correspondingZoneSelect = memberTabZoneSelects[index];
+      
+      blockSelect.addEventListener("change", function () {
+        const blockId = this.value;
+        resetMemberTabSelect(correspondingZoneSelect, "Choose a Zone");
+
+        if (blockId) {
+          // Fetch zones for the selected block
+          fetch(`/get_zones/${blockId}`)
+            .then((response) => response.json())
+            .then((data) => {
+              populateMemberTabSelect(correspondingZoneSelect, data, "Choose a Zone");
+              // Update members table with block filter
+              updateMembersTable(blockId);
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              alert("Error fetching zones. Please try again.");
+            });
+        } else {
+          // If no block selected, reset the table to show all members
+          location.reload();
+        }
+      });
+
+      // Handle zone selection
+      correspondingZoneSelect.addEventListener("change", function() {
+        const zoneId = this.value;
+        const blockId = blockSelect.value;
+
+        if (blockId && zoneId) {
+          // Update members table with both block and zone filters
+          updateMembersTable(blockId, zoneId);
+        } else if (blockId) {
+          // If zone is deselected, filter by block only
+          updateMembersTable(blockId);
+        }
+      });
+
+      // Initially disable zone selects
+      resetMemberTabSelect(correspondingZoneSelect, "Choose a Zone");
     });
   });
 </script>

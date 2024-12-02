@@ -312,12 +312,12 @@ block content %}
               <div class="flex-container mt-4">
                 <div class="row mb-3">
                   <div class="col-md-6" style="max-width: fit-content">
-                    {{ schedule_form.block.label }} {{
-                    schedule_form.block(class="select") }}
+                    {{ schedule_form.block.label }} 
+                    {{ schedule_form.block(class="select analytics-block") }}
                   </div>
                   <div class="col-md-6" style="max-width: fit-content">
-                    {{ schedule_form.zone.label }} {{
-                    schedule_form.zone(class="select") }}
+                    {{ schedule_form.zone.label }} 
+                    {{ schedule_form.zone(class="select analytics-zone") }}
                   </div>
                 </div>
               </div>
@@ -508,6 +508,124 @@ block content %}
         filter.addEventListener('change', filterContributions);
       }
     });
+  });
+</script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Get elements for analytics tab
+    const analyticsBlockSelect = document.querySelector('.analytics-block');
+    const analyticsZoneSelect = document.querySelector('.analytics-zone');
+    const contributionChart = document.getElementById('contributionChart');
+
+    // Initialize chart with default data
+    let chart = null;
+
+    function initializeChart(data) {
+      if (chart) {
+        chart.destroy();
+      }
+      
+      const ctx = contributionChart.getContext('2d');
+      chart = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: ["Contributed", "Pending"],
+          datasets: [{
+            label: "Contribution Overview",
+            data: [data.contributed || 0, data.pending || 0],
+            backgroundColor: ["orange", "red"],
+            borderWidth: 1,
+          }],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: "bottom",
+            },
+          },
+        },
+      });
+    }
+
+    function resetAnalyticsSelect(select, defaultText = "Choose an option") {
+      select.innerHTML = `<option value="">${defaultText}</option>`;
+      select.disabled = true;
+    }
+
+    function populateAnalyticsSelect(select, data, defaultText) {
+      select.innerHTML = `<option value="">${defaultText}</option>`;
+      data.forEach((item) => {
+        const option = document.createElement("option");
+        option.value = item.id;
+        option.textContent = item.name;
+        select.appendChild(option);
+      });
+      select.disabled = false;
+    }
+
+    function updateContributionData(blockId, zoneId = null) {
+      const url = zoneId 
+        ? `/get_contribution_stats/${blockId}/${zoneId}`
+        : `/get_contribution_stats/${blockId}`;
+
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          initializeChart(data);
+        })
+        .catch(error => {
+          console.error("Error fetching contribution stats:", error);
+          initializeChart({ contributed: 0, pending: 0 });
+        });
+    }
+
+    // Handle block selection in analytics tab
+    if (analyticsBlockSelect) {
+      analyticsBlockSelect.addEventListener("change", function () {
+        const blockId = this.value;
+        resetAnalyticsSelect(analyticsZoneSelect, "Choose a Zone");
+
+        if (blockId) {
+          fetch(`/get_zones/${blockId}`)
+            .then((response) => response.json())
+            .then((data) => {
+              populateAnalyticsSelect(analyticsZoneSelect, data, "Choose a Zone");
+              updateContributionData(blockId);
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              alert("Error fetching zones. Please try again.");
+            });
+        } else {
+          // Reset chart to initial state if no block is selected
+          initializeChart({ contributed: 0, pending: 0 });
+        }
+      });
+    }
+
+    // Handle zone selection in analytics tab
+    if (analyticsZoneSelect) {
+      analyticsZoneSelect.addEventListener("change", function () {
+        const zoneId = this.value;
+        const blockId = analyticsBlockSelect.value;
+
+        if (blockId && zoneId) {
+          updateContributionData(blockId, zoneId);
+        } else if (blockId) {
+          updateContributionData(blockId);
+        }
+      });
+    }
+
+    // Initialize zone select as disabled
+    if (analyticsZoneSelect) {
+      resetAnalyticsSelect(analyticsZoneSelect, "Choose a Zone");
+    }
+
+    // Initialize chart with empty data
+    initializeChart({ contributed: 0, pending: 0 });
   });
 </script>
 
