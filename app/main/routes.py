@@ -727,9 +727,6 @@ def create_zone(payload):
 @approval_required
 @roles_accepted('SuperUser', 'Administrator', 'Chairman', 'Secretary','Treasurer')
 def statistics():
-    
-    umbrella_id = get_umbrella_by_user(current_user.id)
-    # print(f'fetched umbrella: {umbrella_id}')
 
     total_members = len(get_members())
 
@@ -808,7 +805,10 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
     schedule_form.zone.choices = [("", "--Choose a Zone--")] + [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
 
     update_form.member_zone.choices = [("", "--Choose an Additional Zone--")] +[(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
+    # Get current page from request arguments (default is page 1)
 
+    current_page = int(request.args.get('page', 1))
+    members_per_page = 5  # Number of members per page
     # Fetch members
     members = get_members()
     if members:
@@ -817,6 +817,23 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
             schedule_form.member.choices = [("", "--Choose a Member--")] + [(str(member['id']), member['full_name']) for member in members]
     else:
         schedule_form.member.choice = []
+
+    total_members = len(members)
+    total_pages = (total_members + members_per_page - 1) // members_per_page
+
+    # Apply slicing for pagination
+    start = (current_page - 1) * members_per_page
+    end = start + members_per_page
+    paginated_members = members[start:end]
+
+    # Prepare pagination metadata
+    pagination = {
+        "current_page": current_page,
+        "total_pages": total_pages,
+        "has_prev": current_page > 1,
+        "has_next": current_page < total_pages
+    }
+
 
     banks = get_banks()
     update_form.bank_id.choices = [("", "--Choose Bank--")] + [(str(bank['id']), bank['name']) for bank in banks]
@@ -829,7 +846,8 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
                            schedule_form=schedule_form,
                            blocks=blocks,message=message,
                            zones=zone_map.keys(),acc_number=acc_number,paybill_no=paybill_no,
-                           members=members,
+                            members=paginated_members,
+                            pagination=pagination,
                            active_tab=active_tab,  
                            error=error,meeting_block=meeting_block,host=host,meeting_zone=meeting_zone,when=when,event_id=event_id)
 
@@ -1260,7 +1278,7 @@ def remove_member(user_id):
 
 
 # Helper function to fetch members by role "Member"
-def get_members():
+def get_members(page=1, per_page=5):
     """Fetches members associated with the specified umbrella."""
     # Retrieve the umbrella details for the current user
     umbrella = get_umbrella_by_user(current_user.id)  
@@ -1276,7 +1294,7 @@ def get_members():
         # Fetch members associated with the umbrella
         response = requests.get(
             f"{current_app.config['API_BASE_URL']}/api/v1/users/",
-            params={'role': 'Member', 'umbrella_id': umbrella_id} 
+            params={'role': 'Member', 'umbrella_id': umbrella_id,"page": page, "per_page": per_page} 
         )
         
         if response.status_code == 200:
@@ -1915,19 +1933,3 @@ def get_members_for_zone(zone_id):
         return jsonify([{"id": str(member["id"]), "name": member["full_name"]} for member in members])
     except Exception as e:
         return jsonify([]), 500
-
-# @main.route('/get_zones/<block_id>')
-# @login_required
-# def get_zones(block_id):
-#     """Endpoint to get zones for a specific block"""
-#     try:
-#         # Query zones for the given block
-#         zones = Zone.query.filter_by(parent_block=block_id).all()
-        
-#         # Format zones for JSON response
-#         zones_list = [{'id': zone.id, 'name': zone.zone_name} for zone in zones]
-        
-#         return jsonify(zones_list)
-#     except Exception as e:
-#         print(f"Error fetching zones: {str(e)}")
-#         return jsonify({'error': 'Error fetching zones'}), 500
