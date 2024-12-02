@@ -852,7 +852,7 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
         schedule_form.member.choice = []
 
     total_members = len(members)
-    total_pages = (total_members + members_per_page - 1) // members_per_page
+    total_pages = 1  # Initialize with default value
 
     # Apply slicing for pagination
     start = (current_page - 1) * members_per_page
@@ -1415,7 +1415,7 @@ def remove_committee_role(user_id, active_tab):
 # Helper function to render the reports page with member contributions
 def render_reports_page(active_tab=None, error=None, host_id=None, member_id=None, status=None, umbrella=None):
     schedule_form = ScheduleForm()
-
+    total_pages = 1  # Initialize with default value
     # Fetch user and umbrella details
     try:
         user = get_user_from_api(current_user.id)
