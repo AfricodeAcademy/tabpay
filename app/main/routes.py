@@ -1903,7 +1903,7 @@ def get_zones(block_id):
     """Endpoint to get zones for a specific block"""
     try:
         # Query zones for the given block using ZoneModel
-        zones = ZoneModel.query.filter_by(block_id=block_id).all()
+        zones = ZoneModel.query.filter_by(parent_block_id=block_id).all()
         
         # Format zones for JSON response
         zones_list = [{'id': zone.id, 'name': zone.name} for zone in zones]
