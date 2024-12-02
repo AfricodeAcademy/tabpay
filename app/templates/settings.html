@@ -139,26 +139,25 @@ render_field(field) %}
             novalidate
           >
             {{ committee_form.hidden_tag() }}
-            <!-- <div id="user-details" style="display:none;">
-                        <div class="row mb-5 mt-2">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    {{ committee_form.full_name.label }}
-                                    {{ committee_form.full_name(class="input", readonly=True, id="full_name", autocomplete="off") }}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    {{ committee_form.phone_number.label }}
-                                    {{ committee_form.phone_number(class="input", readonly=True, id="phone_number", autocomplete="off") }}
-                                </div>
-                            </div>
-                        </div>
-                    </div> -->
+            <div id="user-details" style="display:none;">
+              <div class="row mb-5 mt-2">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    {{ committee_form.full_name.label(class="form-label") }}
+                    {{ committee_form.full_name(class="form-control", readonly=True) }}
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    {{ committee_form.phone_number.label(class="form-label") }}
+                    {{ committee_form.phone_number(class="form-control", readonly=True) }}
+                  </div>
+                </div>
+              </div>
+            </div>
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  <!-- For Cascade dropdown - AJAX -->
                   {{ committee_form.id_number.label(class="form-label") }}
                   {{ committee_form.id_number(class="form-control") }}
                   {% if committee_form.id_number.errors %}
@@ -172,9 +171,8 @@ render_field(field) %}
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  <!-- For Cascade dropdown - AJAX -->
                   {{ committee_form.block_id.label(class="form-label") }}
-                  {{ committee_form.block_id(class="form-control", id="committee-block") }}
+                  {{ committee_form.block_id(class="form-control") }}
                   {% if committee_form.block_id.errors %}
                   <div class="invalid-feedback">
                     {% for error in committee_form.block_id.errors %}
@@ -185,10 +183,9 @@ render_field(field) %}
                 </div>
               </div>
             </div>
-            <!-- For Cascade dropdown - AJAX -->
             <div class="mb-3">
               {{ committee_form.role_id.label(class="form-label") }}
-              {{ committee_form.role_id(class="form-control", id="committee-role") }}
+              {{ committee_form.role_id(class="form-control") }}
               {% if committee_form.role_id.errors %}
               <div class="invalid-feedback">
                 {% for error in committee_form.role_id.errors %}
@@ -418,84 +415,159 @@ render_field(field) %}
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    // Committee Tab Elements
-    const committeeBlock = document.getElementById('committee-block');
-    const committeeRole = document.getElementById('committee-role');
-
-    // Zone Definition Tab Elements
-    const zoneBlock = document.getElementById('zone-block');
-
-    // Add Members Tab Elements
-    const memberZone = document.getElementById('member-zone');
-    const memberBank = document.getElementById('member-bank');
-    const memberBlock = document.getElementById('member-block');
-
-    // Function to reset options of a select element
-    function resetSelect(select, defaultText = "-- Select an option --") {
-      select.innerHTML = `<option value="">${defaultText}</option>`;
-      select.disabled = true;
-    }
-
-    // Function to populate a select element with options
-    function populateSelect(select, data, defaultText, selectedValue = '') {
-      select.innerHTML = `<option value="">${defaultText}</option>`;
-      data.forEach(item => {
-        const option = document.createElement('option');
-        option.value = item.id;
-        option.textContent = item.name;
-        if (selectedValue && item.id.toString() === selectedValue.toString()) {
-          option.selected = true;
-        }
-        select.appendChild(option);
-      });
-      select.disabled = false;
-    }
-
-    // Handle block selection in Add Members tab
-    if (memberBlock) {
-      // Load zones if block is pre-selected
-      if (memberBlock.value) {
-        fetch(`/get_zones/${memberBlock.value}`)
-          .then(response => response.json())
-          .then(zones => {
-            populateSelect(memberZone, zones, "-- Select Zone --", "{{ selected_zone }}");
-          })
-          .catch(error => {
-            console.error('Error:', error);
-            alert('Error fetching zones. Please try again.');
-          });
-      }
-
-      memberBlock.addEventListener('change', function() {
-        const blockId = this.value;
-        resetSelect(memberZone, "-- Select Zone --");
-        
-        if (blockId) {
-          fetch(`/get_zones/${blockId}`)
-            .then(response => response.json())
-            .then(zones => {
-              populateSelect(memberZone, zones, "-- Select Zone --");
-            })
-            .catch(error => {
-              console.error('Error:', error);
-              alert('Error fetching zones. Please try again.');
-            });
-        }
-      });
-    }
-
-    // Initialize disabled states only if no pre-selected values
-    if (committeeRole && !committeeRole.value) resetSelect(committeeRole, "-- Select Role --");
-    if (memberZone && !memberBlock.value) resetSelect(memberZone, "-- Select Zone --");
-  });
-
-  // Keep the existing CSRF token function
-  function getCsrfToken() {
-    return document
-      .querySelector('meta[name="csrf-token"]')
-      .getAttribute("content");
+  // Helper function to show feedback to the user
+  function showFeedback(message, isError = false) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${isError ? 'danger' : 'success'} alert-dismissible fade show`;
+    alertDiv.role = 'alert';
+    alertDiv.innerHTML = `
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    const form = document.querySelector('form');
+    form.insertBefore(alertDiv, form.firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+      alertDiv.remove();
+    }, 5000);
   }
+
+  // Function to validate ID number format
+  function validateIdNumber(idNumber) {
+    return /^\d{8,10}$/.test(idNumber);
+  }
+
+  // Enhanced fetchUserData function
+  function fetchUserData(idNumber) {
+    console.log('Fetching user data for ID:', idNumber);
+    const userDetailsSection = document.getElementById('user-details');
+    
+    // Use more specific selectors within the user-details section
+    const fullNameInput = userDetailsSection.querySelector('input[name="full_name"]');
+    const phoneNumberInput = userDetailsSection.querySelector('input[name="phone_number"]');
+    const blockSelect = document.querySelector('select[name="block_id"]');
+    
+    // Debug log to check if we found the elements
+    console.log('Form elements found:', {
+      fullNameInput: fullNameInput ? 'yes' : 'no',
+      phoneNumberInput: phoneNumberInput ? 'yes' : 'no',
+      blockSelect: blockSelect ? 'yes' : 'no'
+    });
+    
+    // Clear previous feedback
+    const existingAlerts = document.querySelectorAll('.alert');
+    existingAlerts.forEach(alert => alert.remove());
+    
+    if (!idNumber) {
+      userDetailsSection.style.display = 'none';
+      return;
+    }
+    
+    if (!validateIdNumber(idNumber)) {
+      showFeedback('Please enter a valid ID number (8-10 digits)', true);
+      userDetailsSection.style.display = 'none';
+      return;
+    }
+    
+    // Show loading state
+    userDetailsSection.style.opacity = '0.5';
+    
+    fetch(`/get_user_by_id/${idNumber}`)
+      .then(response => response.json())
+      .then(data => {
+        console.log('API Response:', data);
+        userDetailsSection.style.opacity = '1';
+        
+        if (data.success && data.data) {
+          // Show the section first so elements are in the DOM
+          userDetailsSection.style.display = 'block';
+          
+          // Add a small delay to ensure the section is visible
+          setTimeout(() => {
+            if (fullNameInput) {
+              console.log('Setting full name to:', data.data.full_name);
+              fullNameInput.value = data.data.full_name || '';
+            }
+            
+            if (phoneNumberInput) {
+              console.log('Setting phone number to:', data.data.phone_number);
+              phoneNumberInput.value = data.data.phone_number || '';
+            }
+            
+            if (blockSelect && data.data.block_id) {
+              console.log('Setting block to:', data.data.block_id);
+              blockSelect.value = data.data.block_id;
+              blockSelect.dispatchEvent(new Event('change'));
+            }
+            
+            showFeedback('User details loaded successfully');
+          }, 100);
+        } else {
+          userDetailsSection.style.display = 'none';
+          showFeedback(data.message || 'User not found', true);
+          
+          // Clear form fields
+          if (fullNameInput) fullNameInput.value = '';
+          if (phoneNumberInput) phoneNumberInput.value = '';
+          if (blockSelect) blockSelect.value = '';
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching user data:', error);
+        userDetailsSection.style.display = 'none';
+        userDetailsSection.style.opacity = '1';
+        showFeedback('Error loading user details. Please try again.', true);
+      });
+  }
+
+  // Enhanced event listeners
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('Setting up form handlers');
+    const idNumberInput = document.querySelector('input[name="id_number"]');
+    const form = document.querySelector('form');
+    
+    if (idNumberInput) {
+      let typingTimer;
+      const doneTypingInterval = 1000; // Wait 1 second after typing stops
+      
+      idNumberInput.addEventListener('input', function() {
+        clearTimeout(typingTimer);
+        if (this.value.length >= 8) {
+          typingTimer = setTimeout(() => {
+            fetchUserData(this.value);
+          }, doneTypingInterval);
+        }
+      });
+      
+      // Also fetch on blur for immediate feedback
+      idNumberInput.addEventListener('blur', function() {
+        if (this.value) {
+          fetchUserData(this.value);
+        }
+      });
+    }
+    
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        const requiredFields = ['id_number', 'block_id', 'role_id'];
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+          const input = this.querySelector(`[name="${field}"]`);
+          if (input && !input.value) {
+            isValid = false;
+            showFeedback(`Please fill in all required fields`, true);
+          }
+        });
+        
+        if (!isValid) {
+          e.preventDefault();
+        }
+      });
+    }
+  });
 </script>
 
 <!-- End For Cascade dropdown - AJAX -->

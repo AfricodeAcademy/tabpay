@@ -67,8 +67,16 @@ def render_settings_page(umbrella_form=None, block_form=None, zone_form=None,
         member_form = AddMemberForm()
     if committee_form is None:
         committee_form = AddCommitteForm()
-
-
+            
+            # Pre-populate committee form choices
+        blocks = get_blocks_by_umbrella()
+        roles = get_roles()
+            
+        if blocks and isinstance(blocks, list):
+            committee_form.block_id.choices = [("", "Choose a Block")] + [(str(block['id']), block['name']) for block in blocks]
+            
+        if roles and isinstance(roles, list):
+            committee_form.role_id.choices = [("", "Choose a Committee Role")] + [(str(role['id']), role['name']) for role in roles]
 
   # API call to get user details
     try:
@@ -1501,12 +1509,8 @@ def render_reports_page(active_tab=None, error=None, host_id=None, member_id=Non
                            schedule_form=schedule_form,
                            block_contributions=block_contributions_data.get('block_contributions', []),
                            blocks=blocks,
-                           active_tab=active_tab,
-                           error=error)
-
-
-
-
+                           active_tab=active_tab,  
+                           error=error,meeting_block=meeting_block,host=host,meeting_zone=meeting_zone,when=when,event_id=event_id)
 
 @main.route('/block_reports', methods=['GET'])
 @login_required
@@ -2079,3 +2083,40 @@ def get_contribution_stats(block_id, zone_id=None):
     except Exception as e:
         print(f"Error getting contribution stats: {str(e)}")
         return jsonify({'error': 'Error getting contribution stats'}), 500
+
+@main.route('/get_user_by_id/<id_number>')
+@login_required
+def get_user_by_id(id_number):
+    try:
+        user = get_user_by_id_number(id_number)
+        print(f"Raw API Response for user {id_number}: {user}")  # Debug print
+        
+        if user and isinstance(user, dict):
+            # Extract data directly from the response
+            full_name = user.get('full_name', '')
+            phone_number = user.get('phone_number', '')
+            
+            # Get block data from block_memberships
+            block_memberships = user.get('block_memberships', [])
+            block_id = str(block_memberships[0]['id']) if block_memberships else ''
+            block_name = block_memberships[0]['name'] if block_memberships else ''
+            
+            print(f"Extracted data: full_name={full_name}, block_id={block_id}, block_name={block_name}, phone={phone_number}")
+            
+            response_data = {
+                'success': True,
+                'data': {
+                    'full_name': full_name,
+                    'block': block_name,
+                    'block_id': block_id,
+                    'phone_number': phone_number
+                }
+            }
+            print(f"Sending response: {response_data}")
+            return jsonify(response_data)
+            
+        print(f"No user found for ID: {id_number}")
+        return jsonify({'success': False, 'message': 'User not found'})
+    except Exception as e:
+        print(f"Error in get_user_by_id: {str(e)}")
+        return jsonify({'success': False, 'message': str(e)})
