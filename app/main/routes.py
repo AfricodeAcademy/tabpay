@@ -2155,3 +2155,98 @@ def get_user_by_id(id_number):
     except Exception as e:
         print(f"Error in get_user_by_id: {str(e)}")
         return jsonify({'success': False, 'message': str(e)})
+
+@main.route('/get_member_contributions', methods=['GET'])
+@login_required
+def get_filtered_member_contributions():
+    try:
+        # Get filter parameters from request
+        block_id = request.args.get('block_id')
+        zone_id = request.args.get('zone_id')
+        host_id = request.args.get('host_id')
+        member_id = request.args.get('member_id')
+        status = request.args.get('status')
+
+        # Get umbrella ID for the current user
+        umbrella = get_umbrella_by_user(current_user.id)
+        if not umbrella:
+            return jsonify({'error': 'No umbrella found'}), 404
+
+        # Prepare base query parameters
+        params = {'role': 'Member', 'umbrella_id': umbrella['id']}
+        
+        # Add block and zone filters if provided
+        if block_id:
+            params['block_id'] = block_id
+        if zone_id:
+            params['zone_id'] = zone_id
+
+        # Fetch filtered members
+        members_response = requests.get(
+            f"{current_app.config['API_BASE_URL']}/api/v1/users/",
+            params=params
+        )
+        
+        if members_response.status_code != 200:
+            return jsonify({'error': 'Error fetching members'}), 500
+
+        members = members_response.json()
+
+        # Get current meeting details
+        meeting = get_upcoming_meeting_details()
+        if not meeting:
+            return jsonify({'error': 'No upcoming meeting found'}), 404
+
+        meeting_id = meeting['meeting_id']
+        host_name = meeting['host']
+        meeting_date = meeting['when']
+
+        # Prepare contribution query parameters
+        contributions_params = {'meeting_id': meeting_id}
+        if host_id and host_id != 'all_hosts':
+            contributions_params['host_id'] = host_id
+        if member_id and member_id != 'all_members':
+            contributions_params['payer_id'] = member_id
+
+        # Fetch contributions
+        contributions_response = requests.get(
+            f"{current_app.config['API_BASE_URL']}/api/v1/payments/",
+            params=contributions_params
+        )
+
+        if contributions_response.status_code != 200:
+            return jsonify({'error': 'Error fetching contributions'}), 500
+
+        contributions = contributions_response.json()
+
+        # Combine and filter member contributions
+        member_contributions = []
+        for member in members:
+            contribution_record = next(
+                (c for c in contributions if c['payer_id'] == member['id']), 
+                None
+            )
+
+            member_status = ('Contributed' 
+                           if contribution_record and contribution_record['transaction_status']
+                           else 'Pending')
+
+            # Apply status filter if provided
+            if status and status != member_status:
+                continue
+
+            member_contributions.append({
+                'full_name': member['full_name'],
+                'amount': contribution_record['amount'] if contribution_record else 0.0,
+                'status': member_status
+            })
+
+        return jsonify({
+            'member_contributions': member_contributions,
+            'host_name': host_name,
+            'meeting_date': meeting_date
+        })
+
+    except Exception as e:
+        print(f"Error in get_filtered_member_contributions: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500

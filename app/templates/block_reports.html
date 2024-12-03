@@ -493,13 +493,59 @@ block content %}
 
     // Function to filter contributions based on selected values
     function filterContributions() {
+      const selectedBlock = blockMember.value;
+      const selectedZone = zoneMember.value;
       const selectedHost = hostMember.value;
       const selectedMember = memberFilter.value;
       const selectedStatus = statusFilter.value;
-      
-      // You can implement the filtering logic here
-      // This might involve making an API call with the selected filters
-      // and updating the table content
+
+      // Show loading state
+      const tbody = document.querySelector('#member_contribution table tbody');
+      tbody.innerHTML = '<tr><td colspan="3" class="text-center">Loading...</td></tr>';
+
+      // Prepare filter parameters
+      const params = new URLSearchParams();
+      if (selectedBlock) params.append('block_id', selectedBlock);
+      if (selectedZone) params.append('zone_id', selectedZone);
+      if (selectedHost && selectedHost !== 'all_hosts') params.append('host_id', selectedHost);
+      if (selectedMember && selectedMember !== 'all_members') params.append('member_id', selectedMember);
+      if (selectedStatus) params.append('status', selectedStatus);
+
+      // Make API call to get filtered contributions
+      fetch(`/get_member_contributions?${params.toString()}`)
+        .then(response => response.json())
+        .then(data => {
+          // Clear loading state
+          tbody.innerHTML = '';
+
+          if (data.member_contributions && data.member_contributions.length > 0) {
+            // Update table with filtered data
+            data.member_contributions.forEach(contribution => {
+              const row = document.createElement('tr');
+              row.innerHTML = `
+                <td>${contribution.full_name}</td>
+                <td>Kes ${contribution.amount}</td>
+                <td><span class="badge ${contribution.status === 'Contributed' ? 'bg-success' : 'bg-warning'}">${contribution.status}</span></td>
+              `;
+              tbody.appendChild(row);
+            });
+
+            // Update host name and meeting date if provided
+            if (data.host_name) {
+              document.querySelector('#host-name').textContent = data.host_name;
+            }
+            if (data.meeting_date) {
+              document.querySelector('#meeting-date').textContent = data.meeting_date;
+            }
+          } else {
+            // Show no data message
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center">No contributions found</td></tr>';
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching filtered contributions:', error);
+          tbody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Error loading contributions. Please try again.</td></tr>';
+        });
     }
 
     // Add event listeners for filter changes
