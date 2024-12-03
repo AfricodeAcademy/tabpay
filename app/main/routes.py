@@ -1034,6 +1034,11 @@ def handle_schedule_creation(schedule_form):
 
 
 def get_upcoming_meeting_details():
+    """Fetch upcoming meetings for the current user.
+    
+    Returns:
+        dict: Meeting details if found, None otherwise
+    """
     today = datetime.now()
     week_start = today.replace(hour=0, minute=0, second=0, microsecond=0)
     week_end = (week_start + timedelta(days=6)).replace(hour=23, minute=59, second=59)
@@ -1041,63 +1046,126 @@ def get_upcoming_meeting_details():
     organizer_id = current_user.id
 
     try:
-        logging.info(f"Fetching upcoming meetings for organizer_id={organizer_id}, start={week_start}, end={week_end}")
+        # Get user's umbrella first
+        umbrella = get_umbrella_by_user(current_user.id)
+        if not umbrella:
+            logging.warning(f"No umbrella found for user {organizer_id}")
+            return None
+
+        logging.info(f"Fetching upcoming meetings for organizer_id={organizer_id}, umbrella_id={umbrella.get('id')}, start={week_start}, end={week_end}")
+
+        # Format dates in ISO format for API
+        params = {
+            'start_date': week_start.isoformat(),
+            'end_date': week_end.isoformat(),
+            'organizer_id': organizer_id,
+            'umbrella_id': umbrella.get('id')
+        }
 
         response = requests.get(
             f"{current_app.config['API_BASE_URL']}/api/v1/meetings/",
-            params={
-                'start': week_start.strftime('%Y-%m-%d'),
-                'end': week_end.strftime('%Y-%m-%d'),
-                'organizer_id': organizer_id
-            }
+            params=params,
+            headers={
+                "Authorization": f"Bearer {current_user.get_auth_token()}",
+                "Content-Type": "application/json"
+            },
+            timeout=20
         )
-        logging.info(f"API request sent. Status Code: {response.status_code}")
+        
+        # Log the full request details for debugging
+        logging.info(f"API request URL: {response.request.url}")
+        logging.info(f"API request headers: {response.request.headers}")
+        logging.info(f"API response status: {response.status_code}")
 
         if response.status_code == 200:
             meeting_data = response.json()
             logging.info(f"API response received: {meeting_data}")
 
-            # Extract the first meeting if data is a list, or use it directly if it's a dict
-            first_meeting = meeting_data[0] if isinstance(meeting_data, list) and len(meeting_data) > 0 else meeting_data
+            # Handle empty response
+            if not meeting_data:
+                logging.info("No meetings found in response")
+                return None
 
-            if first_meeting:
-                # Parse meeting date and check if it has expired
-                meeting_date_str = first_meeting.get('when', 'Unknown Date')
-                try:
-                    meeting_date = datetime.strptime(meeting_date_str, '%a, %d %b %Y %H:%M:%S')
-                except ValueError:
-                    logging.error("Invalid meeting date format received from API.")
+            # Extract the first meeting if data is a list
+            first_meeting = meeting_data[0] if isinstance(meeting_data, list) else meeting_data
+
+            if not first_meeting:
+                logging.info("No valid meeting data found")
+                return None
+
+            # Parse meeting date and check if it has expired
+            meeting_date_str = first_meeting.get('when')
+            if not meeting_date_str:
+                logging.error("Meeting date not found in response")
+                return None
+
+            try:
+                # Try multiple date formats
+                for date_format in ['%a, %d %b %Y %H:%M:%S', '%Y-%m-%dT%H:%M:%S', '%Y-%m-%d %H:%M:%S']:
+                    try:
+                        meeting_date = datetime.strptime(meeting_date_str, date_format)
+                        break
+                    except ValueError:
+                        continue
+                else:
+                    logging.error(f"Could not parse meeting date: {meeting_date_str}")
                     return None
 
-                if meeting_date < datetime.now():
-                    logging.info("Meeting has expired; setting upcoming meeting details to None.")
+                # Compare dates using date components only for expiration check
+                today = datetime.now().date()
+                meeting_date_only = meeting_date.date()
+                
+                if meeting_date_only < today:
+                    logging.info(f"Meeting has expired. Meeting date: {meeting_date_only}, Today: {today}")
                     return None
 
-                # Extract details
+                # Extract details with proper validation
                 meeting_details = {
                     'meeting_block': first_meeting.get('meeting_block', 'Unknown Block'),
                     'meeting_zone': first_meeting.get('meeting_zone', 'Unknown Zone'),
                     'host': first_meeting.get('host', 'Unknown Host'),
-                    'meeting_id': first_meeting.get('meeting_id', 'Unknown meeting id'),
+                    'meeting_id': first_meeting.get('meeting_id'),
                     'when': meeting_date_str,
-                    'event_id': first_meeting.get('event_id', 'Unknown event ID'),
-                    'paybill_no': first_meeting.get('paybill_no', 'Unknown Paybill'),
-                    'acc_number': first_meeting.get('acc_number', 'Unknown Account')
+                    'event_id': first_meeting.get('event_id'),
+                    'paybill_no': first_meeting.get('paybill_no'),
+                    'acc_number': first_meeting.get('acc_number')
                 }
 
-                logging.info(f"Extracted meeting details: {meeting_details}")
+                # Validate required fields
+                required_fields = ['meeting_id', 'event_id', 'paybill_no', 'acc_number']
+                if any(not meeting_details.get(field) for field in required_fields):
+                    logging.error(f"Missing required fields in meeting data: {meeting_details}")
+                    return None
+
+                logging.info(f"Successfully extracted meeting details: {meeting_details}")
                 return meeting_details
-            else:
-                logging.warning("No upcoming meetings found.")
+
+            except Exception as e:
+                logging.error(f"Error processing meeting date: {str(e)}")
                 return None
+
+        elif response.status_code == 404:
+            logging.info("No meetings found for the specified criteria")
+            return None
         else:
-            logging.error(f"Failed to fetch data from API. Status Code: {response.status_code}")
+            logging.error(f"API request failed with status {response.status_code}")
+            try:
+                error_data = response.json()
+                logging.error(f"API error response: {error_data}")
+            except:
+                logging.error(f"Raw API error response: {response.text}")
             return None
 
-    except requests.exceptions.RequestException as e:
-        logging.error(f"An error occurred while fetching data from the API: {e}")
+    except requests.exceptions.Timeout:
+        logging.error("API request timed out after 20 seconds")
         return None
-    
+    except requests.exceptions.RequestException as e:
+        logging.error(f"API request error: {str(e)}")
+        return None
+    except Exception as e:
+        logging.error(f"Unexpected error: {str(e)}")
+        return None
+
 def send_sms_notifications():
     try:
         # Retrieve message from the form data
@@ -1179,12 +1247,12 @@ def update_member(user_id,update_form):
         block_zones = get_zones_by_block(block_id)
         block_name = block['name']
         for zone in block_zones:
-            zone_map[zone['id']] = (zone['name'], block_name)
+            zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
 
     update_form.member_zone.choices =  [("", "--Choose an Additional Zone--")] + [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
 
     banks = get_banks()
-    update_form.bank_id.choices = [("", "--Choose Bank--")] +  [(str(bank['id']), bank['name']) for bank in banks]
+    update_form.bank_id.choices = [("", "--Choose Bank--")] + [(str(bank['id']), bank['name']) for bank in banks]
 
     # Fetch current user data
     try:
