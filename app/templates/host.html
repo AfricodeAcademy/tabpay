@@ -763,7 +763,7 @@ Regular Block Hosting {% endblock %} {% block content %}
       resetSelect(memberSelect, "Choose a Member");
 
       if (zoneId && blockId) {
-        fetch(`/get_members/${blockId}/${zoneId}`)
+        fetch(`/get_members/${zoneId}`)
           .then((response) => {
             if (!response.ok) {
               throw new Error('Network response was not ok');
