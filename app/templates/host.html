@@ -727,6 +727,7 @@ Regular Block Hosting {% endblock %} {% block content %}
     // Handle block selection
     blockSelect.addEventListener("change", function () {
       const blockId = this.value;
+      TabPaySpinner.show('Loading zones...');
       resetSelect(zoneSelect, "Choose a Zone");
       resetSelect(memberSelect, "Choose a Member");
 
@@ -747,6 +748,9 @@ Regular Block Hosting {% endblock %} {% block content %}
             console.error("Error:", error);
             alert("Error fetching zones. Please try again.");
             resetSelect(zoneSelect, "Choose a Zone");
+          })
+          .finally(() => {
+            TabPaySpinner.hide();
           });
       }
     });
@@ -754,10 +758,12 @@ Regular Block Hosting {% endblock %} {% block content %}
     // Handle zone selection
     zoneSelect.addEventListener("change", function () {
       const zoneId = this.value;
+      const blockId = blockSelect.value;
+      TabPaySpinner.show('Loading members...');
       resetSelect(memberSelect, "Choose a Member");
 
-      if (zoneId) {
-        fetch(`/get_members/${zoneId}`)
+      if (zoneId && blockId) {
+        fetch(`/get_members/${blockId}/${zoneId}`)
           .then((response) => {
             if (!response.ok) {
               throw new Error('Network response was not ok');
@@ -773,6 +779,9 @@ Regular Block Hosting {% endblock %} {% block content %}
             console.error("Error:", error);
             alert("Error fetching members. Please try again.");
             resetSelect(memberSelect, "Choose a Member");
+          })
+          .finally(() => {
+            TabPaySpinner.hide();
           });
       }
     });
@@ -818,6 +827,7 @@ Regular Block Hosting {% endblock %} {% block content %}
     }
 
     function updateMembersTable(blockId, zoneId) {
+      TabPaySpinner.show('Loading members table...');
       const tbody = membersTable.querySelector('tbody');
       const url = zoneId 
         ? `/get_filtered_members/${blockId}/${zoneId}`
@@ -855,6 +865,9 @@ Regular Block Hosting {% endblock %} {% block content %}
         .catch(error => {
           console.error("Error fetching members:", error);
           alert("Error fetching members. Please try again.");
+        })
+        .finally(() => {
+          TabPaySpinner.hide();
         });
     }
 
@@ -901,6 +914,56 @@ Regular Block Hosting {% endblock %} {% block content %}
 
       // Initially disable zone selects
       resetMemberTabSelect(correspondingZoneSelect, "Choose a Zone");
+    });
+  });
+</script>
+
+<!-- Spinner implementations for various actions in the host page -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Handle block selection
+    const blockSelect = document.getElementById("block");
+    blockSelect.addEventListener("change", function () {
+      const blockId = this.value;
+      TabPaySpinner.show('Loading zones...');
+      // Existing code...
+    });
+
+    // Handle zone selection
+    const zoneSelect = document.getElementById("zone");
+    zoneSelect.addEventListener("change", function () {
+      const zoneId = this.value;
+      const blockId = blockSelect.value;
+      TabPaySpinner.show('Loading members...');
+      // Existing code...
+    });
+
+    // Handle member table updates
+    async function updateMembersTable(blockId, zoneId) {
+      TabPaySpinner.show('Loading members table...');
+      try {
+        // Existing code...
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        TabPaySpinner.hide();
+      }
+    }
+
+    // Handle SMS sending
+    const smsForm = document.querySelector('form[name="send_sms"]');
+    if (smsForm) {
+      smsForm.addEventListener('submit', function(e) {
+        TabPaySpinner.show('Sending SMS messages...');
+      });
+    }
+
+    // Handle payment link generation
+    const paymentLinkBtns = document.querySelectorAll('.payment-link-btn');
+    paymentLinkBtns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        TabPaySpinner.show('Generating payment link...');
+      });
     });
   });
 </script>

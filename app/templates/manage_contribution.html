@@ -242,58 +242,58 @@
     }
 
     // Function to handle block selection
-    function handleBlockSelection(blockSelect, memberSelect) {
+    async function handleBlockSelection(blockSelect, memberSelect) {
       const blockId = blockSelect.value;
+      TabPaySpinner.show('Loading members...');
       resetSelect(memberSelect, "Choose a Member");
-      
+
       if (blockId) {
-        // First get zones for the block
-        fetch(`/get_zones/${blockId}`)
-          .then(response => response.json())
-          .then(zones => {
-            // For each zone, get its members
-            Promise.all(zones.map(zone => 
-              fetch(`/get_members/${zone.id}`).then(res => res.json())
-            )).then(membersArrays => {
-              // Combine all members from different zones
-              const allMembers = membersArrays.flat();
-              // Remove duplicates based on member id
-              const uniqueMembers = Array.from(new Map(allMembers.map(item => 
-                [item.id, item])).values());
-              populateSelect(memberSelect, uniqueMembers, "Choose a Member");
-            });
-          })
-          .catch(error => {
-            console.error('Error:', error);
-            alert('Error fetching members. Please try again.');
-          });
+        try {
+          const response = await fetch(`/get_block_members/${blockId}`);
+          if (!response.ok) {
+            throw new Error('Network response was not ok');
+          }
+          const data = await response.json();
+          populateSelect(memberSelect, data.members, "Choose a Member");
+        } catch (error) {
+          console.error("Error:", error);
+          alert("Error fetching members. Please try again.");
+          resetSelect(memberSelect, "Choose a Member");
+        } finally {
+          TabPaySpinner.hide();
+        }
       }
+    }
+
+    // Handle request payment form submission
+    const requestPaymentForm = document.querySelector('#request_payment form');
+    if (requestPaymentForm) {
+      requestPaymentForm.addEventListener('submit', function(e) {
+        TabPaySpinner.show('Processing payment request...');
+      });
+    }
+
+    // Handle send to bank form submission
+    const sendToBankForm = document.querySelector('#send_to_bank form');
+    if (sendToBankForm) {
+      sendToBankForm.addEventListener('submit', function(e) {
+        TabPaySpinner.show('Processing bank transfer...');
+      });
     }
 
     // Handle block selection for Request Payment tab
     if (blockSelectRequest) {
       blockSelectRequest.addEventListener('change', function() {
+        TabPaySpinner.show('Loading members...');
         handleBlockSelection(this, memberSelectRequest);
       });
-      resetSelect(memberSelectRequest, "Choose a Member");
     }
 
     // Handle block selection for Send to Bank tab
     if (blockSelectBank) {
       blockSelectBank.addEventListener('change', function() {
+        TabPaySpinner.show('Loading members...');
         handleBlockSelection(this, memberSelectBank);
-      });
-      resetSelect(memberSelectBank, "Choose a Member");
-    }
-
-    // Additional functionality for Send to Bank tab
-    if (memberSelectBank) {
-      memberSelectBank.addEventListener('change', function() {
-        const memberId = this.value;
-        if (memberId) {
-          // You can add an endpoint to fetch member's bank details
-          // and populate the bank and account number fields
-        }
       });
     }
   });
