@@ -48,10 +48,10 @@ class EditMemberForm(FlaskForm):
     full_name = StringField('Full Name', validators=[Length(max=30, min=5,message="Full name should have atleast 5 characters.")])
     phone_number = StringField('Phone Number', validators=[Length(min=10, max=10, message="Phone number must be exactly 10 digits.")])
     id_number = IntegerField('ID Number', validators=[NumberRange(min=10000000, max=9999999999, message="ID number must be between 8 and 10 digits.")])
-    member_zone = SelectField('Select Additional Zone', choices=[("", "Choose a Zone")], validators=[Optional()])
-    block_id = SelectField('Select Additional Block', choices=[("", "Choose a Block")], validators=[Optional()])
-    bank_id = SelectField('Bank',  validators=[Optional()], render_kw={'readonly': True})
-    account_number = StringField('Account Number', validators=[Optional()], render_kw={'readonly': True})
+    member_zone = SelectField(' Zone')
+    block_id = SelectField(' Block', )
+    bank_id = SelectField('Bank',  )
+    account_number = StringField('Account Number')
     submit = SubmitField('Save Changes')
 
 class PaymentForm(FlaskForm):
@@ -88,3 +88,9 @@ class ScheduleForm(FlaskForm):
         if date.data < datetime.now():
             raise ValidationError('The meeting date and time cannot be in the past.')
 
+
+
+class AddMembershipForm(FlaskForm):
+    id_number = IntegerField('Member ID Number', validators=[DataRequired(message="ID number is required"), NumberRange(min=10000000, max=9999999999, message="ID number must be between 8 and 10 digits.")], render_kw={'placeholder': 'xxxxxxxx'})
+    block = SelectField(" Block", choices=[("", "Choose a Block")], validators=[DataRequired(message="Please select a Block")])
+    zone = SelectField('Member Zone', choices=[("", "Choose a Zone")], validators=[DataRequired(message="Please select a Zone ")])

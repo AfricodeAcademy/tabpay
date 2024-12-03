@@ -222,18 +222,6 @@ Regular Block Hosting {% endblock %} {% block content %}
                               name="meeting_id"
                               value="{{ id_meeting }}"
                             />
-                            <!-- <input type="text" name="host" value="{{ host }}" /> -->
-                            <!-- <input
-                              type="text"
-                              name="meeting_block"
-                              value="{{ meeting_block }}"
-                            />
-                            <input
-                              type="text"
-                              name="meeting_zone"
-                              value="{{ meeting_zone }}"
-                            />
-                            <input type="text" name="when" value="{{ when }}" /> -->
 
                             <div class="row">
                               <div class="col-md-6">
@@ -391,15 +379,99 @@ Regular Block Hosting {% endblock %} {% block content %}
             Filter By:
           </h4>
 
-          <div class="flex-container mt-4">
-            <div class="row">
-              <div class="col-md-3" style="max-width: fit-content">
+          <div class="d-flex justify-content-between align-items-center mt-4">
+            <!-- Filters Section -->
+            <div class="d-flex">
+              <div class="me-3">
                 {{ schedule_form.block.label }} {{
-                schedule_form.block(class="select member-tab-block", id="block") }}
+                schedule_form.block(class="select member-tab-block", id="block")
+                }}
               </div>
-              <div class="col-md-3" style="max-width: fit-content">
+              <div>
                 {{ schedule_form.zone.label }} {{
                 schedule_form.zone(class="select member-tab-zone", id="zone") }}
+              </div>
+            </div>
+
+            <!-- Add Membership Button -->
+            <button
+              class="btn"
+              style="background-color: rgba(70, 162, 16, 0.873); color: white"
+              data-bs-toggle="modal"
+              data-bs-target="#addMembershipModal"
+            >
+              Add Membership
+            </button>
+          </div>
+
+          <!-- Add Membership Modal -->
+          <div
+            class="modal fade"
+            id="addMembershipModal"
+            tabindex="-1"
+            aria-labelledby="addMembershipModalLabel"
+            aria-hidden="true"
+          >
+            <div class="modal-dialog">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h5 class="modal-title" id="addMembershipModalLabel">
+                    Add Membership
+                  </h5>
+                  <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                  ></button>
+                </div>
+                <div class="modal-body">
+                  <form
+                    id="addMembershipForm"
+                    method="post"
+                    action="{{ url_for('main.host', active_tab='block_members') }}"
+                  >
+                    {{ add_membership_form.hidden_tag() }}
+
+                    <div class="mb-3">
+                      {{ add_membership_form.id_number.label(class="form-label")
+                      }} {{ add_membership_form.id_number(class="form-control")
+                      }} {% if add_membership_form.id_number.errors %}
+                      <div class="text-danger">
+                        {{ add_membership_form.id_number.errors[0] }}
+                      </div>
+                      {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                      {{ add_membership_form.block.label(class="form-label") }}
+                      {{ add_membership_form.block(class="form-control") }} {%
+                      if add_membership_form.block.errors %}
+                      <div class="text-danger">
+                        {{ add_membership_form.block.errors[0] }}
+                      </div>
+                      {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                      {{ add_membership_form.zone.label(class="form-label") }}
+                      {{ add_membership_form.zone(class="form-control") }} {% if
+                      add_membership_form.zone.errors %}
+                      <div class="text-danger">
+                        {{ add_membership_form.zone.errors[0] }}
+                      </div>
+                      {% endif %}
+                    </div>
+
+                    <button
+                      type="submit"
+                      class="submit-btn"
+                      name="add_membership_submit"
+                    >
+                      Add Membership
+                    </button>
+                  </form>
+                </div>
               </div>
             </div>
           </div>
@@ -537,20 +609,20 @@ Regular Block Hosting {% endblock %} {% block content %}
                         <div class="mb-3">
                           {{
                           update_form.block_id.label(class="update_form-label")
-                          }} {{ update_form.block_id(class="form-select",
+                          }} {{ update_form.block_id(class="form-control",
                           value=member.block_memberships[0]['name']) }}
                         </div>
                         <div class="mb-3">
                           {{
                           update_form.member_zone.label(class="update_form-label")
-                          }} {{ update_form.member_zone(class="form-select",
+                          }} {{ update_form.member_zone(class="form-control",
                           value=member.zone_memberships[0]['name']) }}
                         </div>
 
                         <div class="mb-3">
                           {{
                           update_form.bank_id.label(class="update_form-label")
-                          }} {{ update_form.bank_id(class="form-select",
+                          }} {{ update_form.bank_id(class="form-control",
                           value=member.bank_name) }}
                         </div>
                         <div class="mb-3">
@@ -781,9 +853,10 @@ Regular Block Hosting {% endblock %} {% block content %}
 <!-- For Member Tab Cascade Dropdowns -->
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    const memberTabBlockSelects = document.querySelectorAll('.member-tab-block');
-    const memberTabZoneSelects = document.querySelectorAll('.member-tab-zone');
-    const membersTable = document.getElementById('membersTable');
+    const memberTabBlockSelects =
+      document.querySelectorAll(".member-tab-block");
+    const memberTabZoneSelects = document.querySelectorAll(".member-tab-zone");
+    const membersTable = document.getElementById("membersTable");
 
     function resetMemberTabSelect(select, defaultText = "Choose an option") {
       select.innerHTML = `<option value="">${defaultText}</option>`;
@@ -802,16 +875,16 @@ Regular Block Hosting {% endblock %} {% block content %}
     }
 
     function updateMembersTable(blockId, zoneId) {
-      const tbody = membersTable.querySelector('tbody');
-      const url = zoneId 
+      const tbody = membersTable.querySelector("tbody");
+      const url = zoneId
         ? `/get_filtered_members/${blockId}/${zoneId}`
         : `/get_filtered_members/${blockId}`;
 
       fetch(url)
-        .then(response => response.json())
-        .then(members => {
-          tbody.innerHTML = '';
-          members.forEach(member => {
+        .then((response) => response.json())
+        .then((members) => {
+          tbody.innerHTML = "";
+          members.forEach((member) => {
             const row = `
               <tr>
                 <td>${member.full_name}</td>
@@ -833,10 +906,10 @@ Regular Block Hosting {% endblock %} {% block content %}
                   </button>
                 </td>
               </tr>`;
-            tbody.insertAdjacentHTML('beforeend', row);
+            tbody.insertAdjacentHTML("beforeend", row);
           });
         })
-        .catch(error => {
+        .catch((error) => {
           console.error("Error fetching members:", error);
           alert("Error fetching members. Please try again.");
         });
@@ -845,7 +918,7 @@ Regular Block Hosting {% endblock %} {% block content %}
     // Handle block selection for each block select in member tab
     memberTabBlockSelects.forEach((blockSelect, index) => {
       const correspondingZoneSelect = memberTabZoneSelects[index];
-      
+
       blockSelect.addEventListener("change", function () {
         const blockId = this.value;
         resetMemberTabSelect(correspondingZoneSelect, "Choose a Zone");
@@ -855,7 +928,11 @@ Regular Block Hosting {% endblock %} {% block content %}
           fetch(`/get_zones/${blockId}`)
             .then((response) => response.json())
             .then((data) => {
-              populateMemberTabSelect(correspondingZoneSelect, data, "Choose a Zone");
+              populateMemberTabSelect(
+                correspondingZoneSelect,
+                data,
+                "Choose a Zone"
+              );
               // Update members table with block filter
               updateMembersTable(blockId);
             })
@@ -870,7 +947,7 @@ Regular Block Hosting {% endblock %} {% block content %}
       });
 
       // Handle zone selection
-      correspondingZoneSelect.addEventListener("change", function() {
+      correspondingZoneSelect.addEventListener("change", function () {
         const zoneId = this.value;
         const blockId = blockSelect.value;
 

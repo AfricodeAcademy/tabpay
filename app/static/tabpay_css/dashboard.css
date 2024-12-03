@@ -519,3 +519,23 @@ table {
     width: 100%;
   }
 }
+
+.pagination .page-item .page-link {
+  background-color: rgba(70, 162, 16, 0.87);
+  color: white; /* Optional, to ensure text is visible */
+  border: none; /* Optional, remove border if desired */
+}
+
+.pagination .page-item.active .page-link {
+  background-color: rgba(
+    50,
+    130,
+    10,
+    0.87
+  ); /* A darker shade for active state */
+}
+
+.pagination .page-item.disabled .page-link {
+  background-color: rgba(150, 150, 150, 0.5); /* Gray for disabled buttons */
+  color: #fff;
+}

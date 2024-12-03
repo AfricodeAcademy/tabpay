@@ -1,7 +1,7 @@
 import requests
 from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify, session
 from flask_security import login_required, current_user, roles_accepted, user_registered
-from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm,PaymentForm
+from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm,PaymentForm,AddMembershipForm
 import logging
 import os
 from ..utils import save_picture, db
@@ -379,7 +379,7 @@ def handle_committee_addition(committee_form):
 
                 # Ensure the block doesn't already have a chairman, secretary, or treasurer
                 if role_id == 3 and block.get('chairman_id'):
-                    flash(f"{block_name} already has a chairman assigned.", 'danger')
+                    flash(f"{block_name} already has a chairperson assigned.", 'danger')
                     active_tab = 'chairmen' 
                     return redirect(url_for('main.committee', active_tab=active_tab))
 
@@ -773,13 +773,16 @@ def statistics():
 
 
 # Helper function to render the host page with forms
-def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=None):
+def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=None,add_membership_form=None):
 
     if schedule_form is None:
         schedule_form = ScheduleForm()
 
     if update_form is None:
         update_form = EditMemberForm()
+    
+    if add_membership_form is None:
+        add_membership_form = AddMembershipForm()
 
 
      # Call API or database to get upcoming meeting details
@@ -822,7 +825,7 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
     # Fetch blocks associated with the umbrella
     blocks = get_blocks_by_umbrella()
     schedule_form.block.choices = [("", "--Choose a Block--")] + [(str(block['id']), block['name']) for block in blocks]
-    update_form.block_id.choices =  [("", "--Choose an Additional Block--")] + [(str(block['id']), block['name']) for block in blocks]
+    update_form.block_id.choices =  [(str(block['id']), block['name']) for block in blocks]
 
      # Prepare a mapping for zones with block names
     zone_map = {}  # Store a mapping of zone_id to (zone_name, block_name)
@@ -837,7 +840,7 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
     # Set the choices for the member_zone field in the form
     schedule_form.zone.choices = [("", "--Choose a Zone--")] + [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
 
-    update_form.member_zone.choices = [("", "--Choose an Additional Zone--")] +[(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
+    update_form.member_zone.choices = [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
     # Get current page from request arguments (default is page 1)
 
     current_page = int(request.args.get('page', 1))
@@ -868,11 +871,11 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
 
 
     banks = get_banks()
-    update_form.bank_id.choices = [("", "--Choose Bank--")] + [(str(bank['id']), bank['name']) for bank in banks]
+    update_form.bank_id.choices = [(str(bank['id']), bank['name']) for bank in banks]
 
     # Render the host page
     return render_template('host.html', title='Host | Dashboard',
-                           update_form=update_form,
+                           update_form=update_form,add_membership_form=add_membership_form,
                            user=current_user,
                             meeting_id=(meeting_details or {}).get('meeting_id', ''),
                            schedule_form=schedule_form,
@@ -906,9 +909,54 @@ def host():
             return remove_member(user_id)
     elif 'send_sms' in request.form:  
         return send_sms_notifications()
+    add_membership_form = AddMembershipForm()
+    # Fetch blocks associated with the umbrella
+    blocks = get_blocks_by_umbrella()
+    add_membership_form.block.choices = [("", "--Choose a Block--")] + [(str(block['id']), block['name']) for block in blocks]
+
+    # Prepare a mapping for zones with block names
+    zone_map = {}  # Store a mapping of zone_id to (zone_name, block_name)
+    for block in blocks:
+        # Fetch zones associated with the current block       
+        block_id = block['id']         
+        block_zones = get_zones_by_block(block_id)
+        block_name = block['name']  
+        for zone in block_zones:
+            zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
+
+    # Set the choices for the member_zone field in the form
+    add_membership_form.zone.choices = [("", "--Choose a Zone--")] + [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
+
+
+    if request.method == 'POST' and 'add_membership_submit' in request.form:
+        if add_membership_form.validate_on_submit():
+            id_number = add_membership_form.id_number.data
+            block_id = add_membership_form.block.data
+            zone_id = add_membership_form.zone.data
+            payload = {
+                    "block_id": block_id,
+                    "zone_id": zone_id
+                }
+            
+        user = get_user_by_id_number(id_number)
+        user_id = user['id']
+        # API call to add membership
+        try:
+            response = requests.patch(
+                f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}",
+                json=payload,
+            )
+            if response.status_code == 200:
+                flash("Membership added successfully!", "success")
+            else:
+                flash(response.json().get('message', 'Failed to add membership'), "danger")
+        except Exception as e:
+            flash(f"Error updating member details: {str(e)}", "danger")      
+
+        return redirect(url_for('main.host', active_tab='block_members'))
         
     # Default GET request rendering the host page
-    return render_host_page(schedule_form=schedule_form,update_form=update_form,active_tab=request.args.get('active_tab', 'schedule_meeting'))
+    return render_host_page(schedule_form=schedule_form,add_membership_form=add_membership_form,update_form=update_form,active_tab=request.args.get('active_tab', 'schedule_meeting'))
 
 
 def edit_meeting_details(meeting_id, schedule_form):
@@ -1210,12 +1258,11 @@ def get_member_phone_numbers():
         return []
 
 
-def update_member(user_id,update_form):
-
+def update_member(user_id, update_form):
+    # Fetch blocks, zones, and banks
     blocks = get_blocks_by_umbrella()
-    update_form.block_id.choices =  [("", "--Choose an Additional Block--")] + [(str(block['id']), block['name']) for block in blocks]
+    update_form.block_id.choices = [("", "--Choose an Additional Block--")] + [(str(block['id']), block['name']) for block in blocks]
 
-    # Prepare a mapping for zones with block names
     umbrella = get_umbrella_by_user(current_user.id)
     zone_map = {}
     for block in blocks:
@@ -1225,65 +1272,85 @@ def update_member(user_id,update_form):
         for zone in block_zones:
             zone_map[zone['id']] = (zone['name'], block_name)
 
-    update_form.member_zone.choices =  [("", "--Choose an Additional Zone--")] + [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
+    update_form.member_zone.choices = [("", "--Choose an Additional Zone--")] + [
+        (str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()
+    ]
 
     banks = get_banks()
-    update_form.bank_id.choices = [("", "--Choose Bank--")] +  [(str(bank['id']), bank['name']) for bank in banks]
+    update_form.bank_id.choices = [("", "--Choose Bank--")] + [(str(bank['id']), bank['name']) for bank in banks]
 
     # Fetch current user data
     try:
         current_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}")
         current_data = current_response.json() if current_response.status_code == 200 else {}
     except Exception as e:
-        print(f"Error fetching current member data: {str(e)}", "danger")
+        flash(f"Error fetching current member data: {str(e)}", "danger")
         return redirect(url_for('main.host', active_tab='block_members'))
+
+    # Fetch all members to check for uniqueness
+    try:
+        members_response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/users", params={'umbrella_id': current_data['umbrella_id']})
+        members = members_response.json() if members_response.status_code == 200 else []
+    except Exception as e:
+        flash(f"Error fetching members for uniqueness check: {str(e)}", "danger")
+        return render_host_page(update_form=update_form, active_tab='block_members')
 
     # Check for form submission
     if update_form.validate_on_submit():
-        # Prepare payload to update member details
         payload = {}
+        any_input = False
 
-        form_fields = {
+        # Validate uniqueness of phone number, ID number, and account number
+        unique_fields = ['id_number', 'phone_number', 'account_number']
+        for field in unique_fields:
+            form_data = getattr(update_form, field).data
+            if form_data and form_data != current_data.get(field):
+                # Check uniqueness in the member list
+                for member in members:
+                    if member.get(field) == form_data and member['id'] != user_id:
+                        flash(f"{field.replace('_', ' ').title()} is already in use by another member.", "danger")
+                        return render_host_page(update_form=update_form, active_tab='block_members')
+
+                payload[field] = form_data
+                any_input = True
+
+        # Include other fields if they are changed
+        other_fields = {
             'full_name': 'full_name',
-            'phone_number': 'phone_number',
-            'id_number': 'id_number',
             'member_zone': 'zone_id',
             'bank_id': 'bank_id',
-            'account_number': 'acc_number',
             'block_id': 'block_id',
         }
 
-   
-        
-        # Build the payload with only changed data
-        any_input = False
-        for form_field, payload_key in form_fields.items():
+        for form_field, payload_key in other_fields.items():
             form_data = getattr(update_form, form_field).data
             current_value = current_data.get(payload_key)
-            # If the form field has changed and it's not empty, include it in the payload
             if form_data and form_data != current_value:
                 payload[payload_key] = form_data
                 any_input = True
 
-        # Check if no input was made (i.e., nothing to update)
-        if not any_input and 'block_memberships' not in payload:
+        if not any_input:
             flash("No input was provided. Please fill in at least one field.", "warning")
             return redirect(url_for('main.host', active_tab='block_members'))
 
-        # Send the PATCH request to update member details
-        if payload:
-            try:
-                response = requests.patch(f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}", json=payload, params={'umbrella_id': current_data['umbrella_id']})
-                if response.status_code == 200:
-                    flash("Member details updated successfully.", "success")
-                else:
-                    flash("Failed to update member details. Please try again.", "danger")
-            except Exception as e:
-                flash(f"Error updating member details: {str(e)}", "danger")
+        # Send patch request
+        try:
+            response = requests.patch(
+                f"{current_app.config['API_BASE_URL']}/api/v1/users/{user_id}",
+                json=payload,
+                params={'umbrella_id': current_data['umbrella_id']}
+            )
+            if response.status_code == 200:
+                flash("Member details updated successfully.", "success")
+            else:
+                flash("Failed to update member details. Please try again.", "danger")
+        except Exception as e:
+            flash(f"Error updating member details: {str(e)}", "danger")
 
         return redirect(url_for('main.host', active_tab='block_members'))
 
-    return render_host_page(update_form=update_form,active_tab='block_members')
+    return render_host_page(update_form=update_form, active_tab='block_members')
+
 
 
 # Function to handle member removal
@@ -2120,3 +2187,10 @@ def get_user_by_id(id_number):
     except Exception as e:
         print(f"Error in get_user_by_id: {str(e)}")
         return jsonify({'success': False, 'message': str(e)})
+
+
+
+
+
+
+
