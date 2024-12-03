@@ -362,8 +362,8 @@ render_field(field) %}
               <div class="col-md-6">
                 <div class="mb-3">
                   <label class="form-label">Select Block</label>
-                  <select class="form-control" id="member-block" name="block">
-                    <option value="">-- Select Block --</option>
+                  <select class="select" id="member-block" name="block">
+                    <option value="">Choose a Block</option>
                     {% for block in blocks %}
                     <option value="{{ block.id }}" {% if selected_block == block.id|string %}selected{% endif %}>{{ block.name }}</option>
                     {% endfor %}
@@ -375,14 +375,9 @@ render_field(field) %}
               <div class="col-md-6">
                 <div class="mb-3">
                   <label class="form-label">Select Zone</label>
-                  {{ member_form.member_zone(class="form-control", id="member-zone") }}
-                  {% if member_form.member_zone.errors %}
-                  <div class="invalid-feedback">
-                    {% for error in member_form.member_zone.errors %}
-                    {{ error }}
-                    {% endfor %}
-                  </div>
-                  {% endif %}
+                  <select class="select" id="member-zone" name="member_zone">
+                    <option value="">Choose a Zone</option>
+                  </select>
                 </div>
               </div>
               <div class="col-md-6">
@@ -415,190 +410,62 @@ render_field(field) %}
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-  // Helper function to show feedback to the user
-  function showFeedback(message, isError = false) {
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${isError ? 'danger' : 'success'} alert-dismissible fade show`;
-    alertDiv.role = 'alert';
-    alertDiv.innerHTML = `
-      ${message}
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    `;
-    
-    const form = document.querySelector('form');
-    form.insertBefore(alertDiv, form.firstChild);
-    
-    // Auto-dismiss after 5 seconds
-    setTimeout(() => {
-      alertDiv.remove();
-    }, 5000);
-  }
+  document.addEventListener("DOMContentLoaded", function () {
+    // Get the dropdown elements
+    const blockSelect = document.getElementById("member-block");
+    const zoneSelect = document.getElementById("member-zone");
 
-  // Function to validate ID number format
-  function validateIdNumber(idNumber) {
-    return /^\d{8,10}$/.test(idNumber);
-  }
+    // Function to reset options of a select element
+    function resetSelect(select, defaultText = "Choose an option") {
+      select.innerHTML = `<option value="">${defaultText}</option>`;
+      select.disabled = true;
+    }
 
-  // Enhanced fetchUserData function
-  function fetchUserData(idNumber) {
-    console.log('Fetching user data for ID:', idNumber);
-    const userDetailsSection = document.getElementById('user-details');
-    
-    // Use more specific selectors within the user-details section
-    const fullNameInput = userDetailsSection.querySelector('input[name="full_name"]');
-    const phoneNumberInput = userDetailsSection.querySelector('input[name="phone_number"]');
-    const blockSelect = document.querySelector('select[name="block_id"]');
-    
-    // Debug log to check if we found the elements
-    console.log('Form elements found:', {
-      fullNameInput: fullNameInput ? 'yes' : 'no',
-      phoneNumberInput: phoneNumberInput ? 'yes' : 'no',
-      blockSelect: blockSelect ? 'yes' : 'no'
+    // Function to populate a select element with options
+    function populateSelect(select, data, defaultText) {
+      select.innerHTML = `<option value="">${defaultText}</option>`;
+      data.forEach((item) => {
+        const option = document.createElement("option");
+        option.value = item.id;
+        option.textContent = item.name;
+        select.appendChild(option);
+      });
+      select.disabled = false;
+    }
+
+    // Handle block selection
+    blockSelect.addEventListener("change", function () {
+      const blockId = this.value;
+      TabPaySpinner.show('Loading zones...');
+      resetSelect(zoneSelect, "Choose a Zone");
+
+      if (blockId) {
+        fetch(`/get_zones/${blockId}`)
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error('Network response was not ok');
+            }
+            return response.json();
+          })
+          .then((data) => {
+            // Check if data is an array
+            const zones = Array.isArray(data) ? data : [];
+            populateSelect(zoneSelect, zones, "Choose a Zone");
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            alert("Error fetching zones. Please try again.");
+            resetSelect(zoneSelect, "Choose a Zone");
+          })
+          .finally(() => {
+            TabPaySpinner.hide();
+          });
+      }
     });
-    
-    // Clear previous feedback
-    const existingAlerts = document.querySelectorAll('.alert');
-    existingAlerts.forEach(alert => alert.remove());
-    
-    if (!idNumber) {
-      userDetailsSection.style.display = 'none';
-      return;
-    }
-    
-    if (!validateIdNumber(idNumber)) {
-      showFeedback('Please enter a valid ID number (8-10 digits)', true);
-      userDetailsSection.style.display = 'none';
-      return;
-    }
-    
-    // Show loading state
-    userDetailsSection.style.opacity = '0.5';
-    
-    fetch(`/get_user_by_id/${idNumber}`)
-      .then(response => response.json())
-      .then(data => {
-        console.log('API Response:', data);
-        userDetailsSection.style.opacity = '1';
-        
-        if (data.success && data.data) {
-          // Show the section first so elements are in the DOM
-          userDetailsSection.style.display = 'block';
-          
-          // Add a small delay to ensure the section is visible
-          setTimeout(() => {
-            if (fullNameInput) {
-              console.log('Setting full name to:', data.data.full_name);
-              fullNameInput.value = data.data.full_name || '';
-            }
-            
-            if (phoneNumberInput) {
-              console.log('Setting phone number to:', data.data.phone_number);
-              phoneNumberInput.value = data.data.phone_number || '';
-            }
-            
-            if (blockSelect && data.data.block_id) {
-              console.log('Setting block to:', data.data.block_id);
-              blockSelect.value = data.data.block_id;
-              blockSelect.dispatchEvent(new Event('change'));
-            }
-            
-            showFeedback('User details loaded successfully');
-          }, 100);
-        } else {
-          userDetailsSection.style.display = 'none';
-          showFeedback(data.message || 'User not found', true);
-          
-          // Clear form fields
-          if (fullNameInput) fullNameInput.value = '';
-          if (phoneNumberInput) phoneNumberInput.value = '';
-          if (blockSelect) blockSelect.value = '';
-        }
-      })
-      .catch(error => {
-        console.error('Error fetching user data:', error);
-        userDetailsSection.style.display = 'none';
-        userDetailsSection.style.opacity = '1';
-        showFeedback('Error loading user details. Please try again.', true);
-      });
-  }
 
-  // Enhanced event listeners
-  document.addEventListener('DOMContentLoaded', function() {
-    console.log('Setting up form handlers');
-    const idNumberInput = document.querySelector('input[name="id_number"]');
-    const blockSelect = document.getElementById('member-block');
-    const zoneSelect = document.getElementById('member-zone');
-    const form = document.querySelector('form');
-    
-    // Add event listener for block selection
-    if (blockSelect && zoneSelect) {
-      blockSelect.addEventListener('change', function() {
-        const selectedBlockId = this.value;
-        zoneSelect.innerHTML = '<option value="">-- Select Zone --</option>';
-        
-        if (selectedBlockId) {
-          // Fetch zones for the selected block
-          fetch(`/get_zones/${selectedBlockId}`)
-            .then(response => response.json())
-            .then(data => {
-              if (data.zones) {
-                data.zones.forEach(zone => {
-                  const option = document.createElement('option');
-                  option.value = zone.id;
-                  option.textContent = zone.name;
-                  zoneSelect.appendChild(option);
-                });
-              }
-            })
-            .catch(error => {
-              console.error('Error fetching zones:', error);
-              showFeedback('Error loading zones. Please try again.', true);
-            });
-        }
-      });
-    }
-
-    if (idNumberInput) {
-      let typingTimer;
-      const doneTypingInterval = 1000; // Wait 1 second after typing stops
-      
-      idNumberInput.addEventListener('input', function() {
-        clearTimeout(typingTimer);
-        if (this.value.length >= 8) {
-          typingTimer = setTimeout(() => {
-            fetchUserData(this.value);
-          }, doneTypingInterval);
-        }
-      });
-      
-      // Also fetch on blur for immediate feedback
-      idNumberInput.addEventListener('blur', function() {
-        if (this.value) {
-          fetchUserData(this.value);
-        }
-      });
-    }
-    
-    if (form) {
-      form.addEventListener('submit', function(e) {
-        const requiredFields = ['id_number', 'block_id', 'role_id'];
-        let isValid = true;
-        
-        requiredFields.forEach(field => {
-          const input = this.querySelector(`[name="${field}"]`);
-          if (input && !input.value) {
-            isValid = false;
-            showFeedback(`Please fill in all required fields`, true);
-          }
-        });
-        
-        if (!isValid) {
-          e.preventDefault();
-        }
-      });
-    }
+    // Initially disable zone select
+    resetSelect(zoneSelect, "Choose a Zone");
   });
 </script>
-
 <!-- End For Cascade dropdown - AJAX -->
 {% endblock %}
