@@ -410,8 +410,163 @@ render_field(field) %}
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
+  // Helper function to show feedback to the user
+  function showFeedback(message, isError = false) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${isError ? 'danger' : 'success'} alert-dismissible fade show`;
+    alertDiv.role = 'alert';
+    alertDiv.innerHTML = `
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    
+    const form = document.querySelector('form');
+    form.insertBefore(alertDiv, form.firstChild);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+      alertDiv.remove();
+    }, 5000);
+  }
+
+  // Function to validate ID number format
+  function validateIdNumber(idNumber) {
+    return /^\d{8,10}$/.test(idNumber);
+  }
+
+  // Enhanced fetchUserData function for committee tab
+  function fetchUserData(idNumber) {
+    console.log('Fetching user data for ID:', idNumber);
+    const userDetailsSection = document.getElementById('user-details');
+    
+    // Use more specific selectors within the user-details section
+    const fullNameInput = userDetailsSection.querySelector('input[name="full_name"]');
+    const phoneNumberInput = userDetailsSection.querySelector('input[name="phone_number"]');
+    const blockSelect = document.querySelector('select[name="block_id"]');
+    
+    // Debug log to check if we found the elements
+    console.log('Form elements found:', {
+      fullNameInput: fullNameInput ? 'yes' : 'no',
+      phoneNumberInput: phoneNumberInput ? 'yes' : 'no',
+      blockSelect: blockSelect ? 'yes' : 'no'
+    });
+    
+    // Clear previous feedback
+    const existingAlerts = document.querySelectorAll('.alert');
+    existingAlerts.forEach(alert => alert.remove());
+    
+    if (!idNumber) {
+      userDetailsSection.style.display = 'none';
+      return;
+    }
+    
+    if (!validateIdNumber(idNumber)) {
+      showFeedback('Please enter a valid ID number (8-10 digits)', true);
+      userDetailsSection.style.display = 'none';
+      return;
+    }
+    
+    // Show loading state
+    userDetailsSection.style.opacity = '0.5';
+    
+    fetch(`/get_user_by_id/${idNumber}`)
+      .then(response => response.json())
+      .then(data => {
+        console.log('API Response:', data);
+        userDetailsSection.style.opacity = '1';
+        
+        if (data.success && data.data) {
+          // Show the section first so elements are in the DOM
+          userDetailsSection.style.display = 'block';
+          
+          // Add a small delay to ensure the section is visible
+          setTimeout(() => {
+            if (fullNameInput) {
+              console.log('Setting full name to:', data.data.full_name);
+              fullNameInput.value = data.data.full_name || '';
+            }
+            
+            if (phoneNumberInput) {
+              console.log('Setting phone number to:', data.data.phone_number);
+              phoneNumberInput.value = data.data.phone_number || '';
+            }
+            
+            if (blockSelect && data.data.block_id) {
+              console.log('Setting block to:', data.data.block_id);
+              blockSelect.value = data.data.block_id;
+              blockSelect.dispatchEvent(new Event('change'));
+            }
+            
+            showFeedback('User details loaded successfully');
+          }, 100);
+        } else {
+          userDetailsSection.style.display = 'none';
+          showFeedback(data.message || 'User not found', true);
+          
+          // Clear form fields
+          if (fullNameInput) fullNameInput.value = '';
+          if (phoneNumberInput) phoneNumberInput.value = '';
+          if (blockSelect) blockSelect.value = '';
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching user data:', error);
+        userDetailsSection.style.display = 'none';
+        userDetailsSection.style.opacity = '1';
+        showFeedback('Error loading user details. Please try again.', true);
+      });
+  }
+
+  // Event listeners for committee tab
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('Setting up form handlers');
+    const idNumberInput = document.querySelector('input[name="id_number"]');
+    const form = document.querySelector('form');
+
+    if (idNumberInput) {
+      let typingTimer;
+      const doneTypingInterval = 1000; // Wait 1 second after typing stops
+      
+      idNumberInput.addEventListener('input', function() {
+        clearTimeout(typingTimer);
+        if (this.value.length >= 8) {
+          typingTimer = setTimeout(() => {
+            fetchUserData(this.value);
+          }, doneTypingInterval);
+        }
+      });
+      
+      // Also fetch on blur for immediate feedback
+      idNumberInput.addEventListener('blur', function() {
+        if (this.value) {
+          fetchUserData(this.value);
+        }
+      });
+    }
+    
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        const requiredFields = ['id_number', 'block_id', 'role_id'];
+        let isValid = true;
+        
+        requiredFields.forEach(field => {
+          const input = this.querySelector(`[name="${field}"]`);
+          if (input && !input.value) {
+            isValid = false;
+            showFeedback(`Please fill in all required fields`, true);
+          }
+        });
+        
+        if (!isValid) {
+          e.preventDefault();
+        }
+      });
+    }
+  });
+
+  // Member tab cascading dropdowns
   document.addEventListener("DOMContentLoaded", function () {
-    // Get the dropdown elements
+    // Get the dropdown elements for member tab
     const blockSelect = document.getElementById("member-block");
     const zoneSelect = document.getElementById("member-zone");
 
@@ -433,38 +588,40 @@ render_field(field) %}
       select.disabled = false;
     }
 
-    // Handle block selection
-    blockSelect.addEventListener("change", function () {
-      const blockId = this.value;
-      TabPaySpinner.show('Loading zones...');
+    // Handle block selection for member tab
+    if (blockSelect && zoneSelect) {
+      blockSelect.addEventListener("change", function () {
+        const blockId = this.value;
+        TabPaySpinner.show('Loading zones...');
+        resetSelect(zoneSelect, "Choose a Zone");
+
+        if (blockId) {
+          fetch(`/get_zones/${blockId}`)
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error('Network response was not ok');
+              }
+              return response.json();
+            })
+            .then((data) => {
+              // Check if data is an array
+              const zones = Array.isArray(data) ? data : [];
+              populateSelect(zoneSelect, zones, "Choose a Zone");
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              alert("Error fetching zones. Please try again.");
+              resetSelect(zoneSelect, "Choose a Zone");
+            })
+            .finally(() => {
+              TabPaySpinner.hide();
+            });
+        }
+      });
+
+      // Initially disable zone select
       resetSelect(zoneSelect, "Choose a Zone");
-
-      if (blockId) {
-        fetch(`/get_zones/${blockId}`)
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error('Network response was not ok');
-            }
-            return response.json();
-          })
-          .then((data) => {
-            // Check if data is an array
-            const zones = Array.isArray(data) ? data : [];
-            populateSelect(zoneSelect, zones, "Choose a Zone");
-          })
-          .catch((error) => {
-            console.error("Error:", error);
-            alert("Error fetching zones. Please try again.");
-            resetSelect(zoneSelect, "Choose a Zone");
-          })
-          .finally(() => {
-            TabPaySpinner.hide();
-          });
-      }
-    });
-
-    // Initially disable zone select
-    resetSelect(zoneSelect, "Choose a Zone");
+    }
   });
 </script>
 <!-- End For Cascade dropdown - AJAX -->
