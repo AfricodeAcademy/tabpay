@@ -9,16 +9,21 @@ from flask import current_app
 from datetime import datetime,timedelta
 from ..utils.send_sms import SendSMS
 from ..utils.mpesa import get_mpesa_client
-from ..utils.umbrella import get_umbrella_by_user, get_blocks_by_umbrella
 import logging
-import os
-from functools import wraps
+from ..utils.umbrella import (
+    get_umbrella_by_user,
+    get_blocks_by_umbrella,
+    get_zones_by_block,
+    cache_for_request,
+)
 
 main = Blueprint('main', __name__)
 
 sms = SendSMS()
 
 logger = logging.getLogger(__name__)
+
+
 
 
 
@@ -638,59 +643,6 @@ def get_umbrella_by_user(user_id):
     umbrellas = response.json() if response.status_code == 200 else None
     return umbrellas[0] if umbrellas else None
     
-
-# Helper function to get blocks of a specific umbrella
-def get_blocks_by_umbrella():
-    """Fetches blocks associated with the specified umbrella via API."""
-    # Retrieve the umbrella ID for the current user
-    umbrella = get_umbrella_by_user(current_user.id) 
-    
-    if umbrella is None or not umbrella.get('id'):
-        # If no umbrella is associated, return an empty list
-        print('No umbrella found.')
-        return []
-
-    umbrella_id = umbrella['id']  # Extract the umbrella ID
-    
-    # Make the API request to fetch blocks filtered by the parent_umbrella_id
-    response = requests.get(
-        f"{current_app.config['API_BASE_URL']}/api/v1/blocks/", 
-        params={'parent_umbrella_id': umbrella_id}
-    )
-
-    if response.status_code == 200:
-        blocks = response.json()
-        return blocks
-    else:
-        flash('Error retrieving blocks from the server.', 'danger')
-        return []
-
-
-    
-# Helper function to get zones of a specific block
-def get_zones_by_block(block_id):
-    """Fetches zones associated with the specified block via API."""
-    try:
-        
-        response = requests.get(
-            f"{current_app.config['API_BASE_URL']}/api/v1/zones/",
-            params={'parent_block_id': block_id},
-            timeout=10
-        )
-        
-        response.raise_for_status()
-
-        zones = response.json()
-        return zones
-    except requests.exceptions.RequestException as e:
-        print(f'Error: {e}')
-        flash('Error retrieving zones from the server. Please try again later.', 'danger')
-        return []
-    except ValueError as e:
-        flash('Error processing server response. Please contact support.', 'danger')
-        return []
-
-
 
 # Helper function to get members of a specific zone
 def get_members_by_zone(zone_id,umbrella_id):
@@ -1444,7 +1396,7 @@ def render_reports_page(active_tab=None, error=None, host_id=None, member_id=Non
         block_zones = get_zones_by_block(block_id)
         block_name = block['name']
         for zone in block_zones:
-            zone_map[zone['id']] = (zone['name'], block_name)
+            zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
 
     schedule_form.zone.choices = [("", "--Choose a Zone--")] + [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
 
@@ -1977,25 +1929,34 @@ def view_block(block_id):
 @login_required
 @approval_required
 def view_all_blocks():
-    umbrella = get_umbrella_by_user(current_user.id)
-    blocks = BlockModel.query.filter_by(parent_umbrella_id=umbrella['id']).all()
-
-    
-    block_data = []
-    members =get_members()
-    for block in blocks:
-        block_members = [
+    try:
+        umbrella = get_umbrella_by_user(current_user.id)
+        if not umbrella:
+            flash('No umbrella association found.', 'warning')
+            return render_template('all_blocks.html', blocks=[])
+            
+        blocks = get_blocks_by_umbrella()
+        if not blocks:
+            return render_template('all_blocks.html', blocks=[])
+        
+        block_data = []
+        members = get_members()
+        for block in blocks:
+            block_members = [
                 member for member in members 
-                if any(block_membership['id'] == block.id for block_membership in member.get('block_memberships', []))
+                if any(block_membership['id'] == block['id'] for block_membership in member.get('block_memberships', []))
             ]     
-        block_data.append({
-            'name': block.name,
-            'parent_umbrella': umbrella['name'] if  umbrella['name'] else 'N/A',
-            'members': len(block_members)
-        })
+            block_data.append({
+                'name': block['name'],
+                'parent_umbrella': umbrella['name'] if umbrella['name'] else 'N/A',
+                'members': len(block_members)
+            })
 
-    return render_template('all_blocks.html', blocks=block_data)
-
+        return render_template('all_blocks.html', blocks=block_data)
+    except Exception as e:
+        current_app.logger.error(f"Error in view_all_blocks: {str(e)}")
+        flash('Error retrieving blocks. Please try again later.', 'danger')
+        return render_template('all_blocks.html', blocks=[])
 
 #For Cascade dropdown - AJAX
 @main.route('/get_zones/<int:block_id>')
@@ -2003,14 +1964,13 @@ def view_all_blocks():
 def get_zones(block_id):
     """Endpoint to get zones for a specific block"""
     try:
-        # Query zones for the given block using ZoneModel
-        zones = ZoneModel.query.filter_by(parent_block_id=block_id).all()
+        zones = get_zones_by_block(block_id)
         
         if not zones:
             return jsonify({'zones': [], 'message': 'No zones found for this block'}), 200
             
-        # Format zones for JSON response
-        zones_list = [{'id': zone.id, 'name': zone.name} for zone in zones]
+        # Format zones for JSON response if needed
+        zones_list = [{'id': zone['id'], 'name': zone['name']} for zone in zones]
         
         return jsonify(zones_list)
     except Exception as e:
