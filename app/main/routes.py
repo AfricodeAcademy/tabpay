@@ -750,7 +750,7 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
         meeting_id = meeting_details['meeting_id']
     else:
         meeting_block = meeting_zone = host = when = paybill_no = acc_number = event_id = meeting_id = None
-        flash('No upcoming meetings found.','warning')
+        flash('No meetings scheduled for this week. Click "Schedule Meeting" to create one.', 'info')
     
     message = (
     f"Dear Member, \n"
