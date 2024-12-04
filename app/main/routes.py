@@ -695,11 +695,11 @@ def statistics():
         if response.status_code == 200:
             meetings = response.json()  
         elif response.status_code == 404:  # No meetings found
-            flash("No meetings have been scheduled yet.", "info")
             meetings = []
         else:
             flash("Failed to fetch meetings data from the API.", "danger")
             meetings = []
+
     except Exception as e:
         print(f"Error fetching meetings data: {e}")
         flash("An error occurred while retrieving meetings data.", "danger")
@@ -750,7 +750,7 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
         meeting_id = meeting_details['meeting_id']
     else:
         meeting_block = meeting_zone = host = when = paybill_no = acc_number = event_id = meeting_id = None
-        flash('No meetings scheduled for this week. Click "Schedule Meeting" to create one.', 'info')
+        flash('No meetings scheduled for this week. Use the "Schedule Meeting" tab to create one.', 'info')
     
     message = (
     f"Dear Member, \n"
