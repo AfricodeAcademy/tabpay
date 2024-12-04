@@ -799,18 +799,30 @@ Regular Block Hosting {% endblock %} {% block content %}
     // Handle block selection
     blockSelect.addEventListener("change", function () {
       const blockId = this.value;
+      TabPaySpinner.show("Loading zones...");
       resetSelect(zoneSelect, "Choose a Zone");
       resetSelect(memberSelect, "Choose a Member");
 
       if (blockId) {
         fetch(`/get_zones/${blockId}`)
-          .then((response) => response.json())
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Network response was not ok");
+            }
+            return response.json();
+          })
           .then((data) => {
-            populateSelect(zoneSelect, data, "Choose a Zone");
+            // Check if data is an array
+            const zones = Array.isArray(data) ? data : [];
+            populateSelect(zoneSelect, zones, "Choose a Zone");
           })
           .catch((error) => {
             console.error("Error:", error);
-            alert("Error fetching zones. Please try again.");
+            showGlobalFeedback("Error fetching zones. Please try again.", true);
+            resetSelect(zoneSelect, "Choose a Zone");
+          })
+          .finally(() => {
+            TabPaySpinner.hide();
           });
       }
     });
@@ -818,17 +830,33 @@ Regular Block Hosting {% endblock %} {% block content %}
     // Handle zone selection
     zoneSelect.addEventListener("change", function () {
       const zoneId = this.value;
+      const blockId = blockSelect.value;
+      TabPaySpinner.show("Loading members...");
       resetSelect(memberSelect, "Choose a Member");
 
-      if (zoneId) {
+      if (zoneId && blockId) {
         fetch(`/get_members/${zoneId}`)
-          .then((response) => response.json())
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Network response was not ok");
+            }
+            return response.json();
+          })
           .then((data) => {
-            populateSelect(memberSelect, data, "Choose a Member");
+            // Check if data is an array
+            const members = Array.isArray(data) ? data : [];
+            populateSelect(memberSelect, members, "Choose a Member");
           })
           .catch((error) => {
             console.error("Error:", error);
-            alert("Error fetching members. Please try again.");
+            showGlobalFeedback(
+              "Error fetching members. Please try again.",
+              true
+            );
+            resetSelect(memberSelect, "Choose a Member");
+          })
+          .finally(() => {
+            TabPaySpinner.hide();
           });
       }
     });
@@ -875,6 +903,7 @@ Regular Block Hosting {% endblock %} {% block content %}
     }
 
     function updateMembersTable(blockId, zoneId) {
+      TabPaySpinner.show("Loading members table...");
       const tbody = membersTable.querySelector("tbody");
       const url = zoneId
         ? `/get_filtered_members/${blockId}/${zoneId}`
@@ -911,7 +940,10 @@ Regular Block Hosting {% endblock %} {% block content %}
         })
         .catch((error) => {
           console.error("Error fetching members:", error);
-          alert("Error fetching members. Please try again.");
+          showGlobalFeedback("Error fetching members. Please try again.", true);
+        })
+        .finally(() => {
+          TabPaySpinner.hide();
         });
     }
 
@@ -938,7 +970,10 @@ Regular Block Hosting {% endblock %} {% block content %}
             })
             .catch((error) => {
               console.error("Error:", error);
-              alert("Error fetching zones. Please try again.");
+              showGlobalFeedback(
+                "Error fetching zones. Please try again.",
+                true
+              );
             });
         } else {
           // If no block selected, reset the table to show all members
@@ -962,6 +997,57 @@ Regular Block Hosting {% endblock %} {% block content %}
 
       // Initially disable zone selects
       resetMemberTabSelect(correspondingZoneSelect, "Choose a Zone");
+    });
+  });
+</script>
+
+<!-- Spinner implementations for various actions in the host page -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Handle block selection
+    const blockSelect = document.getElementById("block");
+    blockSelect.addEventListener("change", function () {
+      const blockId = this.value;
+      TabPaySpinner.show("Loading zones...");
+      // Existing code...
+    });
+
+    // Handle zone selection
+    const zoneSelect = document.getElementById("zone");
+    zoneSelect.addEventListener("change", function () {
+      const zoneId = this.value;
+      const blockId = blockSelect.value;
+      TabPaySpinner.show("Loading members...");
+      // Existing code...
+    });
+
+    // Handle member table updates
+    async function updateMembersTable(blockId, zoneId) {
+      TabPaySpinner.show("Loading members table...");
+      try {
+        // Existing code...
+      } catch (error) {
+        console.error("Error:", error);
+        showGlobalFeedback("Error fetching members. Please try again.", true);
+      } finally {
+        TabPaySpinner.hide();
+      }
+    }
+
+    // Handle SMS sending
+    const smsForm = document.querySelector('form[name="send_sms"]');
+    if (smsForm) {
+      smsForm.addEventListener("submit", function (e) {
+        TabPaySpinner.show("Sending SMS messages...");
+      });
+    }
+
+    // Handle payment link generation
+    const paymentLinkBtns = document.querySelectorAll(".payment-link-btn");
+    paymentLinkBtns.forEach((btn) => {
+      btn.addEventListener("click", function () {
+        TabPaySpinner.show("Generating payment link...");
+      });
     });
   });
 </script>

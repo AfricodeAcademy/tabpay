@@ -7,7 +7,7 @@ load_dotenv()
 class Config:
     SECRET_KEY = secrets.token_hex(32)
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SECURITY_PASSWORD_SALT = '201343284857125688191020663358661879047'
+    SECURITY_PASSWORD_SALT = secrets.token_hex(16)
     
     # Flask-Security settings
     SECURITY_REGISTERABLE = True

@@ -2,24 +2,28 @@ import requests
 from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify, session
 from flask_security import login_required, current_user, roles_accepted, user_registered
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm,PaymentForm,AddMembershipForm
-import logging
-import os
+from app.main.models import UserModel, BlockModel, PaymentModel, ZoneModel
+from app.auth.decorators import approval_required, umbrella_required
 from ..utils import save_picture, db
 from flask import current_app
 from datetime import datetime,timedelta
 from ..utils.send_sms import SendSMS
-from app.main.models import UserModel, BlockModel, PaymentModel, ZoneModel
-from app.auth.decorators import approval_required, umbrella_required
-from ..utils.umbrella import get_umbrella_by_user, get_blocks_by_umbrella
-from functools import wraps
-import logging
 from ..utils.mpesa import get_mpesa_client
+import logging
+from ..utils.umbrella import (
+    get_umbrella_by_user,
+    get_blocks_by_umbrella,
+    get_zones_by_block,
+    cache_for_request,
+)
 
 main = Blueprint('main', __name__)
 
 sms = SendSMS()
 
 logger = logging.getLogger(__name__)
+
+
 
 
 
@@ -640,59 +644,6 @@ def get_umbrella_by_user(user_id):
     return umbrellas[0] if umbrellas else None
     
 
-# Helper function to get blocks of a specific umbrella
-def get_blocks_by_umbrella():
-    """Fetches blocks associated with the specified umbrella via API."""
-    # Retrieve the umbrella ID for the current user
-    umbrella = get_umbrella_by_user(current_user.id) 
-    
-    if umbrella is None or not umbrella.get('id'):
-        # If no umbrella is associated, return an empty list
-        print('No umbrella found.')
-        return []
-
-    umbrella_id = umbrella['id']  # Extract the umbrella ID
-    
-    # Make the API request to fetch blocks filtered by the parent_umbrella_id
-    response = requests.get(
-        f"{current_app.config['API_BASE_URL']}/api/v1/blocks/", 
-        params={'parent_umbrella_id': umbrella_id}
-    )
-
-    if response.status_code == 200:
-        blocks = response.json()
-        return blocks
-    else:
-        flash('Error retrieving blocks from the server.', 'danger')
-        return []
-
-
-    
-# Helper function to get zones of a specific block
-def get_zones_by_block(block_id):
-    """Fetches zones associated with the specified block via API."""
-    try:
-        
-        response = requests.get(
-            f"{current_app.config['API_BASE_URL']}/api/v1/zones/",
-            params={'parent_block_id': block_id},
-            timeout=10
-        )
-        
-        response.raise_for_status()
-
-        zones = response.json()
-        return zones
-    except requests.exceptions.RequestException as e:
-        print(f'Error: {e}')
-        flash('Error retrieving zones from the server. Please try again later.', 'danger')
-        return []
-    except ValueError as e:
-        flash('Error processing server response. Please contact support.', 'danger')
-        return []
-
-
-
 # Helper function to get members of a specific zone
 def get_members_by_zone(zone_id,umbrella_id):
     """Fetches members associated with the specified zone via API."""
@@ -743,9 +694,12 @@ def statistics():
         response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/meetings/")
         if response.status_code == 200:
             meetings = response.json()  
+        elif response.status_code == 404:  # No meetings found
+            meetings = []
         else:
             print("Failed to fetch meetings data from the API.")
             meetings = []
+
     except Exception as e:
         print(f"Error fetching meetings data: {e}")
         flash("An error occurred while retrieving meetings data.", "danger")
@@ -799,7 +753,7 @@ def render_host_page(active_tab=None, error=None,schedule_form=None,update_form=
         meeting_id = meeting_details['meeting_id']
     else:
         meeting_block = meeting_zone = host = when = paybill_no = acc_number = event_id = meeting_id = None
-        flash('No upcoming meetings found.','warning')
+        flash('No meetings scheduled for this week. Use the "Schedule Meeting" tab to create one.', 'info')
     
     message = (
     f"Dear Member, \n"
@@ -1112,12 +1066,16 @@ def handle_schedule_creation(schedule_form):
 
         # Create meeting via API
         try:
+            print(f"Attempting to schedule meeting with payload: {payload}")
             response = requests.post(f"{current_app.config['API_BASE_URL']}/api/v1/meetings/", json=payload)
+            print(f"API Response Status: {response.status_code}")
+            print(f"API Response Content: {response.text}")
             if response.status_code == 201:
                 flash("Meeting has been scheduled successfully!", "success")
                 return redirect(url_for('main.host', active_tab='schedule_meeting'))
             else:
-                flash('Meeting scheduling failed. Please try again later.', 'danger')
+                error_msg = response.json().get('error', 'Meeting scheduling failed. Please try again later.')
+                flash(error_msg, 'danger')
         except Exception as e:
             print(f"Meeting scheduling error: {e}")
             flash('Error creating meeting. Please try again later.', 'danger') 
@@ -1126,6 +1084,11 @@ def handle_schedule_creation(schedule_form):
 
 
 def get_upcoming_meeting_details():
+    """Fetch upcoming meetings for the current user.
+    
+    Returns:
+        dict: Meeting details if found, None otherwise
+    """
     today = datetime.now()
     week_start = today.replace(hour=0, minute=0, second=0, microsecond=0)
     week_end = (week_start + timedelta(days=6)).replace(hour=23, minute=59, second=59)
@@ -1133,63 +1096,126 @@ def get_upcoming_meeting_details():
     organizer_id = current_user.id
 
     try:
-        logging.info(f"Fetching upcoming meetings for organizer_id={organizer_id}, start={week_start}, end={week_end}")
+        # Get user's umbrella first
+        umbrella = get_umbrella_by_user(current_user.id)
+        if not umbrella:
+            logging.warning(f"No umbrella found for user {organizer_id}")
+            return None
+
+        logging.info(f"Fetching upcoming meetings for organizer_id={organizer_id}, umbrella_id={umbrella.get('id')}, start={week_start}, end={week_end}")
+
+        # Format dates in ISO format for API
+        params = {
+            'start_date': week_start.isoformat(),
+            'end_date': week_end.isoformat(),
+            'organizer_id': organizer_id,
+            'umbrella_id': umbrella.get('id')
+        }
 
         response = requests.get(
             f"{current_app.config['API_BASE_URL']}/api/v1/meetings/",
-            params={
-                'start': week_start.strftime('%Y-%m-%d'),
-                'end': week_end.strftime('%Y-%m-%d'),
-                'organizer_id': organizer_id
-            }
+            params=params,
+            headers={
+                "Authorization": f"Bearer {current_user.get_auth_token()}",
+                "Content-Type": "application/json"
+            },
+            timeout=20
         )
-        logging.info(f"API request sent. Status Code: {response.status_code}")
+        
+        # Log the full request details for debugging
+        logging.info(f"API request URL: {response.request.url}")
+        logging.info(f"API request headers: {response.request.headers}")
+        logging.info(f"API response status: {response.status_code}")
 
         if response.status_code == 200:
             meeting_data = response.json()
             logging.info(f"API response received: {meeting_data}")
 
-            # Extract the first meeting if data is a list, or use it directly if it's a dict
-            first_meeting = meeting_data[0] if isinstance(meeting_data, list) and len(meeting_data) > 0 else meeting_data
+            # Handle empty response
+            if not meeting_data:
+                logging.info("No meetings found in response")
+                return None
 
-            if first_meeting:
-                # Parse meeting date and check if it has expired
-                meeting_date_str = first_meeting.get('when', 'Unknown Date')
-                try:
-                    meeting_date = datetime.strptime(meeting_date_str, '%a, %d %b %Y %H:%M:%S')
-                except ValueError:
-                    logging.error("Invalid meeting date format received from API.")
+            # Extract the first meeting if data is a list
+            first_meeting = meeting_data[0] if isinstance(meeting_data, list) else meeting_data
+
+            if not first_meeting:
+                logging.info("No valid meeting data found")
+                return None
+
+            # Parse meeting date and check if it has expired
+            meeting_date_str = first_meeting.get('when')
+            if not meeting_date_str:
+                logging.error("Meeting date not found in response")
+                return None
+
+            try:
+                # Try multiple date formats
+                for date_format in ['%a, %d %b %Y %H:%M:%S', '%Y-%m-%dT%H:%M:%S', '%Y-%m-%d %H:%M:%S']:
+                    try:
+                        meeting_date = datetime.strptime(meeting_date_str, date_format)
+                        break
+                    except ValueError:
+                        continue
+                else:
+                    logging.error(f"Could not parse meeting date: {meeting_date_str}")
                     return None
 
-                if meeting_date < datetime.now():
-                    logging.info("Meeting has expired; setting upcoming meeting details to None.")
+                # Compare dates using date components only for expiration check
+                today = datetime.now().date()
+                meeting_date_only = meeting_date.date()
+                
+                if meeting_date_only < today:
+                    logging.info(f"Meeting has expired. Meeting date: {meeting_date_only}, Today: {today}")
                     return None
 
-                # Extract details
+                # Extract details with proper validation
                 meeting_details = {
                     'meeting_block': first_meeting.get('meeting_block', 'Unknown Block'),
                     'meeting_zone': first_meeting.get('meeting_zone', 'Unknown Zone'),
                     'host': first_meeting.get('host', 'Unknown Host'),
-                    'meeting_id': first_meeting.get('meeting_id', 'Unknown meeting id'),
+                    'meeting_id': first_meeting.get('meeting_id'),
                     'when': meeting_date_str,
-                    'event_id': first_meeting.get('event_id', 'Unknown event ID'),
-                    'paybill_no': first_meeting.get('paybill_no', 'Unknown Paybill'),
-                    'acc_number': first_meeting.get('acc_number', 'Unknown Account')
+                    'event_id': first_meeting.get('event_id'),
+                    'paybill_no': first_meeting.get('paybill_no'),
+                    'acc_number': first_meeting.get('acc_number')
                 }
 
-                logging.info(f"Extracted meeting details: {meeting_details}")
+                # Validate required fields
+                required_fields = ['meeting_id', 'event_id', 'paybill_no', 'acc_number']
+                if any(not meeting_details.get(field) for field in required_fields):
+                    logging.error(f"Missing required fields in meeting data: {meeting_details}")
+                    return None
+
+                logging.info(f"Successfully extracted meeting details: {meeting_details}")
                 return meeting_details
-            else:
-                logging.warning("No upcoming meetings found.")
+
+            except Exception as e:
+                logging.error(f"Error processing meeting date: {str(e)}")
                 return None
+
+        elif response.status_code == 404:
+            logging.info("No meetings found for the specified criteria")
+            return None
         else:
-            logging.error(f"Failed to fetch data from API. Status Code: {response.status_code}")
+            logging.error(f"API request failed with status {response.status_code}")
+            try:
+                error_data = response.json()
+                logging.error(f"API error response: {error_data}")
+            except:
+                logging.error(f"Raw API error response: {response.text}")
             return None
 
-    except requests.exceptions.RequestException as e:
-        logging.error(f"An error occurred while fetching data from the API: {e}")
+    except requests.exceptions.Timeout:
+        logging.error("API request timed out after 20 seconds")
         return None
-    
+    except requests.exceptions.RequestException as e:
+        logging.error(f"API request error: {str(e)}")
+        return None
+    except Exception as e:
+        logging.error(f"Unexpected error: {str(e)}")
+        return None
+
 def send_sms_notifications():
     try:
         # Retrieve message from the form data
@@ -1270,7 +1296,7 @@ def update_member(user_id, update_form):
         block_zones = get_zones_by_block(block_id)
         block_name = block['name']
         for zone in block_zones:
-            zone_map[zone['id']] = (zone['name'], block_name)
+            zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
 
     update_form.member_zone.choices = [("", "--Choose an Additional Zone--")] + [
         (str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()
@@ -1507,7 +1533,7 @@ def render_reports_page(active_tab=None, error=None, host_id=None, member_id=Non
         block_zones = get_zones_by_block(block_id)
         block_name = block['name']
         for zone in block_zones:
-            zone_map[zone['id']] = (zone['name'], block_name)
+            zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
 
     schedule_form.zone.choices = [("", "--Choose a Zone--")] + [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
 
@@ -1851,7 +1877,7 @@ def handle_send_to_bank(payment_form):
     members = get_members()
     payment_form.member.choices =  [("", "--Choose a Member--")] + [(str(member['id']), member['full_name']) for member in members]
 
-    
+
 
     if payment_form.validate_on_submit():
         # Fetch total contributions for the selected block (assume an API fetch)
@@ -2040,25 +2066,34 @@ def view_block(block_id):
 @login_required
 @approval_required
 def view_all_blocks():
-    umbrella = get_umbrella_by_user(current_user.id)
-    blocks = BlockModel.query.filter_by(parent_umbrella_id=umbrella['id']).all()
-
-    
-    block_data = []
-    members =get_members()
-    for block in blocks:
-        block_members = [
+    try:
+        umbrella = get_umbrella_by_user(current_user.id)
+        if not umbrella:
+            flash('No umbrella association found.', 'warning')
+            return render_template('all_blocks.html', blocks=[])
+            
+        blocks = get_blocks_by_umbrella()
+        if not blocks:
+            return render_template('all_blocks.html', blocks=[])
+        
+        block_data = []
+        members = get_members()
+        for block in blocks:
+            block_members = [
                 member for member in members 
-                if any(block_membership['id'] == block.id for block_membership in member.get('block_memberships', []))
+                if any(block_membership['id'] == block['id'] for block_membership in member.get('block_memberships', []))
             ]     
-        block_data.append({
-            'name': block.name,
-            'parent_umbrella': umbrella['name'] if  umbrella['name'] else 'N/A',
-            'members': len(block_members)
-        })
+            block_data.append({
+                'name': block['name'],
+                'parent_umbrella': umbrella['name'] if umbrella['name'] else 'N/A',
+                'members': len(block_members)
+            })
 
-    return render_template('all_blocks.html', blocks=block_data)
-
+        return render_template('all_blocks.html', blocks=block_data)
+    except Exception as e:
+        current_app.logger.error(f"Error in view_all_blocks: {str(e)}")
+        flash('Error retrieving blocks. Please try again later.', 'danger')
+        return render_template('all_blocks.html', blocks=[])
 
 #For Cascade dropdown - AJAX
 @main.route('/get_zones/<int:block_id>')
@@ -2066,16 +2101,18 @@ def view_all_blocks():
 def get_zones(block_id):
     """Endpoint to get zones for a specific block"""
     try:
-        # Query zones for the given block using ZoneModel
-        zones = ZoneModel.query.filter_by(parent_block_id=block_id).all()
+        zones = get_zones_by_block(block_id)
         
-        # Format zones for JSON response
-        zones_list = [{'id': zone.id, 'name': zone.name} for zone in zones]
+        if not zones:
+            return jsonify({'zones': [], 'message': 'No zones found for this block'}), 200
+            
+        # Format zones for JSON response if needed
+        zones_list = [{'id': zone['id'], 'name': zone['name']} for zone in zones]
         
         return jsonify(zones_list)
     except Exception as e:
-        print(f"Error fetching zones: {str(e)}")
-        return jsonify({'error': 'Error fetching zones'}), 500
+        logging.error(f"Error fetching zones for block {block_id}: {str(e)}")
+        return jsonify({'error': 'Error fetching zones. Please try again.'}), 500
 
 @main.route('/get_members/<zone_id>')
 @login_required
@@ -2188,9 +2225,114 @@ def get_user_by_id(id_number):
         print(f"Error in get_user_by_id: {str(e)}")
         return jsonify({'success': False, 'message': str(e)})
 
+@main.route('/get_member_contributions', methods=['GET'])
+@login_required
+def get_filtered_member_contributions():
+    try:
+        # Get filter parameters from request
+        block_id = request.args.get('block_id')
+        zone_id = request.args.get('zone_id')
+        host_id = request.args.get('host_id')
+        member_id = request.args.get('member_id')
+        status = request.args.get('status')
 
+        # Get umbrella ID for the current user
+        umbrella = get_umbrella_by_user(current_user.id)
+        if not umbrella:
+            return jsonify({'error': 'No umbrella found'}), 404
 
+        # Prepare base query parameters
+        params = {'role': 'Member', 'umbrella_id': umbrella['id']}
+        
+        # Add block and zone filters if provided
+        if block_id:
+            params['block_id'] = block_id
+        if zone_id:
+            params['zone_id'] = zone_id
 
+        # Fetch filtered members
+        members_response = requests.get(
+            f"{current_app.config['API_BASE_URL']}/api/v1/users/",
+            params=params
+        )
+        
+        if members_response.status_code != 200:
+            return jsonify({'error': 'Error fetching members'}), 500
 
+        members = members_response.json()
 
+        # Get current meeting details
+        meeting = get_upcoming_meeting_details()
+        if not meeting:
+            return jsonify({'error': 'No upcoming meeting found'}), 404
 
+        meeting_id = meeting['meeting_id']
+        host_name = meeting['host']
+        meeting_date = meeting['when']
+
+        # Prepare contribution query parameters
+        contributions_params = {'meeting_id': meeting_id}
+        if host_id:
+            # Verify that the host belongs to the umbrella's blocks
+            host_response = requests.get(
+                f"{current_app.config['API_BASE_URL']}/api/v1/users/{host_id}"
+            )
+            if host_response.status_code != 200:
+                flash("Error fetching host details.", "danger")
+                return []
+            
+            host_data = host_response.json()
+            host_blocks = host_data.get('block_memberships', [])
+            if not any(block['parent_umbrella_id'] == umbrella['id'] for block in host_blocks):
+                flash("You do not have permission to view this host's contributions.", "danger")
+                return []
+            
+            contributions_params['host_id'] = host_id
+
+        if member_id and member_id != 'all_members':
+            contributions_params['payer_id'] = member_id
+
+        if status:
+            contributions_params['status'] = status
+
+        contributions_response = requests.get(
+            f"{current_app.config['API_BASE_URL']}/api/v1/payments/",
+            params=contributions_params
+        )
+
+        if contributions_response.status_code != 200:
+            return jsonify({'error': 'Error fetching contributions'}), 500
+
+        contributions = contributions_response.json()
+
+        # Combine and filter member contributions
+        member_contributions = []
+        for member in members:
+            contribution_record = next(
+                (c for c in contributions if c['payer_id'] == member['id']), 
+                None
+            )
+
+            member_status = ('Contributed' 
+                           if contribution_record and contribution_record['transaction_status']
+                           else 'Pending')
+
+            # Apply status filter if provided
+            if status and status != member_status:
+                continue
+
+            member_contributions.append({
+                'full_name': member['full_name'],
+                'amount': contribution_record['amount'] if contribution_record else 0.0,
+                'status': member_status
+            })
+
+        return jsonify({
+            'member_contributions': member_contributions,
+            'host_name': host_name,
+            'meeting_date': meeting_date
+        })
+
+    except Exception as e:
+        print(f"Error in get_filtered_member_contributions: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500

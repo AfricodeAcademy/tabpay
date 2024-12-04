@@ -362,8 +362,8 @@ render_field(field) %}
               <div class="col-md-6">
                 <div class="mb-3">
                   <label class="form-label">Select Block</label>
-                  <select class="form-control" id="member-block" name="block">
-                    <option value="">-- Select Block --</option>
+                  <select class="select" id="member-block" name="block">
+                    <option value="">Choose a Block</option>
                     {% for block in blocks %}
                     <option value="{{ block.id }}" {% if selected_block == block.id|string %}selected{% endif %}>{{ block.name }}</option>
                     {% endfor %}
@@ -375,14 +375,9 @@ render_field(field) %}
               <div class="col-md-6">
                 <div class="mb-3">
                   <label class="form-label">Select Zone</label>
-                  {{ member_form.member_zone(class="form-control", id="member-zone") }}
-                  {% if member_form.member_zone.errors %}
-                  <div class="invalid-feedback">
-                    {% for error in member_form.member_zone.errors %}
-                    {{ error }}
-                    {% endfor %}
-                  </div>
-                  {% endif %}
+                  <select class="select" id="member-zone" name="member_zone">
+                    <option value="">Choose a Zone</option>
+                  </select>
                 </div>
               </div>
               <div class="col-md-6">
@@ -439,7 +434,7 @@ render_field(field) %}
     return /^\d{8,10}$/.test(idNumber);
   }
 
-  // Enhanced fetchUserData function
+  // Enhanced fetchUserData function for committee tab
   function fetchUserData(idNumber) {
     console.log('Fetching user data for ID:', idNumber);
     const userDetailsSection = document.getElementById('user-details');
@@ -522,12 +517,12 @@ render_field(field) %}
       });
   }
 
-  // Enhanced event listeners
+  // Event listeners for committee tab
   document.addEventListener('DOMContentLoaded', function() {
     console.log('Setting up form handlers');
     const idNumberInput = document.querySelector('input[name="id_number"]');
     const form = document.querySelector('form');
-    
+
     if (idNumberInput) {
       let typingTimer;
       const doneTypingInterval = 1000; // Wait 1 second after typing stops
@@ -568,7 +563,66 @@ render_field(field) %}
       });
     }
   });
-</script>
 
+  // Member tab cascading dropdowns
+  document.addEventListener("DOMContentLoaded", function () {
+    // Get the dropdown elements for member tab
+    const blockSelect = document.getElementById("member-block");
+    const zoneSelect = document.getElementById("member-zone");
+
+    // Function to reset options of a select element
+    function resetSelect(select, defaultText = "Choose an option") {
+      select.innerHTML = `<option value="">${defaultText}</option>`;
+      select.disabled = true;
+    }
+
+    // Function to populate a select element with options
+    function populateSelect(select, data, defaultText) {
+      select.innerHTML = `<option value="">${defaultText}</option>`;
+      data.forEach((item) => {
+        const option = document.createElement("option");
+        option.value = item.id;
+        option.textContent = item.name;
+        select.appendChild(option);
+      });
+      select.disabled = false;
+    }
+
+    // Handle block selection for member tab
+    if (blockSelect && zoneSelect) {
+      blockSelect.addEventListener("change", function () {
+        const blockId = this.value;
+        TabPaySpinner.show('Loading zones...');
+        resetSelect(zoneSelect, "Choose a Zone");
+
+        if (blockId) {
+          fetch(`/get_zones/${blockId}`)
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error('Network response was not ok');
+              }
+              return response.json();
+            })
+            .then((data) => {
+              // Check if data is an array
+              const zones = Array.isArray(data) ? data : [];
+              populateSelect(zoneSelect, zones, "Choose a Zone");
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              showGlobalFeedback("Error fetching zones. Please try again.", true);
+              resetSelect(zoneSelect, "Choose a Zone");
+            })
+            .finally(() => {
+              TabPaySpinner.hide();
+            });
+        }
+      });
+
+      // Initially disable zone select
+      resetSelect(zoneSelect, "Choose a Zone");
+    }
+  });
+</script>
 <!-- End For Cascade dropdown - AJAX -->
 {% endblock %}
