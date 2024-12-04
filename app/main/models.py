@@ -153,7 +153,7 @@ class UmbrellaModel(db.Model):
     __tablename__ = 'umbrellas'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False, unique=True)
-    location = db.Column(db.String(255), nullable=False, unique = True)
+    location = db.Column(db.String(255), nullable=False)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     blocks = db.relationship('BlockModel', backref='parent_umbrella', lazy=True)
     initials = db.Column(db.String(10), unique=True)
