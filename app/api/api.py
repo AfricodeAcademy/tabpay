@@ -471,14 +471,23 @@ class PaymentsResource(BaseResource):
             if id:
                 return super().get(id)
             
-            
-            # Check if a meeting_id query parameter is provided
+            # Check for query parameters
             meeting_id = request.args.get('meeting_id', None)
+            mpesa_id = request.args.get('mpesa_id', None)
+            
+            query = PaymentModel.query
+            
+            if mpesa_id:
+                # Filter by mpesa_id if provided
+                query = query.filter_by(mpesa_id=mpesa_id)
+                payments = query.all()
+                return marshal(payments, self.fields), 200
+            
             if meeting_id:
                 try:
                     logger.info(f"Fetching payments for meeting ID: {meeting_id}")
                     # Query payments by meeting_id and join payer (user) and block tables
-                    payments = PaymentModel.query \
+                    payments = query \
                         .filter_by(meeting_id=meeting_id) \
                         .join(UserModel, PaymentModel.payer_id == UserModel.id) \
                         .join(BlockModel, PaymentModel.block_id == BlockModel.id) \
@@ -1191,4 +1200,3 @@ api.add_resource(MeetingsResource, '/meetings/', '/meetings/<int:id>')
 api.add_resource(ZonesResource, '/zones/', '/zones/<int:id>')
 api.add_resource(MpesaValidationResource, '/v1/payments/c2b/validation')
 api.add_resource(MpesaConfirmationResource, '/v1/payments/c2b/confirmation')
-
