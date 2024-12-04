@@ -423,16 +423,37 @@
     <script>
       // Global spinner utilities
 const TabPaySpinner = {
-  show: function(message = '') {
+  timeoutId: null,
+  timeoutDuration: 30000, // 30 seconds timeout
+
+  show(message = '') {
+    this.hide(); // Clear any existing spinner
     const spinner = document.getElementById('global-spinner');
-    const messageEl = spinner.querySelector('.spinner-message');
-    messageEl.textContent = message;
-    spinner.classList.remove('d-none');
+    if (spinner) {
+      const spinnerText = spinner.querySelector('.spinner-message');
+      if (spinnerText) {
+        spinnerText.textContent = message || 'Loading...';
+      }
+      spinner.classList.remove('d-none');
+      
+      // Set timeout
+      this.timeoutId = setTimeout(() => {
+        this.hide();
+        showGlobalFeedback('The request is taking longer than expected. Please try again.', true);
+      }, this.timeoutDuration);
+    }
   },
-  
-  hide: function() {
+
+  hide() {
     const spinner = document.getElementById('global-spinner');
-    spinner.classList.add('d-none');
+    if (spinner) {
+      spinner.classList.add('d-none');
+    }
+    // Clear timeout if it exists
+    if (this.timeoutId) {
+      clearTimeout(this.timeoutId);
+      this.timeoutId = null;
+    }
   }
 };
 
