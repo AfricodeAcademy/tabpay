@@ -13,15 +13,12 @@ from sqlalchemy import event
 # Association tables
 member_blocks = db.Table('member_blocks',
     db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
-    db.Column('block_id', db.Integer, db.ForeignKey('blocks.id'), primary_key=True),
-    db.Column('unique_id', db.String(20), unique=True) 
+    db.Column('block_id', db.Integer, db.ForeignKey('blocks.id'), primary_key=True)
 )
-
 member_zones = db.Table(
     'member_zones',
     db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
-    db.Column('zone_id', db.Integer, db.ForeignKey('zones.id'), primary_key=True),
-    db.Column('umbrella_id', db.Integer, db.ForeignKey('umbrellas.id'), nullable=False)
+    db.Column('zone_id', db.Integer, db.ForeignKey('zones.id'), primary_key=True)
 )
 
 roles_users = db.Table('roles_users',
@@ -65,6 +62,8 @@ class UserModel(db.Model, UserMixin):
     fs_uniquifier = db.Column(db.String(64), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
     zone_id = db.Column(db.Integer, db.ForeignKey('zones.id'))
     umbrella_id = db.Column(db.Integer, db.ForeignKey('umbrellas.id'))
+    __table_args__ = (db.UniqueConstraint('id_number', 'phone_number',acc_number, 'zone_id', name='uq_user_id_phone_acc_zone'),)
+
 
     is_approved = db.Column(db.Boolean(), default=False)  # New field
     approval_date = db.Column(db.DateTime())  # New field
@@ -105,42 +104,42 @@ class UserModel(db.Model, UserMixin):
     def __repr__(self):
         return f"<User {self.full_name}>"
     
-    @staticmethod
-    def generate_member_identifier(umbrella, block):
-        """
-        Generate a unique identifier for a member based on the umbrella and block.
-        Format: {UmbrellaInitials}{BlockInitials}{Increment}
-        Example: NYB001
-        """        
-        # Ensure initials are present
-        if not umbrella.initials:
-            raise ValueError("Umbrella initials cannot be None.")
-        if not block.initials:
-            raise ValueError("Block initials cannot be None.")
+    # @staticmethod
+    # def generate_member_identifier(umbrella, block):
+    #     """
+    #     Generate a unique identifier for a member based on the umbrella and block.
+    #     Format: {UmbrellaInitials}{BlockInitials}{Increment}
+    #     Example: NYB001
+    #     """        
+    #     # Ensure initials are present
+    #     if not umbrella.initials:
+    #         raise ValueError("Umbrella initials cannot be None.")
+    #     if not block.initials:
+    #         raise ValueError("Block initials cannot be None.")
 
-        # Combine initials
-        prefix = f"{umbrella.initials}{block.initials}"
+    #     # Combine initials
+    #     prefix = f"{umbrella.initials}{block.initials}"
 
-        # Query existing unique_ids in member_blocks for this umbrella and block
-        last_identifier = db.session.query(member_blocks.c.unique_id).join(BlockModel, member_blocks.c.block_id == BlockModel.id).filter(
-            member_blocks.c.unique_id.like(f"{prefix}%"),
-            BlockModel.parent_umbrella_id == umbrella.id
-        ).order_by(member_blocks.c.unique_id.desc()).first()
+    #     # Query existing unique_ids in member_blocks for this umbrella and block
+    #     last_identifier = db.session.query(member_blocks.c.unique_id).join(BlockModel, member_blocks.c.block_id == BlockModel.id).filter(
+    #         member_blocks.c.unique_id.like(f"{prefix}%"),
+    #         BlockModel.parent_umbrella_id == umbrella.id
+    #     ).order_by(member_blocks.c.unique_id.desc()).first()
 
-        # Determine the next incremental number
-        if last_identifier:
-            try:
-                last_number = int(last_identifier[0][-3:])
-                new_number = f"{last_number + 1:03}"
-            except ValueError:
-                # Handle cases where the last three characters are not digits
-                new_number = "001"
-        else:
-            new_number = "001"
+    #     # Determine the next incremental number
+    #     if last_identifier:
+    #         try:
+    #             last_number = int(last_identifier[0][-3:])
+    #             new_number = f"{last_number + 1:03}"
+    #         except ValueError:
+    #             # Handle cases where the last three characters are not digits
+    #             new_number = "001"
+    #     else:
+    #         new_number = "001"
 
-        # Construct the unique_id
-        unique_id = f"{prefix}{new_number}"
-        return unique_id
+    #     # Construct the unique_id
+    #     unique_id = f"{prefix}{new_number}"
+    #     return unique_id
 
 
 
@@ -154,7 +153,7 @@ class UmbrellaModel(db.Model):
     __tablename__ = 'umbrellas'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False, unique=True)
-    location = db.Column(db.String(255), nullable=False, unique = True)
+    location = db.Column(db.String(255), nullable=False)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     blocks = db.relationship('BlockModel', backref='parent_umbrella', lazy=True)
     initials = db.Column(db.String(10), unique=True)

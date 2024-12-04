@@ -261,31 +261,20 @@ class UsersResource(BaseResource):
                 if role:
                     new_user.roles.append(role)
 
-            # Generate unique ID for block membership
-            try:
-                unique_id = UserModel.generate_member_identifier(umbrella, block)
-            except ValueError as e:
-                return {"message": "Error generating unique ID. Check umbrella and block initials."}, 400
-
+        
             # Insert user into the `member_blocks` table
             stmt = member_blocks.insert().values(
                 user_id=new_user.id,
                 block_id=block.id,
-                unique_id=unique_id
             )
             db.session.execute(stmt)
 
-            # Add zone membership with umbrella_id
-            if not any(
-                mz.zone_id == zone.id and mz.umbrella_id == args['umbrella_id']
-                for mz in new_user.zone_memberships
-            ):
-                stmt = member_zones.insert().values(
-                    user_id=new_user.id,
-                    zone_id=zone.id,
-                    umbrella_id=args['umbrella_id']
-                )
-                db.session.execute(stmt)
+            # Add zone membership
+            stmt = member_zones.insert().values(
+                user_id=new_user.id,
+                zone_id=zone.id,
+            )
+            db.session.execute(stmt)
 
             # Commit the session
             db.session.commit()
@@ -350,25 +339,31 @@ class UsersResource(BaseResource):
                         unchanged_fields.append(field)
 
             # Check if block_id is provided to update block memberships
-            block_id = args.get('block_id')
-            if block_id is not None:
-                block = BlockModel.query.get(block_id)
-                if block:
-                    if block not in user.block_memberships:
-                        user.block_memberships.append(block)
-                        updated = True
-             
-
-            # Check if zone_id is provided to update zone memberships
-            zone_id = args.get('zone_id')
-            if zone_id is not None:
-                zone = ZoneModel.query.get(zone_id)
-                if zone:
-                    if zone not in user.zone_memberships:
-                        user.zone_memberships.append(zone)
-                        updated = True
-                              
-
+                block_id = args.get('block_id')
+                if block_id is not None:
+                    block = BlockModel.query.get(block_id)
+                    if block:
+                        if block not in user.block_memberships:
+                            user.block_memberships.append(block)
+                            logger.info(f"Added block {block.id} to user's block memberships.")
+                            updated = True
+                        else:
+                            logger.info(f"User {user.id} is already a member of block {block.id}.")
+                    else:
+                        logger.warning(f"Block {block_id} not found.")
+                # Check if zone_id is provided to update zone memberships
+                zone_id = args.get('zone_id')
+                if zone_id is not None:
+                    zone = ZoneModel.query.get(zone_id)
+                    if zone:
+                        if zone not in user.zone_memberships:
+                            user.zone_memberships.append(zone)
+                            logger.info(f"Added zone {zone.id} to user's zone memberships.")
+                            updated = True
+                        else:
+                            logger.info(f"User {user.id} is already a member of zone {zone.id}.")
+                    else:
+                        logger.warning(f"Zone {zone_id} not found.")
 
 
             role_id = args.get('role_id')
