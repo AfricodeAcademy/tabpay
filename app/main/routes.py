@@ -694,6 +694,9 @@ def statistics():
         response = requests.get(f"{current_app.config['API_BASE_URL']}/api/v1/meetings/")
         if response.status_code == 200:
             meetings = response.json()  
+        elif response.status_code == 404:  # No meetings found
+            flash("No meetings have been scheduled yet.", "info")
+            meetings = []
         else:
             flash("Failed to fetch meetings data from the API.", "danger")
             meetings = []
@@ -1808,7 +1811,7 @@ def handle_send_to_bank(payment_form):
     members = get_members()
     payment_form.member.choices =  [("", "--Choose a Member--")] + [(str(member['id']), member['full_name']) for member in members]
 
-    
+
 
     if payment_form.validate_on_submit():
         # Fetch total contributions for the selected block (assume an API fetch)
@@ -2203,12 +2206,29 @@ def get_filtered_member_contributions():
 
         # Prepare contribution query parameters
         contributions_params = {'meeting_id': meeting_id}
-        if host_id and host_id != 'all_hosts':
+        if host_id:
+            # Verify that the host belongs to the umbrella's blocks
+            host_response = requests.get(
+                f"{current_app.config['API_BASE_URL']}/api/v1/users/{host_id}"
+            )
+            if host_response.status_code != 200:
+                flash("Error fetching host details.", "danger")
+                return []
+            
+            host_data = host_response.json()
+            host_blocks = host_data.get('block_memberships', [])
+            if not any(block['parent_umbrella_id'] == umbrella['id'] for block in host_blocks):
+                flash("You do not have permission to view this host's contributions.", "danger")
+                return []
+            
             contributions_params['host_id'] = host_id
+
         if member_id and member_id != 'all_members':
             contributions_params['payer_id'] = member_id
 
-        # Fetch contributions
+        if status:
+            contributions_params['status'] = status
+
         contributions_response = requests.get(
             f"{current_app.config['API_BASE_URL']}/api/v1/payments/",
             params=contributions_params
