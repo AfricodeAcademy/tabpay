@@ -22,7 +22,7 @@ def get_umbrella_by_user(user_id):
     try:
         response = requests.get(
             f"{current_app.config['API_BASE_URL']}/api/v1/umbrellas/",
-            params={"user_id": user_id},
+            params={"created_by": user_id},
             headers={"Authorization": f"Bearer {current_user.get_auth_token()}"}
         )
         if response.status_code == 200:
