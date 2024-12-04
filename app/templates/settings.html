@@ -610,7 +610,7 @@ render_field(field) %}
             })
             .catch((error) => {
               console.error("Error:", error);
-              alert("Error fetching zones. Please try again.");
+              showGlobalFeedback("Error fetching zones. Please try again.", true);
               resetSelect(zoneSelect, "Choose a Zone");
             })
             .finally(() => {

@@ -441,7 +441,7 @@ block content %}
             })
             .catch(error => {
               console.error('Error:', error);
-              alert('Error fetching hosts. Please try again.');
+              showGlobalFeedback('Error fetching hosts. Please try again.', true);
             });
         }
       });
@@ -463,7 +463,7 @@ block content %}
             })
             .catch(error => {
               console.error('Error:', error);
-              alert('Error fetching zones. Please try again.');
+              showGlobalFeedback('Error fetching zones. Please try again.', true);
             });
         }
       });
@@ -485,7 +485,7 @@ block content %}
             })
             .catch(error => {
               console.error('Error:', error);
-              alert('Error fetching members. Please try again.');
+              showGlobalFeedback('Error fetching members. Please try again.', true);
             });
         }
       });
@@ -642,7 +642,7 @@ block content %}
             })
             .catch((error) => {
               console.error("Error:", error);
-              alert("Error fetching zones. Please try again.");
+              showGlobalFeedback("Error fetching zones. Please try again.", true);
             });
         } else {
           // Reset chart to initial state if no block is selected

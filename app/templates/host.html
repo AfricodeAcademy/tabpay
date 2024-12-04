@@ -746,7 +746,7 @@ Regular Block Hosting {% endblock %} {% block content %}
           })
           .catch((error) => {
             console.error("Error:", error);
-            alert("Error fetching zones. Please try again.");
+            showGlobalFeedback("Error fetching zones. Please try again.", true);
             resetSelect(zoneSelect, "Choose a Zone");
           })
           .finally(() => {
@@ -777,7 +777,7 @@ Regular Block Hosting {% endblock %} {% block content %}
           })
           .catch((error) => {
             console.error("Error:", error);
-            alert("Error fetching members. Please try again.");
+            showGlobalFeedback("Error fetching members. Please try again.", true);
             resetSelect(memberSelect, "Choose a Member");
           })
           .finally(() => {
@@ -864,7 +864,7 @@ Regular Block Hosting {% endblock %} {% block content %}
         })
         .catch(error => {
           console.error("Error fetching members:", error);
-          alert("Error fetching members. Please try again.");
+          showGlobalFeedback("Error fetching members. Please try again.", true);
         })
         .finally(() => {
           TabPaySpinner.hide();
@@ -890,7 +890,7 @@ Regular Block Hosting {% endblock %} {% block content %}
             })
             .catch((error) => {
               console.error("Error:", error);
-              alert("Error fetching zones. Please try again.");
+              showGlobalFeedback("Error fetching zones. Please try again.", true);
             });
         } else {
           // If no block selected, reset the table to show all members
@@ -945,6 +945,7 @@ Regular Block Hosting {% endblock %} {% block content %}
         // Existing code...
       } catch (error) {
         console.error('Error:', error);
+        showGlobalFeedback("Error fetching members. Please try again.", true);
       } finally {
         TabPaySpinner.hide();
       }

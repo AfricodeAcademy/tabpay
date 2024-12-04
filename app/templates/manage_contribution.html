@@ -286,7 +286,7 @@
           })
           .catch((error) => {
             console.error("Error:", error);
-            alert("Error fetching zones. Please try again.");
+            showGlobalFeedback("Error fetching zones. Please try again.", true);
             resetSelect(zoneRequestSelect, "Choose a Zone");
           })
           .finally(() => {
@@ -317,7 +317,7 @@
           })
           .catch((error) => {
             console.error("Error:", error);
-            alert("Error fetching members. Please try again.");
+            showGlobalFeedback("Error fetching members. Please try again.", true);
             resetSelect(memberRequestSelect, "Choose a Member");
           })
           .finally(() => {
@@ -348,7 +348,7 @@
           })
           .catch((error) => {
             console.error("Error:", error);
-            alert("Error fetching zones. Please try again.");
+            showGlobalFeedback("Error fetching zones. Please try again.", true);
             resetSelect(zoneBankSelect, "Choose a Zone");
           })
           .finally(() => {
@@ -379,7 +379,7 @@
           })
           .catch((error) => {
             console.error("Error:", error);
-            alert("Error fetching members. Please try again.");
+            showGlobalFeedback("Error fetching members. Please try again.", true);
             resetSelect(memberBankSelect, "Choose a Member");
           })
           .finally(() => {
