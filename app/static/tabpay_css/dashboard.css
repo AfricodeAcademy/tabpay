@@ -170,8 +170,7 @@ label {
 
 input {
   padding: 12px;
-  margin-top: 5px;
-  margin-bottom: 18px;
+
   border: 2px solid #bdc3c786;
   border-radius: 5px;
   width: 100%;
@@ -182,10 +181,9 @@ input::placeholder {
   color: rgba(0, 0, 0, 0.731);
 }
 .select {
-  padding: 12px 20px;
+  padding: 10px 18px;
   background-color: #fff;
-  margin-top: 5px;
-  margin-bottom: 18px;
+
   border: 2px solid #bdc3c786;
   border-radius: 5px;
   width: 100%;

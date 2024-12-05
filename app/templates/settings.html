@@ -133,6 +133,9 @@ render_field(field) %}
           id="committee"
           class="tab-pane fade {% if active_tab == 'committee' %}show active{% endif %}"
         >
+        <p class="mb-3">
+          Assign committee roles to block members by entering their ID Number.
+        </p>
           <form
             method="POST"
             action="{{ url_for('main.settings', active_tab='committee') }}"
@@ -140,15 +143,15 @@ render_field(field) %}
           >
             {{ committee_form.hidden_tag() }}
             <div id="user-details" style="display:none;">
-              <div class="row mb-5 mt-2">
+              <div class="row mb-3">
                 <div class="col-md-6">
-                  <div class="mb-3">
+                  <div class="">
                     {{ committee_form.full_name.label(class="form-label") }}
                     {{ committee_form.full_name(class="form-control", readonly=True) }}
                   </div>
                 </div>
                 <div class="col-md-6">
-                  <div class="mb-3">
+                  <div class="">
                     {{ committee_form.phone_number.label(class="form-label") }}
                     {{ committee_form.phone_number(class="form-control", readonly=True) }}
                   </div>
@@ -159,40 +162,34 @@ render_field(field) %}
               <div class="col-md-6">
                 <div class="mb-3">
                   {{ committee_form.id_number.label(class="form-label") }}
-                  {{ committee_form.id_number(class="form-control") }}
-                  {% if committee_form.id_number.errors %}
-                  <div class="invalid-feedback">
-                    {% for error in committee_form.id_number.errors %}
-                    {{ error }}
-                    {% endfor %}
-                  </div>
-                  {% endif %}
+                  {% if  committee_form.id_number.errors %} {{
+                     committee_form.id_number(class="form-control is-invalid") }}
+                    <div class="invalid-feedback">
+                      {% for error in  committee_form.id_number.errors %} {{ error }} {% endfor %}
+                    </div>
+                    {% else %} {{  committee_form.id_number(class="form-control") }} {% endif %}
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
                   {{ committee_form.block_id.label(class="form-label") }}
-                  {{ committee_form.block_id(class="form-control") }}
-                  {% if committee_form.block_id.errors %}
-                  <div class="invalid-feedback">
-                    {% for error in committee_form.block_id.errors %}
-                    {{ error }}
-                    {% endfor %}
-                  </div>
-                  {% endif %}
+                  {% if  committee_form.block_id.errors %} {{
+                    committee_form.block_id(class="form-select is-invalid") }}
+                   <div class="invalid-feedback">
+                     {% for error in  committee_form.block_id.errors %} {{ error }} {% endfor %}
+                   </div>
+                   {% else %} {{  committee_form.block_id(class="form-select") }} {% endif %}
                 </div>
               </div>
             </div>
             <div class="mb-3">
               {{ committee_form.role_id.label(class="form-label") }}
-              {{ committee_form.role_id(class="form-control") }}
-              {% if committee_form.role_id.errors %}
-              <div class="invalid-feedback">
-                {% for error in committee_form.role_id.errors %}
-                {{ error }}
-                {% endfor %}
-              </div>
-              {% endif %}
+              {% if  committee_form.role_id.errors %} {{
+                committee_form.role_id(class="form-select is-invalid") }}
+               <div class="invalid-feedback">
+                 {% for error in  committee_form.role_id.errors %} {{ error }} {% endfor %}
+               </div>
+               {% else %} {{  committee_form.role_id(class="form-select") }} {% endif %}
             </div>
             <button
               type="submit"
@@ -309,14 +306,12 @@ render_field(field) %}
                 <div class="mb-3">
                   <!-- For Cascade  dropdown - AJAX -->
                   {{ zone_form.parent_block.label(class="form-label") }}
-                  {{ zone_form.parent_block(class="form-control", id="zone-block") }}
-                  {% if zone_form.parent_block.errors %}
-                  <div class="invalid-feedback">
-                    {% for error in zone_form.parent_block.errors %}
-                    {{ error }}
-                    {% endfor %}
-                  </div>
-                  {% endif %}
+                  {% if  zone_form.parent_block.errors %} {{
+                    zone_form.parent_block(class="form-select is-invalid",id="zone-block") }}
+                   <div class="invalid-feedback">
+                     {% for error in  zone_form.parent_block.errors %} {{ error }} {% endfor %}
+                   </div>
+                   {% else %} {{  zone_form.parent_block(class="form-select",id="zone-block") }} {% endif %}
                 </div>
               </div>
             </div>
@@ -347,48 +342,71 @@ render_field(field) %}
             {{ member_form.hidden_tag() }}
             <div class="row">
               <div class="col-md-6">
-                <div class="mb-3">{{ render_field(member_form.full_name)}}</div>
+                <div class="">{{ render_field(member_form.full_name)}}</div>
               </div>
               <div class="col-md-6">
-                <div class="mb-3">
+                <div class="">
                   {{ render_field(member_form.phone_number)}}
                 </div>
               </div>
             </div>
             <div class="row">
               <div class="col-md-6">
-                <div class="mb-3">{{ render_field(member_form.id_number)}}</div>
+                <div class="">{{ render_field(member_form.id_number)}}</div>
               </div>
               <div class="col-md-6">
+                <div class="">
+                  {{render_field(block_form.parent_umbrella)}}
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6">
                 <div class="mb-3">
-                  <label class="form-label">Select Block</label>
-                  <select class="select" id="member-block" name="block">
+                  {{ member_form.member_block.label(class="form-label") }}                 
+                  {% if member_form.member_block.errors %} <select class="form-select is-invalid" id="member-block" name="block">
                     <option value="">Choose a Block</option>
                     {% for block in blocks %}
                     <option value="{{ block.id }}" {% if selected_block == block.id|string %}selected{% endif %}>{{ block.name }}</option>
                     {% endfor %}
                   </select>
+                    <div class="invalid-feedback">
+                      {% for error in member_form.member_block.errors %} {{ error }} {% endfor %}
+                    </div>
+                    {% else %}  <select class="form-select" id="member-block" name="block">
+                      <option value="">Choose a Block</option>
+                      {% for block in blocks %}
+                      <option value="{{ block.id }}" {% if selected_block == block.id|string %}selected{% endif %}>{{ block.name }}</option>
+                      {% endfor %}
+                    </select> {% endif %}
                 </div>
               </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  {{ member_form.member_zone.label(class="form-label") }}   
+                  {% if member_form.member_zone.errors %}               
+                  <select class="form-select is-invalid" id="member-zone" name="member_zone">
+                    <option value="">Choose a Zone</option>
+                  </select>
+                  <div class="invalid-feedback">
+                    {% for error in member_form.member_zone.errors %} {{ error }} {% endfor %}
+                  </div>
+                  {% else %}
+                  <select class="form-select " id="member-zone" name="member_zone">
+                    <option value="">Choose a Zone</option>
+                  </select>
+              {% endif %}
+                </div>
+              </div>          
             </div>
             <div class="row">
               <div class="col-md-6">
-                <div class="mb-3">
-                  <label class="form-label">Select Zone</label>
-                  <select class="select" id="member-zone" name="member_zone">
-                    <option value="">Choose a Zone</option>
-                  </select>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="mb-3">
+                <div class="">
                   {{ render_field(member_form.bank_id)}}
                 </div>
               </div>
-            </div>
-            <div class="row">
               <div class="col-md-6">
-                <div class="mb-3">
+                <div class="">
                   {{ render_field(member_form.acc_number)}}
                 </div>
               </div>

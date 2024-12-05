@@ -55,9 +55,9 @@
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  {{ payment_form.block.label }} 
-                  {{ payment_form.block(class="select", id="block-request") }} 
-                  {% if payment_form.block.errors %}
+                  {{ payment_form.block.label }} {{
+                  payment_form.block(class="select", id="block-request") }} {%
+                  if payment_form.block.errors %}
                   <div class="text-danger">
                     {% for error in payment_form.block.errors %}
                     <small>{{ error }}</small>
@@ -79,9 +79,9 @@
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  {{ payment_form.member.label }} 
-                  {{ payment_form.member(class="select", id="member-request") }} 
-                  {% if payment_form.member.errors %}
+                  {{ payment_form.member.label }} {{
+                  payment_form.member(class="select", id="member-request") }} {%
+                  if payment_form.member.errors %}
                   <div class="text-danger">
                     {% for error in payment_form.member.errors %}
                     <small>{{ error }}</small>
@@ -90,19 +90,21 @@
                   {% endif %}
                 </div>
               </div>
+              <div class="col-lg-6">
+                <div class="mb-3">
+                  {{ payment_form.amount.label }} {{
+                  payment_form.amount(class="form-control") }} {% if
+                  payment_form.amount.errors %}
+                  <div class="text-danger">
+                    {% for error in payment_form.amount.errors %}
+                    <small>{{ error }}</small>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
             </div>
 
-            <div class="mb-3">
-              {{ payment_form.amount.label }} {{
-              payment_form.amount(class="form-control") }} {% if
-              payment_form.amount.errors %}
-              <div class="text-danger">
-                {% for error in payment_form.amount.errors %}
-                <small>{{ error }}</small>
-                {% endfor %}
-              </div>
-              {% endif %}
-            </div>
             <button type="submit" name="request_submit" class="submit-btn">
               {{ payment_form.submit.label.text }}
             </button>
@@ -129,9 +131,9 @@
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  {{ payment_form.block.label }} 
-                  {{ payment_form.block(class="select", id="block-bank") }} 
-                  {% if payment_form.block.errors %}
+                  {{ payment_form.block.label }} {{
+                  payment_form.block(class="select", id="block-bank") }} {% if
+                  payment_form.block.errors %}
                   <div class="text-danger">
                     {% for error in payment_form.block.errors %}
                     <small>{{ error }}</small>
@@ -153,9 +155,9 @@
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  {{ payment_form.member.label }} 
-                  {{ payment_form.member(class="select", id="member-bank") }} 
-                  {% if payment_form.member.errors %}
+                  {{ payment_form.member.label }} {{
+                  payment_form.member(class="select", id="member-bank") }} {% if
+                  payment_form.member.errors %}
                   <div class="text-danger">
                     {% for error in payment_form.member.errors %}
                     <small>{{ error }}</small>
@@ -164,9 +166,6 @@
                   {% endif %}
                 </div>
               </div>
-            </div>
-
-            <div class="row mt-5">
               <div class="col-md-6">
                 <div class="mb-3">
                   {{ payment_form.amount.label() }} {{
@@ -180,43 +179,34 @@
                   {% endif %}
                 </div>
               </div>
+            </div>
+
+            <div class="row">
               <div class="col-md-6">
-                <div class="mb-3 text-center border rounded">
-                  <span class="text-dark">Members A/C No:</span>
-
-                  <div class="d-flex flex-column">
-                    <div class="d-flex align-items-center ms-5">
-                      <div class="me-2">
-                        {{ payment_form.bank.label(class="form-label") }}
-                      </div>
-                      <div>
-                        {{ payment_form.bank(class="form-select") }} {% if
-                        payment_form.bank.errors %}
-                        <div class="text-danger">
-                          {% for error in payment_form.bank.errors %}
-                          <small>{{ error }}</small>
-                          {% endfor %}
-                        </div>
-                        {% endif %}
-                      </div>
-                    </div>
-
-                    <div class="d-flex align-items-center ms-5">
-                      <div class="me-2">
-                        {{ payment_form.acc_number.label(class="form-label") }}
-                      </div>
-                      <div>
-                        {{ payment_form.acc_number(class="form-control") }} {%
-                        if payment_form.acc_number.errors %}
-                        <div class="text-danger">
-                          {% for error in payment_form.acc_number.errors %}
-                          <small>{{ error }}</small>
-                          {% endfor %}
-                        </div>
-                        {% endif %}
-                      </div>
-                    </div>
+                <div class="">
+                  {{ payment_form.bank.label(class="form-label") }} {{
+                  payment_form.bank(class="form-select") }} {% if
+                  payment_form.bank.errors %}
+                  <div class="text-danger">
+                    {% for error in payment_form.bank.errors %}
+                    <small>{{ error }}</small>
+                    {% endfor %}
                   </div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="">
+                  {{ payment_form.acc_number.label(class="form-label") }} {{
+                  payment_form.acc_number(class="form-control") }} {% if
+                  payment_form.acc_number.errors %}
+                  <div class="text-danger">
+                    {% for error in payment_form.acc_number.errors %}
+                    <small>{{ error }}</small>
+                    {% endfor %}
+                  </div>
+                  {% endif %}
                 </div>
               </div>
             </div>
@@ -267,7 +257,7 @@
     // Handle block selection for Request Payment
     blockRequestSelect.addEventListener("change", function () {
       const blockId = this.value;
-      TabPaySpinner.show('Loading zones...');
+      TabPaySpinner.show("Loading zones...");
       resetSelect(zoneRequestSelect, "Choose a Zone");
       resetSelect(memberRequestSelect, "Choose a Member");
 
@@ -275,7 +265,7 @@
         fetch(`/get_zones/${blockId}`)
           .then((response) => {
             if (!response.ok) {
-              throw new Error('Network response was not ok');
+              throw new Error("Network response was not ok");
             }
             return response.json();
           })
@@ -299,14 +289,14 @@
     zoneRequestSelect.addEventListener("change", function () {
       const zoneId = this.value;
       const blockId = blockRequestSelect.value;
-      TabPaySpinner.show('Loading members...');
+      TabPaySpinner.show("Loading members...");
       resetSelect(memberRequestSelect, "Choose a Member");
 
       if (zoneId && blockId) {
         fetch(`/get_members/${zoneId}`)
           .then((response) => {
             if (!response.ok) {
-              throw new Error('Network response was not ok');
+              throw new Error("Network response was not ok");
             }
             return response.json();
           })
@@ -317,7 +307,10 @@
           })
           .catch((error) => {
             console.error("Error:", error);
-            showGlobalFeedback("Error fetching members. Please try again.", true);
+            showGlobalFeedback(
+              "Error fetching members. Please try again.",
+              true
+            );
             resetSelect(memberRequestSelect, "Choose a Member");
           })
           .finally(() => {
@@ -329,7 +322,7 @@
     // Handle block selection for Send to Bank
     blockBankSelect.addEventListener("change", function () {
       const blockId = this.value;
-      TabPaySpinner.show('Loading zones...');
+      TabPaySpinner.show("Loading zones...");
       resetSelect(zoneBankSelect, "Choose a Zone");
       resetSelect(memberBankSelect, "Choose a Member");
 
@@ -337,7 +330,7 @@
         fetch(`/get_zones/${blockId}`)
           .then((response) => {
             if (!response.ok) {
-              throw new Error('Network response was not ok');
+              throw new Error("Network response was not ok");
             }
             return response.json();
           })
@@ -361,14 +354,14 @@
     zoneBankSelect.addEventListener("change", function () {
       const zoneId = this.value;
       const blockId = blockBankSelect.value;
-      TabPaySpinner.show('Loading members...');
+      TabPaySpinner.show("Loading members...");
       resetSelect(memberBankSelect, "Choose a Member");
 
       if (zoneId && blockId) {
         fetch(`/get_members/${zoneId}`)
           .then((response) => {
             if (!response.ok) {
-              throw new Error('Network response was not ok');
+              throw new Error("Network response was not ok");
             }
             return response.json();
           })
@@ -379,7 +372,10 @@
           })
           .catch((error) => {
             console.error("Error:", error);
-            showGlobalFeedback("Error fetching members. Please try again.", true);
+            showGlobalFeedback(
+              "Error fetching members. Please try again.",
+              true
+            );
             resetSelect(memberBankSelect, "Choose a Member");
           })
           .finally(() => {

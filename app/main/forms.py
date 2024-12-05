@@ -6,10 +6,11 @@ from datetime import datetime
 
 
 class AddMemberForm(FlaskForm):
-    full_name = StringField('Member Full Name', validators=[DataRequired(message=" Full Name is required"), Length(max=30, min=5,message="Full name should have atleast 5 characters.")], render_kw={'placeholder': 'e.g John Doe'})
-    id_number = IntegerField('Member ID Number', validators=[DataRequired(message="ID number is required"), NumberRange(min=10000000, max=9999999999, message="ID number must be between 8 and 10 digits.")], render_kw={'placeholder': 'xxxxxxxx'})
+    full_name = StringField("Full Name", validators=[DataRequired(message=" Full Name is required"), Length(max=30, min=5,message="Full name should have atleast 5 characters.")], render_kw={'placeholder': 'e.g John Doe'})
+    id_number = IntegerField("ID Number", validators=[DataRequired(message="ID number is required"), NumberRange(min=10000000, max=9999999999, message="ID number must be between 8 and 10 digits.")], render_kw={'placeholder': 'xxxxxxxx'})
     phone_number = StringField('Phone Number', validators=[DataRequired(message="Phone Number is required"), Length(min=10, max=10, message="Phone number must be exactly 10 digits.")], render_kw={'placeholder': 'e.g 0700000000'})
-    member_zone = SelectField('Member Zone', choices=[("", "Choose a Zone")], validators=[DataRequired(message="Zone is required")])
+    member_block = SelectField("Select Block", choices=[("", "Choose a Zone")], validators=[DataRequired(message="Zone is required")])
+    member_zone = SelectField("Select Zone", choices=[("", "Choose a Zone")], validators=[DataRequired(message="Zone is required")])
     bank_id = SelectField('Select Bank', choices=[("", "Choose a Bank")], validators=[DataRequired(message="Bank is required")])
     acc_number = StringField('Bank Account Number', validators=[DataRequired(message="Account Number is required")], render_kw={'placeholder': 'xxxxxx'})
     submit = SubmitField('ADD MEMBER')
@@ -23,8 +24,8 @@ class ProfileForm(FlaskForm):
 
 class AddCommitteForm(FlaskForm):
     full_name = StringField("Committee's Full Name")
-    block_id = SelectField(" Block", choices=[("", "Choose a Block")], validators=[DataRequired(message="Please select a Block")])
-    id_number = IntegerField("ID Number", validators=[DataRequired(message="ID number is required"), NumberRange(min=10000000, max=9999999999, message="ID number must be between 8 and 10 digits.")], render_kw={'placeholder': 'xxxxxxxx'})
+    block_id = SelectField(" Select Block", choices=[("", "Choose a Block")], validators=[DataRequired(message="Please select a Block")])
+    id_number = IntegerField("Enter ID Number", validators=[DataRequired(message="ID number is required"), NumberRange(min=10000000, max=9999999999, message="ID number must be between 8 and 10 digits.")], render_kw={'placeholder': 'xxxxxxxx'})
     role_id = SelectField('Committee Role', choices=[("", "Choose a Committee Role")], validators=[DataRequired(message="Please select a committee role!")])
     phone_number = StringField("Committee's Phone Number")
     submit = SubmitField('ADD COMMITTEE')
