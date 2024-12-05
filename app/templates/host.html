@@ -53,18 +53,17 @@ Regular Block Hosting {% endblock %} {% block content %}
           id="schedule_meeting"
           class="tab-pane fade {% if active_tab == 'schedule_meeting' %}show active{% endif %}"
         >
-          <p class="text-center mb-2 p-3 fs-4">
-            Schedule the Weekly Block Meeting
-          </p>
+          <p class="text-center p-3 fs-4">Schedule the Weekly Block Meeting</p>
           <form
             method="POST"
             action="{{ url_for('main.host', active_tab='schedule_meeting') }}"
             novalidate
+            class="ps-md-5 pe-md-5 ms-md-5 me-md-5"
           >
             {{ schedule_form.hidden_tag() }}
 
             <div class="row">
-              <div class="col-md-6">
+              <div class="col-md-6 mb-md-3">
                 <div class="mb-3">
                   {{ schedule_form.block.label }} {{
                   schedule_form.block(class="select", id="block") }} {% if
@@ -113,7 +112,7 @@ Regular Block Hosting {% endblock %} {% block content %}
                 .input-with-icon i {
                   position: absolute;
                   left: 10px;
-                  top: 40%;
+                  top: 50%;
                   transform: translateY(-50%);
                   color: #2cde10;
                   pointer-events: none;
@@ -121,6 +120,7 @@ Regular Block Hosting {% endblock %} {% block content %}
 
                 .input {
                   padding-left: 30px;
+                  font-size: small;
                 }
               </style>
               <div class="col-md-6">
