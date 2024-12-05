@@ -96,9 +96,13 @@ class Config:
     MPESA_PASSKEY = os.getenv('MPESA_PASSKEY') 
     MPESA_STK_PUSH_SHORTCODE = os.getenv('MPESA_STK_PUSH_SHORTCODE')
     MPESA_STK_PUSH_PASSKEY = os.getenv('MPESA_STK_PUSH_PASSKEY')
+    
     # M-Pesa Callback URLs
+    MPESA_CALLBACK_BASE_URL = os.getenv('MPESA_CALLBACK_BASE_URL')
     MPESA_CALLBACK_URL = os.getenv('MPESA_CALLBACK_URL')
+    MPESA_STK_CALLBACK_URL = os.getenv('MPESA_STK_CALLBACK_URL')
     MPESA_VALIDATION_URL = os.getenv('MPESA_VALIDATION_URL')
+    MPESA_CONFIRMATION_URL = os.getenv('MPESA_CONFIRMATION_URL')
     
     # Validate required environment variables with debugging
     missing_vars = []
@@ -108,7 +112,9 @@ class Config:
         'MPESA_PASSKEY': MPESA_PASSKEY,
         'MPESA_SHORTCODE': MPESA_SHORTCODE,
         'MPESA_CALLBACK_URL': MPESA_CALLBACK_URL,
-        'MPESA_VALIDATION_URL': MPESA_VALIDATION_URL
+        'MPESA_STK_CALLBACK_URL': MPESA_STK_CALLBACK_URL,
+        'MPESA_VALIDATION_URL': MPESA_VALIDATION_URL,
+        'MPESA_CONFIRMATION_URL': MPESA_CONFIRMATION_URL
     }
     
     print("Current environment variables status:")

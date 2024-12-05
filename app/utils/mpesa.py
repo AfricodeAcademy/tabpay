@@ -256,7 +256,7 @@ class MpesaC2B:
             "PartyA": phone_number,
             "PartyB": self.credentials.stk_push_shortcode,
             "PhoneNumber": phone_number,
-            "CallBackURL": current_app.config['MPESA_CALLBACK_URL'],
+            "CallBackURL": current_app.config.get('MPESA_CALLBACK_URL'),
             "AccountReference": account_reference,
             "TransactionDesc": transaction_desc
         }
