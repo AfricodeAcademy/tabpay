@@ -1015,7 +1015,7 @@ class MpesaValidationResource(BaseResource):
         return super().get(id)
 
     def post(self):
-        """Handle M-Pesa validation requests"""
+        """Handle M-Pesa validation requests for both STK push and direct payments"""
         try:
             # Parse and validate incoming data
             args = self.args.parse_args()
@@ -1029,24 +1029,41 @@ class MpesaValidationResource(BaseResource):
                     "ResultDesc": "Invalid amount: must be positive"
                 }
             
-            # Extract block_id and member_id from bill_ref_number
-            try:
-                parts = args['BillRefNumber'].split('_')
-                block_id = int(parts[1])  # After "Block_"
-                member_id = int(parts[3])  # After "Member_"
-                
-                # Verify block and member exist
-                block = BlockModel.query.get(block_id)
-                member = UserModel.query.get(member_id)
-                
-                if not block or not member:
-                    raise ValueError("Invalid block or member ID")
-                    
-            except (IndexError, ValueError) as e:
-                logger.error(f"Error parsing bill reference number: {str(e)}")
+            # Get bill reference number (meeting unique_id)
+            bill_ref = args['BillRefNumber']
+            
+            # Find the meeting using the bill reference
+            meeting = MeetingModel.query.filter_by(unique_id=bill_ref).first()
+            if not meeting:
+                logger.error(f"Meeting not found for bill reference: {bill_ref}")
                 return {
                     "ResultCode": "C2B00012",
-                    "ResultDesc": "Invalid bill reference number format"
+                    "ResultDesc": "Invalid bill reference number"
+                }
+                
+            # For direct payments, we need to find the member by phone number
+            msisdn = args['MSISDN']  # Phone number making payment
+            if msisdn.startswith('+254'):
+                msisdn = msisdn[4:]
+            elif msisdn.startswith('0'):
+                msisdn = msisdn[1:]
+            msisdn = '254' + msisdn
+            
+            # Find member by phone number
+            member = UserModel.query.filter_by(phone_number=msisdn).first()
+            if not member:
+                logger.error(f"Member not found for phone number: {msisdn}")
+                return {
+                    "ResultCode": "C2B00012",
+                    "ResultDesc": "Member not found for this phone number"
+                }
+            
+            # Check if member belongs to the meeting's block
+            if not member.blocks.filter_by(id=meeting.block_id).first():
+                logger.error(f"Member {member.id} does not belong to block {meeting.block_id}")
+                return {
+                    "ResultCode": "C2B00012",
+                    "ResultDesc": "Member does not belong to this block"
                 }
                 
             # Validation successful

@@ -1330,15 +1330,16 @@ def update_member(user_id, update_form):
         unique_fields = ['id_number', 'phone_number', 'account_number']
         for field in unique_fields:
             form_data = getattr(update_form, field).data
-            if form_data and form_data != current_data.get(field):
-                # Check uniqueness in the member list
-                for member in members:
-                    if member.get(field) == form_data and member['id'] != user_id:
-                        flash(f"{field.replace('_', ' ').title()} is already in use by another member.", "danger")
-                        return render_host_page(update_form=update_form, active_tab='block_members')
+            current_value = current_data.get(field)
 
-                payload[field] = form_data
-                any_input = True
+            # Check uniqueness in the member list
+            for member in members:
+                if member.get(field) == form_data and member['id'] != user_id:
+                    flash(f"{field.replace('_', ' ').title()} is already in use by another member.", "danger")
+                    return render_host_page(update_form=update_form, active_tab='block_members')
+
+            payload[field] = form_data
+            any_input = True
 
         # Include other fields if they are changed
         other_fields = {
@@ -1812,6 +1813,7 @@ def render_contribution_page(active_tab=None,payment_form=None, error=None):
         flash('Please create an umbrella first to manage contributions!', 'danger')
         return redirect(url_for('main.settings', active_tab='umbrella'))
 
+
     # Fetch blocks associated with the umbrella
     blocks = get_blocks_by_umbrella()
     payment_form.block.choices =  [("", "--Choose a Block--")] + [(str(block['id']), block['name']) for block in blocks]
@@ -1942,24 +1944,42 @@ def handle_request_payment(payment_form):
             flash('Member phone number not found.', 'danger')
             return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
 
-        # Generate bill reference number using block and member IDs
-        bill_ref = f"Block_{block_id}_Member_{member_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        # Get the block to find its umbrella
+        block = BlockModel.query.get(block_id)
+        if not block:
+            flash('Block not found.', 'danger')
+            return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
 
-        # Initialize M-Pesa payment
+        # Get the active umbrella meeting
+        now = datetime.now()
+        umbrella_meeting = MeetingModel.query.join(BlockModel).filter(
+            BlockModel.parent_umbrella_id == block.parent_umbrella_id,
+            MeetingModel.date <= now,  # Meeting has started
+            MeetingModel.date >= now - timedelta(hours=24)  # Meeting is within last 24 hours
+        ).first()
+        
+        if not umbrella_meeting:
+            flash('No active umbrella meeting found. Please ensure there is an ongoing meeting.', 'danger')
+            return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
+
+        # Use the umbrella meeting's unique_id as the bill reference (this matches the account number in SMS)
+        bill_ref = umbrella_meeting.unique_id
+
+        # Initialize M-Pesa payment using the umbrella meeting's unique_id
         try:
             mpesa = get_mpesa_client()
             response = mpesa.initiate_payment(
                 amount=int(amount),
                 phone_number=phone_number,
-                bill_ref_number=bill_ref
+                bill_ref_number=bill_ref  # This matches the account number sent in SMS
             )
 
             # Log successful payment initiation
-            logger.info(f"M-Pesa payment initiated: {response}")
+            logger.info(f"M-Pesa payment initiated for umbrella meeting {bill_ref}: {response}")
             flash('M-Pesa payment request sent successfully.', 'success')
 
         except Exception as e:
-            logger.error(f'M-Pesa payment error: {str(e)}')
+            logger.error(f'M-Pesa payment error for umbrella meeting {bill_ref}: {str(e)}')
             flash('Error occurred while processing payment request. Please try again.', 'danger')
 
     except Exception as e:
