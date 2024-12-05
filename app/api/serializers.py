@@ -88,6 +88,22 @@ payment_fields = {
     "payer_full_name": fields.String(attribute=lambda x: getattr(x.payer, 'full_name', 'Unknown')),  
     "block_name": fields.String(attribute=lambda x: getattr(x.block, 'name', 'Unknown')),
     
+    # Payment status tracking
+    "status": fields.String,
+    "status_reason": fields.String,
+    "checkout_request_id": fields.String,
+    "merchant_request_id": fields.String,
+    
+    # Timestamps
+    "initiated_at": fields.DateTime(dt_format="rfc822"),
+    "validated_at": fields.DateTime(dt_format="rfc822"),
+    "completed_at": fields.DateTime(dt_format="rfc822"),
+    "failed_at": fields.DateTime(dt_format="rfc822"),
+    
+    # Retry information
+    "retry_count": fields.Integer,
+    "last_retry_at": fields.DateTime(dt_format="rfc822"),
+    
     # Additional M-Pesa fields
     "transaction_type": fields.String,
     "business_short_code": fields.String,
@@ -181,6 +197,14 @@ payment_args.add_argument('bank_id', type=int, required=True, help='Bank ID is r
 payment_args.add_argument('block_id', type=int, required=True, help='Block ID is required')
 payment_args.add_argument('payer_id', type=int, required=True, help='Payer ID is required')
 payment_args.add_argument('meeting_id', type=int)
+
+# STK Push specific fields
+payment_args.add_argument('checkout_request_id', type=str)
+payment_args.add_argument('merchant_request_id', type=str)
+payment_args.add_argument('status', type=str)
+payment_args.add_argument('status_reason', type=str)
+
+# M-Pesa specific fields
 payment_args.add_argument('transaction_type', type=str)
 payment_args.add_argument('business_short_code', type=str)
 payment_args.add_argument('invoice_number', type=str)

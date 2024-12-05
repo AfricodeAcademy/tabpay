@@ -275,6 +275,22 @@ class PaymentModel(db.Model):
     payment_date = db.Column(db.DateTime, default=db.func.current_timestamp())
     transaction_status = db.Column(db.Boolean, default=False)
     
+    # Payment status tracking
+    status = db.Column(db.String(20), default='pending')  # pending, completed, failed
+    status_reason = db.Column(db.String(255))  # Reason for failure if any
+    checkout_request_id = db.Column(db.String(100))  # For STK push tracking
+    merchant_request_id = db.Column(db.String(100))  # For STK push tracking
+    
+    # Timestamps for different stages
+    initiated_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    validated_at = db.Column(db.DateTime)
+    completed_at = db.Column(db.DateTime)
+    failed_at = db.Column(db.DateTime)
+    
+    # Number of retry attempts for failed payments
+    retry_count = db.Column(db.Integer, default=0)
+    last_retry_at = db.Column(db.DateTime)
+    
     # Bank and block relationships
     bank_id = db.Column(db.Integer, db.ForeignKey('banks.id'), nullable=False)
     block_id = db.Column(db.Integer, db.ForeignKey('blocks.id'), nullable=False)

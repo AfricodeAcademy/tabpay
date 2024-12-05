@@ -1119,24 +1119,47 @@ class MpesaConfirmationResource(BaseResource):
                         "ResultDesc": "Invalid transaction time format"
                     }
             
-            # Extract block_id and member_id from bill_ref_number
-            try:
-                parts = args['BillRefNumber'].split('_')
-                block_id = int(parts[1])  # After "Block_"
-                payer_id = int(parts[3])  # After "Member_"
-                
-                # Verify block and member exist
-                block = BlockModel.query.get(block_id)
-                member = UserModel.query.get(payer_id)
-                
-                if not block or not member:
-                    raise ValueError("Invalid block or member ID")
-                    
-            except (IndexError, ValueError) as e:
-                logger.error(f"Error parsing bill reference number: {str(e)}")
+            # Find the umbrella meeting using bill reference (meeting unique_id)
+            meeting = MeetingModel.query.filter_by(unique_id=args['BillRefNumber']).first()
+            if not meeting:
+                logger.error(f"Meeting not found for bill reference: {args['BillRefNumber']}")
                 return {
                     "ResultCode": "C2B00012",
-                    "ResultDesc": "Invalid bill reference number format"
+                    "ResultDesc": "Invalid bill reference number"
+                }
+
+            # Format phone number consistently
+            msisdn = args['MSISDN']
+            if msisdn.startswith('+254'):
+                msisdn = msisdn[4:]
+            elif msisdn.startswith('0'):
+                msisdn = msisdn[1:]
+            msisdn = '254' + msisdn
+
+            # Find member by phone number
+            member = UserModel.query.filter_by(phone_number=msisdn).first()
+            if not member:
+                logger.error(f"Member not found for phone number: {msisdn}")
+                return {
+                    "ResultCode": "C2B00012",
+                    "ResultDesc": "Member not found for this phone number"
+                }
+
+            # Get the block from the meeting
+            block = meeting.block
+            if not block:
+                logger.error(f"Block not found for meeting: {meeting.id}")
+                return {
+                    "ResultCode": "C2B00012",
+                    "ResultDesc": "Meeting block not found"
+                }
+
+            # Verify member belongs to the umbrella
+            if not member.blocks.filter_by(parent_umbrella_id=block.parent_umbrella_id).first():
+                logger.error(f"Member {member.id} does not belong to umbrella of block {block.id}")
+                return {
+                    "ResultCode": "C2B00012",
+                    "ResultDesc": "Member does not belong to this umbrella"
                 }
                 
             # Check for duplicate transaction
@@ -1154,7 +1177,7 @@ class MpesaConfirmationResource(BaseResource):
                 payment = self.model(
                     mpesa_id=args['TransID'],
                     account_number=args['BillRefNumber'],
-                    source_phone_number=args['MSISDN'],
+                    source_phone_number=msisdn,
                     amount=int(float(args['TransAmount'])),
                     payment_date=datetime.strptime(args['TransTime'], '%Y%m%d%H%M%S') if args.get('TransTime') else datetime.now(timezone.utc),
                     transaction_status=True,
@@ -1165,13 +1188,14 @@ class MpesaConfirmationResource(BaseResource):
                     middle_name=args.get('MiddleName'),
                     last_name=args.get('LastName'),
                     bank_id=1,  # Set default bank_id
-                    block_id=block_id,
-                    payer_id=payer_id
+                    block_id=block.id,
+                    payer_id=member.id,
+                    meeting_id=meeting.id  # Associate payment with the meeting
                 )
                 
                 db.session.add(payment)
                 db.session.commit()
-                logger.info(f"Successfully saved payment: {args['TransID']}")
+                logger.info(f"Successfully saved payment: {args['TransID']} for meeting {meeting.unique_id}")
                 
                 return {
                     "ResultCode": "0",
@@ -1200,6 +1224,86 @@ class MpesaConfirmationResource(BaseResource):
     def delete(self, id):
         return super().delete(id)
 
+class MpesaStkCallback(BaseResource):
+    """Handle callbacks from STK Push requests"""
+    
+    def post(self):
+        try:
+            # Parse the callback data
+            data = request.get_json()
+            logger.info(f"Received STK callback: {data}")
+            
+            # Extract the relevant data
+            body = data.get('Body', {}).get('stkCallback', {})
+            merchant_request_id = body.get('MerchantRequestID')
+            checkout_request_id = body.get('CheckoutRequestID')
+            result_code = body.get('ResultCode')
+            result_desc = body.get('ResultDesc')
+            
+            # Find the payment by checkout_request_id
+            payment = PaymentModel.query.filter_by(checkout_request_id=checkout_request_id).first()
+            if not payment:
+                logger.error(f"Payment not found for checkout_request_id: {checkout_request_id}")
+                return {"ResultCode": "1", "ResultDesc": "Payment not found"}
+            
+            # Update payment status based on result
+            if result_code == 0:  # Success
+                payment.status = 'completed'
+                payment.completed_at = datetime.now()
+                payment.transaction_status = True
+                
+                # Extract payment details
+                callback_metadata = body.get('CallbackMetadata', {}).get('Item', [])
+                for item in callback_metadata:
+                    if item['Name'] == 'MpesaReceiptNumber':
+                        payment.mpesa_id = item['Value']
+                    elif item['Name'] == 'Amount':
+                        payment.amount = item['Value']
+                    elif item['Name'] == 'TransactionDate':
+                        payment.payment_date = datetime.strptime(str(item['Value']), '%Y%m%d%H%M%S')
+                    elif item['Name'] == 'PhoneNumber':
+                        payment.source_phone_number = str(item['Value'])
+                
+            else:  # Failed
+                payment.status = 'failed'
+                payment.failed_at = datetime.now()
+                payment.status_reason = result_desc
+                payment.transaction_status = False
+                
+                # If payment failed due to a retryable reason, increment retry count
+                retryable_codes = [1001, 1002, 1003]  # Add relevant M-Pesa error codes
+                if result_code in retryable_codes and payment.retry_count < 3:
+                    payment.retry_count += 1
+                    payment.last_retry_at = datetime.now()
+                    
+                    # Schedule a retry
+                    try:
+                        mpesa = get_mpesa_client()
+                        response = mpesa.initiate_stk_push(
+                            phone_number=payment.source_phone_number,
+                            amount=payment.amount,
+                            account_reference=payment.account_number
+                        )
+                        
+                        # Update payment with new request IDs
+                        payment.checkout_request_id = response.get('CheckoutRequestID')
+                        payment.merchant_request_id = response.get('MerchantRequestID')
+                        payment.status = 'pending'
+                        logger.info(f"Retrying payment {payment.id}, attempt {payment.retry_count}")
+                        
+                    except Exception as e:
+                        logger.error(f"Failed to retry payment {payment.id}: {str(e)}")
+            
+            # Save changes
+            db.session.commit()
+            logger.info(f"Updated payment {payment.id} status to {payment.status}")
+            
+            return {"ResultCode": "0", "ResultDesc": "Success"}
+            
+        except Exception as e:
+            logger.error(f"Error processing STK callback: {str(e)}", exc_info=True)
+            return {"ResultCode": "1", "ResultDesc": f"Error: {str(e)}"}
+
 # API routes
 api.add_resource(UsersResource, '/users/', '/users/<int:id>')
 api.add_resource(CommunicationsResource, '/communications/', '/communications/<int:id>')
@@ -1212,3 +1316,4 @@ api.add_resource(MeetingsResource, '/meetings/', '/meetings/<int:id>')
 api.add_resource(ZonesResource, '/zones/', '/zones/<int:id>')
 api.add_resource(MpesaValidationResource, '/v1/payments/c2b/validation')
 api.add_resource(MpesaConfirmationResource, '/v1/payments/c2b/confirmation')
+api.add_resource(MpesaStkCallback, '/v1/payments/stk/callback')
