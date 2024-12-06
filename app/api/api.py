@@ -1005,6 +1005,18 @@ class ZonesResource(BaseResource):
         except Exception as e:
             # logging.error(f"Error in ZonesResource.get: {str(e)}", exc_info=True)
             return self.handle_error(e)
+class MpesaCallbackMixin:
+    def dispatch_request(self, *args, **kwargs):
+        """Override dispatch_request to bypass authentication for M-Pesa callbacks"""
+        try:
+            resp = super().dispatch_request(*args, **kwargs)
+            return resp
+        except Exception as e:
+            logger.error(f"Error in M-Pesa callback: {str(e)}")
+            return {
+                "ResultCode": "1",
+                "ResultDesc": "Internal server error"
+            }, 200  # Always return 200 to M-Pesa 
 
 class MpesaValidationResource(MpesaCallbackMixin, BaseResource):
     model = PaymentModel
@@ -1064,19 +1076,6 @@ class MpesaValidationResource(MpesaCallbackMixin, BaseResource):
 
     def delete(self, id):
         return super().delete(id)
-
-class MpesaCallbackMixin:
-    def dispatch_request(self, *args, **kwargs):
-        """Override dispatch_request to bypass authentication for M-Pesa callbacks"""
-        try:
-            resp = super().dispatch_request(*args, **kwargs)
-            return resp
-        except Exception as e:
-            logger.error(f"Error in M-Pesa callback: {str(e)}")
-            return {
-                "ResultCode": "1",
-                "ResultDesc": "Internal server error"
-            }, 200  # Always return 200 to M-Pesa 
 
 
 class MpesaConfirmationResource(MpesaCallbackMixin, BaseResource):
