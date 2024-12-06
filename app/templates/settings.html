@@ -356,46 +356,30 @@ render_field(field) %}
               </div>
               <div class="col-md-6">
                 <div class="">
-                  {{render_field(block_form.parent_umbrella)}}
+                  {{render_field(member_form.umbrella)}}
                 </div>
               </div>
             </div>
             <div class="row">
               <div class="col-md-6">
                 <div class="mb-3">
-                  {{ member_form.member_block.label(class="form-label") }}                 
-                  {% if member_form.member_block.errors %} <select class="form-select is-invalid" id="member-block" name="block">
+                  <label class="form-label">Select Block</label>
+                  <select class="select" id="member-block" name="block">
                     <option value="">Choose a Block</option>
                     {% for block in blocks %}
                     <option value="{{ block.id }}" {% if selected_block == block.id|string %}selected{% endif %}>{{ block.name }}</option>
                     {% endfor %}
                   </select>
-                    <div class="invalid-feedback">
-                      {% for error in member_form.member_block.errors %} {{ error }} {% endfor %}
-                    </div>
-                    {% else %}  <select class="form-select" id="member-block" name="block">
-                      <option value="">Choose a Block</option>
-                      {% for block in blocks %}
-                      <option value="{{ block.id }}" {% if selected_block == block.id|string %}selected{% endif %}>{{ block.name }}</option>
-                      {% endfor %}
-                    </select> {% endif %}
+                 
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="mb-3">
-                  {{ member_form.member_zone.label(class="form-label") }}   
-                  {% if member_form.member_zone.errors %}               
-                  <select class="form-select is-invalid" id="member-zone" name="member_zone">
+                  <label class="form-label">Select Zone</label>
+                  <select class="select" id="member-zone" name="member_zone">
                     <option value="">Choose a Zone</option>
                   </select>
-                  <div class="invalid-feedback">
-                    {% for error in member_form.member_zone.errors %} {{ error }} {% endfor %}
-                  </div>
-                  {% else %}
-                  <select class="form-select " id="member-zone" name="member_zone">
-                    <option value="">Choose a Zone</option>
-                  </select>
-              {% endif %}
+                
                 </div>
               </div>          
             </div>
