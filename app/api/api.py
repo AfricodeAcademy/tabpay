@@ -1005,7 +1005,7 @@ class ZonesResource(BaseResource):
         except Exception as e:
             # logging.error(f"Error in ZonesResource.get: {str(e)}", exc_info=True)
             return self.handle_error(e)
-class MpesaCallbackMixin:
+class MpesaCallbackMixin(Resource):
     def dispatch_request(self, *args, **kwargs):
         """Override dispatch_request to bypass authentication for M-Pesa callbacks"""
         try:
