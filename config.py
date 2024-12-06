@@ -9,6 +9,22 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECURITY_PASSWORD_SALT = secrets.token_hex(16)
     
+    # M-Pesa Settings
+    MPESA_ENVIRONMENT = os.environ.get('MPESA_ENVIRONMENT', 'production')
+    MPESA_CONSUMER_KEY = os.environ.get('MPESA_CONSUMER_KEY')
+    MPESA_CONSUMER_SECRET = os.environ.get('MPESA_CONSUMER_SECRET')
+    MPESA_SHORTCODE = os.environ.get('MPESA_SHORTCODE')
+    MPESA_STK_PUSH_SHORTCODE = os.environ.get('MPESA_STK_PUSH_SHORTCODE')
+    MPESA_STK_PUSH_PASSKEY = os.environ.get('MPESA_STK_PUSH_PASSKEY')
+    BASE_URL = os.environ.get('BASE_URL', 'https://tabpay.africa/api')
+    
+    # M-Pesa Callback URLs
+    MPESA_CALLBACK_BASE_URL = os.environ.get('MPESA_CALLBACK_BASE_URL', 'https://tabpay.africa/api')
+    MPESA_CALLBACK_URL = os.environ.get('MPESA_CALLBACK_URL')
+    MPESA_STK_CALLBACK_URL = os.environ.get('MPESA_STK_CALLBACK_URL')
+    MPESA_VALIDATION_URL = os.environ.get('MPESA_VALIDATION_URL')
+    MPESA_CONFIRMATION_URL = os.environ.get('MPESA_CONFIRMATION_URL')
+    
     # Flask-Security settings
     SECURITY_REGISTERABLE = True
     SECURITY_CONFIRMABLE = True
@@ -89,20 +105,7 @@ class Config:
     AT_API_KEY='atsk_26b6fd63c4ab81592df201a60a3b3c3b221234128dc34046355f0cd9198e1a7afc6e724a'
     AT_SENDER_ID='Africode'
     # M-Pesa Configuration
-    MPESA_ENVIRONMENT = os.getenv('MPESA_ENVIRONMENT', 'production')
-    MPESA_CONSUMER_KEY = os.getenv('MPESA_CONSUMER_KEY')
-    MPESA_CONSUMER_SECRET = os.getenv('MPESA_CONSUMER_SECRET')
-    MPESA_SHORTCODE = os.getenv('MPESA_SHORTCODE')
     MPESA_PASSKEY = os.getenv('MPESA_PASSKEY') 
-    MPESA_STK_PUSH_SHORTCODE = os.getenv('MPESA_STK_PUSH_SHORTCODE')
-    MPESA_STK_PUSH_PASSKEY = os.getenv('MPESA_STK_PUSH_PASSKEY')
-    
-    # M-Pesa Callback URLs
-    MPESA_CALLBACK_BASE_URL = os.getenv('MPESA_CALLBACK_BASE_URL')
-    MPESA_CALLBACK_URL = os.getenv('MPESA_CALLBACK_URL')
-    MPESA_STK_CALLBACK_URL = os.getenv('MPESA_STK_CALLBACK_URL')
-    MPESA_VALIDATION_URL = os.getenv('MPESA_VALIDATION_URL')
-    MPESA_CONFIRMATION_URL = os.getenv('MPESA_CONFIRMATION_URL')
     
     # Validate required environment variables with debugging
     missing_vars = []

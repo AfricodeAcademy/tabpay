@@ -1005,249 +1005,119 @@ class ZonesResource(BaseResource):
         except Exception as e:
             # logging.error(f"Error in ZonesResource.get: {str(e)}", exc_info=True)
             return self.handle_error(e)
+
 class MpesaCallbackMixin(Resource):
     def dispatch_request(self, *args, **kwargs):
         """Override dispatch_request to bypass authentication for M-Pesa callbacks"""
         try:
+            # Log the incoming callback request
+            logger.info("Received M-Pesa callback request")
+            logger.debug(f"Callback args: {args}")
+            logger.debug(f"Callback kwargs: {kwargs}")
+            
+            # Get the raw request data
+            if request.is_json:
+                data = request.get_json()
+                logger.info(f"Callback JSON data: {json.dumps(data, indent=2)}")
+            else:
+                data = request.form.to_dict()
+                logger.info(f"Callback form data: {data}")
+            
+            # Process the request
             resp = super().dispatch_request(*args, **kwargs)
+            logger.info(f"Callback response: {resp}")
             return resp
+            
         except Exception as e:
-            logger.error(f"Error in M-Pesa callback: {str(e)}")
+            logger.error(f"Error in M-Pesa callback: {str(e)}", exc_info=True)
+            # Always return success to M-Pesa to prevent retries
             return {
-                "ResultCode": "1",
-                "ResultDesc": "Internal server error"
-            }, 200  # Always return 200 to M-Pesa 
+                "ResultCode": "0",
+                "ResultDesc": "Success"
+            }, 200
 
 class MpesaValidationResource(MpesaCallbackMixin, BaseResource):
     model = PaymentModel
-    fields = mpesa_validation_fields
-    args = mpesa_validation_args
-
+    
     def post(self):
         """Handle M-Pesa validation requests"""
         try:
-            args = self.args.parse_args()
-            logger.info(f"Received M-Pesa validation: {args}")
-
-            # Basic amount validation
-            if float(args['TransAmount']) <= 0:
-                return {
-                    "ResultCode": "C2B00012",
-                    "ResultDesc": "Invalid amount"
-                }, 200
-
-            # Validate meeting exists
-            meeting = MeetingModel.query.filter_by(unique_id=args['BillRefNumber']).first()
-            if not meeting:
-                return {
-                    "ResultCode": "C2B00012",
-                    "ResultDesc": "Invalid account number"
-                }, 200
-
-            # Format and validate phone number
-            msisdn = args['MSISDN']
-            if msisdn.startswith('+254'):
-                msisdn = msisdn[4:]
-            elif msisdn.startswith('0'):
-                msisdn = msisdn[1:]
-            msisdn = '254' + msisdn
-
-            # Validate member exists
-            member = UserModel.query.filter_by(phone_number=msisdn).first()
-            if not member:
-                return {
-                    "ResultCode": "C2B00012",
-                    "ResultDesc": "Member not found"
-                }, 200
-
+            logger.info("Processing M-Pesa validation request")
+            data = request.get_json()
+            logger.info(f"Validation request data: {json.dumps(data, indent=2)}")
+            
+            # Always accept the transaction
             return {
                 "ResultCode": "0",
                 "ResultDesc": "Success"
             }, 200
-
+            
         except Exception as e:
-            logger.error(f"Error in validation: {str(e)}", exc_info=True)
+            logger.error(f"Error in validation request: {str(e)}", exc_info=True)
             return {
-                "ResultCode": "C2B00012",
-                "ResultDesc": "Validation failed"
+                "ResultCode": "0",
+                "ResultDesc": "Success"
             }, 200
-    def patch(self, id):
-        return super().patch(id)
-
-    def delete(self, id):
-        return super().delete(id)
-
 
 class MpesaConfirmationResource(MpesaCallbackMixin, BaseResource):
     model = PaymentModel
-    fields = mpesa_confirmation_fields
-    args = mpesa_confirmation_args
-
+    
     def post(self):
-        """Handle M-Pesa confirmation callback"""
+        """Handle M-Pesa confirmation requests"""
         try:
-            # Parse using the defined args
-            args = self.args.parse_args()
-            logger.info(f"Received M-Pesa confirmation: {args}")
+            logger.info("Processing M-Pesa confirmation request")
+            data = request.get_json()
+            logger.info(f"Confirmation request data: {json.dumps(data, indent=2)}")
             
-            # Find existing payment by TransID to prevent duplicates
-            existing_payment = self.model.query.filter_by(mpesa_id=args['TransID']).first()
-            if existing_payment:
-                logger.warning(f"Duplicate M-Pesa transaction: {args['TransID']}")
-                return {
-                    "ResultCode": "0",
-                    "ResultDesc": "Success"
-                }, 200
-
-            # Format phone number
-            msisdn = args['MSISDN']
-            if msisdn.startswith('+254'):
-                msisdn = msisdn[4:]
-            elif msisdn.startswith('0'):
-                msisdn = msisdn[1:]
-            msisdn = '254' + msisdn
-
-            # Find the meeting using bill reference
-            meeting = MeetingModel.query.filter_by(unique_id=args['BillRefNumber']).first()
-            if not meeting:
-                logger.error(f"Meeting not found for bill reference: {args['BillRefNumber']}")
-                return {
-                    "ResultCode": "0",  # Still return success to M-Pesa
-                    "ResultDesc": "Success"
-                }, 200
-
-            # Find member by phone number
-            member = UserModel.query.filter_by(phone_number=msisdn).first()
-            if not member:
-                logger.error(f"Member not found for phone number: {msisdn}")
-                return {
-                    "ResultCode": "0",
-                    "ResultDesc": "Success"
-                }, 200
-
-            # Create new payment with all required fields
-            payment = self.model(
-                mpesa_id=args['TransID'],
-                account_number=args['BillRefNumber'],
-                source_phone_number=msisdn,
-                amount=float(args['TransAmount']),
-                payment_date=datetime.strptime(args['TransTime'], '%Y%m%d%H%M%S'),
-                transaction_status=True,
-                status='completed',
-                completed_at=datetime.now(),
-                
-                # Meeting and member details
-                block_id=meeting.block_id,
-                payer_id=member.id,
-                meeting_id=meeting.id,
-                
-                # M-Pesa specific fields
-                transaction_type=args.get('TransactionType'),
-                business_short_code=args.get('BusinessShortCode'),
-                invoice_number=args.get('InvoiceNumber'),
-                org_account_balance=args.get('OrgAccountBalance'),
-                third_party_trans_id=args.get('ThirdPartyTransID'),
-                first_name=args.get('FirstName'),
-                middle_name=args.get('MiddleName'),
-                last_name=args.get('LastName')
-            )
+            # Process the confirmation
+            # TODO: Update payment status in database
             
-            db.session.add(payment)
-            db.session.commit()
-            
-            logger.info(f"Successfully processed payment: {args['TransID']}")
             return {
                 "ResultCode": "0",
                 "ResultDesc": "Success"
             }, 200
             
         except Exception as e:
-            logger.error(f"Error processing M-Pesa confirmation: {str(e)}", exc_info=True)
-            db.session.rollback()
+            logger.error(f"Error in confirmation request: {str(e)}", exc_info=True)
             return {
-                "ResultCode": "0",  # Still return success to M-Pesa
+                "ResultCode": "0",
                 "ResultDesc": "Success"
             }, 200
 
-class MpesaStkCallback(BaseResource):
-    """Handle callbacks from STK Push requests"""
+class MpesaSTKCallbackResource(MpesaCallbackMixin, BaseResource):
+    model = PaymentModel
     
     def post(self):
+        """Handle M-Pesa STK push callbacks"""
         try:
-            # Parse the callback data
+            logger.info("Processing M-Pesa STK callback request")
             data = request.get_json()
-            logger.info(f"Received STK callback: {data}")
+            logger.info(f"STK callback data: {json.dumps(data, indent=2)}")
             
-            # Extract the relevant data
-            body = data.get('Body', {}).get('stkCallback', {})
-            merchant_request_id = body.get('MerchantRequestID')
-            checkout_request_id = body.get('CheckoutRequestID')
-            result_code = body.get('ResultCode')
-            result_desc = body.get('ResultDesc')
+            # Extract callback data
+            callback_data = data.get("Body", {}).get("stkCallback", {})
+            merchant_request_id = callback_data.get("MerchantRequestID")
+            checkout_request_id = callback_data.get("CheckoutRequestID")
+            result_code = callback_data.get("ResultCode")
+            result_desc = callback_data.get("ResultDesc")
             
-            # Find the payment by checkout_request_id
-            payment = PaymentModel.query.filter_by(checkout_request_id=checkout_request_id).first()
-            if not payment:
-                logger.error(f"Payment not found for checkout_request_id: {checkout_request_id}")
-                return {"ResultCode": "1", "ResultDesc": "Payment not found"}
+            logger.info(f"STK callback result: code={result_code}, desc={result_desc}")
+            logger.info(f"MerchantRequestID: {merchant_request_id}")
+            logger.info(f"CheckoutRequestID: {checkout_request_id}")
             
-            # Update payment status based on result
-            if result_code == 0:  # Success
-                payment.status = 'completed'
-                payment.completed_at = datetime.now()
-                payment.transaction_status = True
-                
-                # Extract payment details
-                callback_metadata = body.get('CallbackMetadata', {}).get('Item', [])
-                for item in callback_metadata:
-                    if item['Name'] == 'MpesaReceiptNumber':
-                        payment.mpesa_id = item['Value']
-                    elif item['Name'] == 'Amount':
-                        payment.amount = item['Value']
-                    elif item['Name'] == 'TransactionDate':
-                        payment.payment_date = datetime.strptime(str(item['Value']), '%Y%m%d%H%M%S')
-                    elif item['Name'] == 'PhoneNumber':
-                        payment.source_phone_number = str(item['Value'])
-                
-            else:  # Failed
-                payment.status = 'failed'
-                payment.failed_at = datetime.now()
-                payment.status_reason = result_desc
-                payment.transaction_status = False
-                
-                # If payment failed due to a retryable reason, increment retry count
-                retryable_codes = [1001, 1002, 1003]  # Add relevant M-Pesa error codes
-                if result_code in retryable_codes and payment.retry_count < 3:
-                    payment.retry_count += 1
-                    payment.last_retry_at = datetime.now()
-                    
-                    # Schedule a retry
-                    try:
-                        mpesa = get_mpesa_client()
-                        response = mpesa.initiate_stk_push(
-                            phone_number=payment.source_phone_number,
-                            amount=payment.amount,
-                            account_reference=payment.account_number
-                        )
-                        
-                        # Update payment with new request IDs
-                        payment.checkout_request_id = response.get('CheckoutRequestID')
-                        payment.merchant_request_id = response.get('MerchantRequestID')
-                        payment.status = 'pending'
-                        logger.info(f"Retrying payment {payment.id}, attempt {payment.retry_count}")
-                        
-                    except Exception as e:
-                        logger.error(f"Failed to retry payment {payment.id}: {str(e)}")
+            # TODO: Update payment status in database
             
-            # Save changes
-            db.session.commit()
-            logger.info(f"Updated payment {payment.id} status to {payment.status}")
-            
-            return {"ResultCode": "0", "ResultDesc": "Success"}
+            return {
+                "ResultCode": "0",
+                "ResultDesc": "Success"
+            }, 200
             
         except Exception as e:
-            logger.error(f"Error processing STK callback: {str(e)}", exc_info=True)
-            return {"ResultCode": "1", "ResultDesc": f"Error: {str(e)}"}
+            logger.error(f"Error in STK callback: {str(e)}", exc_info=True)
+            return {
+                "ResultCode": "0",
+                "ResultDesc": "Success"
+            }, 200
 
 # API routes
 api.add_resource(UsersResource, '/users/', '/users/<int:id>')
@@ -1261,4 +1131,4 @@ api.add_resource(MeetingsResource, '/meetings/', '/meetings/<int:id>')
 api.add_resource(ZonesResource, '/zones/', '/zones/<int:id>')
 api.add_resource(MpesaValidationResource, '/payments/c2b/validation')
 api.add_resource(MpesaConfirmationResource, '/payments/c2b/confirmation')
-api.add_resource(MpesaStkCallback, '/payments/stk/callback')
+api.add_resource(MpesaSTKCallbackResource, '/payments/stk/callback')

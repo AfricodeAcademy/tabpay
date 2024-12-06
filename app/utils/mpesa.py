@@ -49,17 +49,20 @@ class MpesaAuthManager:
                 logger.debug("Using cached access token")
                 return self._access_token
 
+            # Clear any existing token
+            self._access_token = None
+            self._token_expiry = None
+
             auth_url = f'{self.auth_url}/v1/generate?grant_type=client_credentials'
             auth_string = f'{self.credentials.consumer_key}:{self.credentials.consumer_secret}'
             auth_base64 = base64.b64encode(auth_string.encode()).decode('utf-8')
             
             headers = {
-                'Authorization': f'Basic {auth_base64}',
-                'Content-Type': 'application/json'
+                'Authorization': f'Basic {auth_base64}'
             }
             
             logger.info(f"Getting new access token from: {auth_url}")
-            logger.debug(f"Using auth string: {auth_string[:10]}...")
+            logger.debug(f"Using credentials: consumer_key={self.credentials.consumer_key[:4]}***, environment={self.credentials.environment}")
             
             response = requests.get(
                 auth_url,
@@ -72,7 +75,12 @@ class MpesaAuthManager:
                 logger.error(f"Auth failed: {response.status_code} - {response.text}")
                 raise ValueError(f"Authentication failed: {response.text}")
             
-            data = response.json()
+            try:
+                data = response.json()
+            except json.JSONDecodeError:
+                logger.error(f"Invalid JSON response: {response.text}")
+                raise ValueError("Invalid JSON response from auth endpoint")
+
             self._access_token = data.get('access_token')
             
             if not self._access_token:
@@ -84,17 +92,14 @@ class MpesaAuthManager:
             self._token_expiry = datetime.now() + timedelta(seconds=expires_in - 100)  # Buffer of 100 seconds
             
             logger.info("Successfully obtained new access token")
-            logger.debug(f"Token (first 10 chars): {self._access_token[:10]}...")
+            logger.debug(f"Token expiry set to: {self._token_expiry}")
             return self._access_token
             
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Request error getting access token: {str(e)}")
-            raise
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse JSON response: {str(e)}")
-            raise
         except Exception as e:
             logger.error(f"Error getting access token: {str(e)}")
+            # Clear token on error
+            self._access_token = None
+            self._token_expiry = None
             raise
 
 class MpesaC2B:
@@ -165,26 +170,28 @@ class MpesaC2B:
         command_id: str = "CustomerPayBillOnline"
     ) -> Dict[str, Any]:
         """Initiate a C2B payment request"""
-        if self.credentials.environment == 'sandbox':
-            url = f'{self.api_url}/mpesa/c2b/v1/simulate'
-            payload = {
-                "ShortCode": self.credentials.shortcode,
-                "CommandID": command_id,
-                "Amount": int(amount),
-                "Msisdn": str(phone_number),
-                "BillRefNumber": bill_ref_number
-            }
-        else:
-            # In production, we use STK Push
-            timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-            password = self.generate_password(timestamp)
-            
+        try:
             # Format phone number (remove leading 0 or +254)
             if phone_number.startswith('+254'):
                 phone_number = phone_number[4:]
             elif phone_number.startswith('0'):
                 phone_number = phone_number[1:]
             phone_number = '254' + phone_number
+
+            # Generate timestamp and password
+            timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+            password = self.generate_password(timestamp)
+            
+            # Get callback URL from config, fallback to constructed URL
+            callback_url = current_app.config.get('MPESA_STK_CALLBACK_URL')
+            if not callback_url:
+                callback_url = f"{current_app.config['MPESA_CALLBACK_BASE_URL']}/payments/stk/callback"
+            
+            # Remove any trailing slashes
+            callback_url = callback_url.rstrip('/')
+            
+            # Remove /v1 if present in the path
+            callback_url = callback_url.replace('/v1/', '/').replace('/v1', '/')
             
             url = f'{self.api_url}/mpesa/stkpush/v1/processrequest'
             payload = {
@@ -196,29 +203,30 @@ class MpesaC2B:
                 "PartyA": int(phone_number),
                 "PartyB": self.credentials.stk_push_shortcode,
                 "PhoneNumber": int(phone_number),
-                "CallBackURL": current_app.config['MPESA_STK_CALLBACK_URL'],
+                "CallBackURL": callback_url,
                 "AccountReference": bill_ref_number,
                 "TransactionDesc": "Payment for TabPay"
             }
         
-        # Get a fresh token for each request
-        access_token = self.auth_manager.get_access_token()
-        logger.debug(f"Using access token (first 20 chars) for payment request: {access_token[:20]}...")
-        
-        headers = {
-            'Content-Type': 'application/json',
-            # 'Authorization': f'Bearer {self.auth_manager.get_access_token()}'
-            'Authorization': f'Bearer {access_token}'
-        }
-        logger.debug(f"Request headers: {json.dumps(headers, indent=2)}")
-        
-        try:
-            logger.info(f"Initiating payment to URL: {url}")
-            logger.info(f"Initiating payment with payload: {json.dumps(payload, indent=2)}")
-            response = requests.post(url, json=payload, headers=headers)
+            # Get a fresh token for each request
+            access_token = self.auth_manager.get_access_token()
             
-            logger.debug(f"Response status code: {response.status_code}")
-            logger.debug(f"Response headers: {json.dumps(dict(response.headers), indent=2)}")
+            headers = {
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {access_token}'
+            }
+            
+            logger.info(f"Initiating payment to URL: {url}")
+            logger.info(f"Using callback URL: {callback_url}")
+            logger.info(f"Initiating payment with payload: {json.dumps(payload, indent=2)}")
+            
+            response = requests.post(
+                url, 
+                json=payload, 
+                headers=headers, 
+                timeout=30,
+                verify=True
+            )
             
             if response.status_code != 200:
                 logger.error(f"Payment request failed with status {response.status_code}")
@@ -228,10 +236,14 @@ class MpesaC2B:
             result = response.json()
             logger.info(f"Successfully initiated payment: {json.dumps(result, indent=2)}")
             return result
+            
         except requests.exceptions.RequestException as e:
             logger.error(f"Error initiating payment: {str(e)}")
-            if hasattr(e.response, 'text'):
+            if hasattr(e, 'response') and e.response is not None:
                 logger.error(f"Response content: {e.response.text}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error during payment initiation: {str(e)}")
             raise
 
     def generate_password(self, timestamp: str) -> str:
