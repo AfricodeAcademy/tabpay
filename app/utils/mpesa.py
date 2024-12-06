@@ -30,68 +30,53 @@ class MpesaAuthManager:
     
     def __init__(self, credentials: MpesaCredentials):
         self.credentials = credentials
-        # Base URLs for different environments
-        self.auth_url = 'https://sandbox.safaricom.co.ke/oauth' if credentials.environment == 'sandbox' else 'https://api.safaricom.co.ke/oauth'
-        self.api_url = 'https://sandbox.safaricom.co.ke' if credentials.environment == 'sandbox' else 'https://api.safaricom.co.ke'
         self._access_token = None
+        self._token_expiry = None
+
+        # Base URLs for different environments
+        if credentials.environment == 'sandbox':
+            self.auth_url = 'https://sandbox.safaricom.co.ke/oauth'
+            self.api_url = 'https://sandbox.safaricom.co.ke'
+        else:
+            self.auth_url = 'https://api.safaricom.co.ke/oauth'
+            self.api_url = 'https://api.safaricom.co.ke'
 
     def get_access_token(self) -> str:
         """Generate or retrieve cached OAuth access token"""
-        if not self._access_token:
+        try:
+            # Check if token exists and is not expired
+            if self._access_token and self._token_expiry and datetime.now() < self._token_expiry:
+                logger.debug("Using cached access token")
+                return self._access_token
+
             auth_url = f'{self.auth_url}/v1/generate'
             auth_string = f'{self.credentials.consumer_key}:{self.credentials.consumer_secret}'
             auth_base64 = base64.b64encode(auth_string.encode()).decode('utf-8')
             
             headers = {
-                'Authorization': f'Basic {auth_base64}',
-                'Cache-Control': 'no-cache'
+                'Authorization': f'Basic {auth_base64}'
             }
             
-            params = {
-                'grant_type': 'client_credentials'
-            }
+            logger.info(f"Getting new access token from: {auth_url}")
+            response = requests.get(auth_url, headers=headers)
             
-            try:
-                logger.info(f"Attempting to get access token from: {auth_url}")
-                # logger.debug(f"Using auth string: {auth_string}")
-                logger.debug(f"Using credentials - Consumer Key: {self.credentials.consumer_key[:5]}... Consumer Secret: {self.credentials.consumer_secret[:5]}...")
-                logger.debug(f"Using auth header: Basic {auth_base64[:20]}...")
-                
-                with requests.Session() as session:
-                    response = session.get(
-                        auth_url,
-                        headers=headers,
-                        params=params,
-                        verify=True,
-                        timeout=60
-                    )
-                
-                if response.status_code != 200:
-                    logger.error(f"Authentication failed with status {response.status_code}")
-                    logger.error(f"Response content: {response.text}")
-                    response.raise_for_status()
-                
-                response_data = response.json()
-                logger.debug(f"Token response data: {json.dumps(response_data, indent=2)}")
-                
-                self._access_token = response_data.get('access_token')
-                if not self._access_token:
-                    raise ValueError("No access token in response")
-                    
-                logger.info("Successfully generated access token")
-                logger.debug(f"Access token (first 20 chars): {self._access_token[:20]}...")
-                
-            except requests.exceptions.RequestException as e:
-                logger.error(f"Error generating access token: {str(e)}")
-                raise
-            except ValueError as e:
-                logger.error(f"Error parsing access token: {str(e)}")
-                raise
-            except Exception as e:
-                logger.error(f"Unexpected error during authentication: {str(e)}")
-                raise
-        
-        return self._access_token
+            if response.status_code != 200:
+                logger.error(f"Auth failed: {response.status_code} - {response.text}")
+                raise ValueError(f"Authentication failed: {response.text}")
+            
+            data = response.json()
+            self._access_token = data.get('access_token')
+            
+            # Set token expiry (typically 1 hour)
+            expires_in = int(data.get('expires_in', 3599))
+            self._token_expiry = datetime.now() + timedelta(seconds=expires_in - 100)  # Buffer of 100 seconds
+            
+            logger.info("Successfully obtained new access token")
+            return self._access_token
+            
+        except Exception as e:
+            logger.error(f"Error getting access token: {str(e)}")
+            raise
 
 class MpesaC2B:
     """Handles M-Pesa Customer to Business (C2B) operations"""
@@ -273,7 +258,7 @@ class MpesaC2B:
             "PartyA": phone_number,
             "PartyB": self.credentials.stk_push_shortcode,
             "PhoneNumber": phone_number,
-            "CallBackURL": current_app.config.get('MPESA_CALLBACK_URL'),
+            "CallBackURL": current_app.config.get('MPESA_STK_CALLBACK_URL'),
             "AccountReference": account_reference,
             "TransactionDesc": transaction_desc
         }
