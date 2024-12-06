@@ -1006,129 +1006,33 @@ class ZonesResource(BaseResource):
             # logging.error(f"Error in ZonesResource.get: {str(e)}", exc_info=True)
             return self.handle_error(e)
 
-class MpesaValidationResource(BaseResource):
+class MpesaValidationResource(MpesaCallbackMixin, BaseResource):
     model = PaymentModel
     fields = mpesa_validation_fields
     args = mpesa_validation_args
 
-    def get(self, id=None):
-        return super().get(id)
-
     def post(self):
-        """Handle M-Pesa validation requests for both STK push and direct payments"""
+        """Handle M-Pesa validation requests"""
         try:
-            # Parse and validate incoming data
             args = self.args.parse_args()
             logger.info(f"Received M-Pesa validation: {args}")
-            
-            # Validate amount is positive
-            if args['TransAmount'] <= 0:
-                logger.error("Invalid amount: must be positive")
+
+            # Basic amount validation
+            if float(args['TransAmount']) <= 0:
                 return {
                     "ResultCode": "C2B00012",
-                    "ResultDesc": "Invalid amount: must be positive"
-                }
-            
-            # Get bill reference number (meeting unique_id)
-            bill_ref = args['BillRefNumber']
-            
-            # Find the meeting using the bill reference
-            meeting = MeetingModel.query.filter_by(unique_id=bill_ref).first()
-            if not meeting:
-                logger.error(f"Meeting not found for bill reference: {bill_ref}")
-                return {
-                    "ResultCode": "C2B00012",
-                    "ResultDesc": "Invalid bill reference number"
-                }
-                
-            # For direct payments, we need to find the member by phone number
-            msisdn = args['MSISDN']  # Phone number making payment
-            if msisdn.startswith('+254'):
-                msisdn = msisdn[4:]
-            elif msisdn.startswith('0'):
-                msisdn = msisdn[1:]
-            msisdn = '254' + msisdn
-            
-            # Find member by phone number
-            member = UserModel.query.filter_by(phone_number=msisdn).first()
-            if not member:
-                logger.error(f"Member not found for phone number: {msisdn}")
-                return {
-                    "ResultCode": "C2B00012",
-                    "ResultDesc": "Member not found for this phone number"
-                }
-            
-            # Check if member belongs to the meeting's block
-            if not member.blocks.filter_by(id=meeting.block_id).first():
-                logger.error(f"Member {member.id} does not belong to block {meeting.block_id}")
-                return {
-                    "ResultCode": "C2B00012",
-                    "ResultDesc": "Member does not belong to this block"
-                }
-                
-            # Validation successful
-            return {
-                "ResultCode": "0",
-                "ResultDesc": "Success"
-            }
-            
-        except Exception as e:
-            logger.error(f"Error in validation endpoint: {str(e)}", exc_info=True)
-            return {
-                "ResultCode": "1",
-                "ResultDesc": "Internal server error"
-            }
+                    "ResultDesc": "Invalid amount"
+                }, 200
 
-    def patch(self, id):
-        return super().patch(id)
-
-    def delete(self, id):
-        return super().delete(id)
-
-class MpesaConfirmationResource(BaseResource):
-    model = PaymentModel
-    fields = mpesa_confirmation_fields
-    args = mpesa_confirmation_args
-
-    def get(self, id=None):
-        return super().get(id)
-
-    def post(self):
-        """Handle M-Pesa confirmation callback"""
-        try:
-            # Parse and validate incoming data
-            args = self.args.parse_args()
-            logger.info(f"Received M-Pesa confirmation: {args}")
-            
-            # Validate amount is positive
-            if args['TransAmount'] <= 0:
-                logger.error("Invalid amount: must be positive")
-                return {
-                    "ResultCode": "C2B00012",
-                    "ResultDesc": "Invalid amount: must be positive"
-                }
-            
-            # Validate TransTime format if provided
-            if args.get('TransTime'):
-                try:
-                    datetime.strptime(args['TransTime'], '%Y%m%d%H%M%S')
-                except ValueError:
-                    logger.error(f"Invalid transaction time format: {args['TransTime']}")
-                    return {
-                        "ResultCode": "C2B00012",
-                        "ResultDesc": "Invalid transaction time format"
-                    }
-            
-            # Find the umbrella meeting using bill reference (meeting unique_id)
+            # Validate meeting exists
             meeting = MeetingModel.query.filter_by(unique_id=args['BillRefNumber']).first()
             if not meeting:
-                logger.error(f"Meeting not found for bill reference: {args['BillRefNumber']}")
                 return {
                     "ResultCode": "C2B00012",
-                    "ResultDesc": "Invalid bill reference number"
-                }
+                    "ResultDesc": "Invalid account number"
+                }, 200
 
-            # Format phone number consistently
+            # Format and validate phone number
             msisdn = args['MSISDN']
             if msisdn.startswith('+254'):
                 msisdn = msisdn[4:]
@@ -1136,93 +1040,135 @@ class MpesaConfirmationResource(BaseResource):
                 msisdn = msisdn[1:]
             msisdn = '254' + msisdn
 
-            # Find member by phone number
+            # Validate member exists
             member = UserModel.query.filter_by(phone_number=msisdn).first()
             if not member:
-                logger.error(f"Member not found for phone number: {msisdn}")
                 return {
                     "ResultCode": "C2B00012",
-                    "ResultDesc": "Member not found for this phone number"
-                }
+                    "ResultDesc": "Member not found"
+                }, 200
 
-            # Get the block from the meeting
-            block = meeting.block
-            if not block:
-                logger.error(f"Block not found for meeting: {meeting.id}")
-                return {
-                    "ResultCode": "C2B00012",
-                    "ResultDesc": "Meeting block not found"
-                }
-
-            # Verify member belongs to the umbrella
-            if not member.blocks.filter_by(parent_umbrella_id=block.parent_umbrella_id).first():
-                logger.error(f"Member {member.id} does not belong to umbrella of block {block.id}")
-                return {
-                    "ResultCode": "C2B00012",
-                    "ResultDesc": "Member does not belong to this umbrella"
-                }
-                
-            # Check for duplicate transaction
-            existing_payment = self.model.query.filter_by(mpesa_id=args['TransID']).first()
-            if existing_payment:
-                logger.warning(f"Duplicate M-Pesa transaction: {args['TransID']}")
-                return {
-                    "ResultCode": "0",
-                    "ResultDesc": "Success",
-                    "payment": existing_payment
-                }
-                
-            # Create new payment record
-            try:
-                payment = self.model(
-                    mpesa_id=args['TransID'],
-                    account_number=args['BillRefNumber'],
-                    source_phone_number=msisdn,
-                    amount=int(float(args['TransAmount'])),
-                    payment_date=datetime.strptime(args['TransTime'], '%Y%m%d%H%M%S') if args.get('TransTime') else datetime.now(timezone.utc),
-                    transaction_status=True,
-                    transaction_type=args['TransactionType'],
-                    business_short_code=args['BusinessShortCode'],
-                    invoice_number=args.get('InvoiceNumber'),
-                    first_name=args.get('FirstName'),
-                    middle_name=args.get('MiddleName'),
-                    last_name=args.get('LastName'),
-                    bank_id=1,  # Set default bank_id
-                    block_id=block.id,
-                    payer_id=member.id,
-                    meeting_id=meeting.id  # Associate payment with the meeting
-                )
-                
-                db.session.add(payment)
-                db.session.commit()
-                logger.info(f"Successfully saved payment: {args['TransID']} for meeting {meeting.unique_id}")
-                
-                return {
-                    "ResultCode": "0",
-                    "ResultDesc": "Success",
-                    "payment": payment
-                }
-                
-            except Exception as e:
-                logger.error(f"Error saving payment: {str(e)}")
-                db.session.rollback()
-                return {
-                    "ResultCode": "1",
-                    "ResultDesc": "Internal server error"
-                }
-                
-        except Exception as e:
-            logger.error(f"Error processing M-Pesa confirmation: {str(e)}", exc_info=True)
             return {
-                "ResultCode": "1",
-                "ResultDesc": f"Error: {str(e)}"
-            }
+                "ResultCode": "0",
+                "ResultDesc": "Success"
+            }, 200
 
+        except Exception as e:
+            logger.error(f"Error in validation: {str(e)}", exc_info=True)
+            return {
+                "ResultCode": "C2B00012",
+                "ResultDesc": "Validation failed"
+            }, 200
     def patch(self, id):
         return super().patch(id)
 
     def delete(self, id):
         return super().delete(id)
+
+class MpesaCallbackMixin:
+    def dispatch_request(self, *args, **kwargs):
+        """Override dispatch_request to bypass authentication for M-Pesa callbacks"""
+        try:
+            resp = super().dispatch_request(*args, **kwargs)
+            return resp
+        except Exception as e:
+            logger.error(f"Error in M-Pesa callback: {str(e)}")
+            return {
+                "ResultCode": "1",
+                "ResultDesc": "Internal server error"
+            }, 200  # Always return 200 to M-Pesa 
+
+
+class MpesaConfirmationResource(MpesaCallbackMixin, BaseResource):
+    model = PaymentModel
+    fields = mpesa_confirmation_fields
+    args = mpesa_confirmation_args
+
+    def post(self):
+        """Handle M-Pesa confirmation callback"""
+        try:
+            # Parse using the defined args
+            args = self.args.parse_args()
+            logger.info(f"Received M-Pesa confirmation: {args}")
+            
+            # Find existing payment by TransID to prevent duplicates
+            existing_payment = self.model.query.filter_by(mpesa_id=args['TransID']).first()
+            if existing_payment:
+                logger.warning(f"Duplicate M-Pesa transaction: {args['TransID']}")
+                return {
+                    "ResultCode": "0",
+                    "ResultDesc": "Success"
+                }, 200
+
+            # Format phone number
+            msisdn = args['MSISDN']
+            if msisdn.startswith('+254'):
+                msisdn = msisdn[4:]
+            elif msisdn.startswith('0'):
+                msisdn = msisdn[1:]
+            msisdn = '254' + msisdn
+
+            # Find the meeting using bill reference
+            meeting = MeetingModel.query.filter_by(unique_id=args['BillRefNumber']).first()
+            if not meeting:
+                logger.error(f"Meeting not found for bill reference: {args['BillRefNumber']}")
+                return {
+                    "ResultCode": "0",  # Still return success to M-Pesa
+                    "ResultDesc": "Success"
+                }, 200
+
+            # Find member by phone number
+            member = UserModel.query.filter_by(phone_number=msisdn).first()
+            if not member:
+                logger.error(f"Member not found for phone number: {msisdn}")
+                return {
+                    "ResultCode": "0",
+                    "ResultDesc": "Success"
+                }, 200
+
+            # Create new payment with all required fields
+            payment = self.model(
+                mpesa_id=args['TransID'],
+                account_number=args['BillRefNumber'],
+                source_phone_number=msisdn,
+                amount=float(args['TransAmount']),
+                payment_date=datetime.strptime(args['TransTime'], '%Y%m%d%H%M%S'),
+                transaction_status=True,
+                status='completed',
+                completed_at=datetime.now(),
+                
+                # Meeting and member details
+                block_id=meeting.block_id,
+                payer_id=member.id,
+                meeting_id=meeting.id,
+                
+                # M-Pesa specific fields
+                transaction_type=args.get('TransactionType'),
+                business_short_code=args.get('BusinessShortCode'),
+                invoice_number=args.get('InvoiceNumber'),
+                org_account_balance=args.get('OrgAccountBalance'),
+                third_party_trans_id=args.get('ThirdPartyTransID'),
+                first_name=args.get('FirstName'),
+                middle_name=args.get('MiddleName'),
+                last_name=args.get('LastName')
+            )
+            
+            db.session.add(payment)
+            db.session.commit()
+            
+            logger.info(f"Successfully processed payment: {args['TransID']}")
+            return {
+                "ResultCode": "0",
+                "ResultDesc": "Success"
+            }, 200
+            
+        except Exception as e:
+            logger.error(f"Error processing M-Pesa confirmation: {str(e)}", exc_info=True)
+            db.session.rollback()
+            return {
+                "ResultCode": "0",  # Still return success to M-Pesa
+                "ResultDesc": "Success"
+            }, 200
 
 class MpesaStkCallback(BaseResource):
     """Handle callbacks from STK Push requests"""
