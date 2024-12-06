@@ -2,7 +2,7 @@ import requests
 import base64
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 from dataclasses import dataclass
 from flask import current_app
@@ -49,16 +49,24 @@ class MpesaAuthManager:
                 logger.debug("Using cached access token")
                 return self._access_token
 
-            auth_url = f'{self.auth_url}/v1/generate'
+            auth_url = f'{self.auth_url}/v1/generate?grant_type=client_credentials'
             auth_string = f'{self.credentials.consumer_key}:{self.credentials.consumer_secret}'
             auth_base64 = base64.b64encode(auth_string.encode()).decode('utf-8')
             
             headers = {
-                'Authorization': f'Basic {auth_base64}'
+                'Authorization': f'Basic {auth_base64}',
+                'Content-Type': 'application/json'
             }
             
             logger.info(f"Getting new access token from: {auth_url}")
-            response = requests.get(auth_url, headers=headers)
+            logger.debug(f"Using auth string: {auth_string[:10]}...")
+            
+            response = requests.get(
+                auth_url,
+                headers=headers,
+                verify=True,
+                timeout=30
+            )
             
             if response.status_code != 200:
                 logger.error(f"Auth failed: {response.status_code} - {response.text}")
@@ -67,13 +75,24 @@ class MpesaAuthManager:
             data = response.json()
             self._access_token = data.get('access_token')
             
+            if not self._access_token:
+                logger.error(f"No access token in response: {data}")
+                raise ValueError("No access token in response")
+            
             # Set token expiry (typically 1 hour)
             expires_in = int(data.get('expires_in', 3599))
             self._token_expiry = datetime.now() + timedelta(seconds=expires_in - 100)  # Buffer of 100 seconds
             
             logger.info("Successfully obtained new access token")
+            logger.debug(f"Token (first 10 chars): {self._access_token[:10]}...")
             return self._access_token
             
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Request error getting access token: {str(e)}")
+            raise
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse JSON response: {str(e)}")
+            raise
         except Exception as e:
             logger.error(f"Error getting access token: {str(e)}")
             raise
