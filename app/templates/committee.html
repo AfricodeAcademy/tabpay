@@ -62,113 +62,119 @@
           <div>
             {{ flash.render_flash_messages() }} {% if committee_members.chairmen
             %}
-            <table
-              class="table table-responsive border-success table-bordered text-center table-hover"
-            >
-              <thead>
-                <tr>
-                  <th scope="col">#</th>
-                  <th scope="col">Name</th>
-                  <th scope="col">Block</th>
-                  <th scope="col">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for chairman in committee_members.chairmen %}
-                <tr>
-                  <th scope="row">{{ loop.index }}</th>
-                  <td>{{ chairman.full_name }}</td>
-                  <td>
-                    {% if chairman.chaired_blocks %}{{
-                    chairman.chaired_blocks[0].name }}{% else %}No block
-                    assigned{% endif %}
-                  </td>
-                  <td>
-                    <form
-                      method="POST"
-                      action="{{ url_for('main.committee', user_id=chairman.id) }}"
-                    >
-                      <input type="hidden" name="active_tab" value="chairmen" />
-                      <input
-                        type="hidden"
-                        name="csrf_token"
-                        value="{{ csrf_token() }}"
-                      />
-                      <button
-                        type="button"
-                        class="btn btn-danger"
-                        data-bs-toggle="modal"
-                        data-bs-target="#removeChairmanModal{{ chairman.id }}"
+            <div class="table-responsive">
+              <table
+                class="table border-success table-bordered text-center table-hover"
+              >
+                <thead>
+                  <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Block</th>
+                    <th scope="col">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for chairman in committee_members.chairmen %}
+                  <tr>
+                    <th scope="row">{{ loop.index }}</th>
+                    <td>{{ chairman.full_name }}</td>
+                    <td>
+                      {% if chairman.chaired_blocks %}{{
+                      chairman.chaired_blocks[0].name }}{% else %}No block
+                      assigned{% endif %}
+                    </td>
+                    <td>
+                      <form
+                        method="POST"
+                        action="{{ url_for('main.committee', user_id=chairman.id) }}"
                       >
-                        Remove Chairman
-                      </button>
-                    </form>
-                  </td>
-                </tr>
-
-                <!-- Modal for Removing Chairman -->
-                <div
-                  class="modal fade"
-                  id="removeChairmanModal{{ chairman.id }}"
-                  tabindex="-1"
-                  aria-labelledby="removeChairmanLabel"
-                  aria-hidden="true"
-                >
-                  <div class="modal-dialog">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <h5 class="modal-title" id="removeChairmanLabel">
+                        <input
+                          type="hidden"
+                          name="active_tab"
+                          value="chairmen"
+                        />
+                        <input
+                          type="hidden"
+                          name="csrf_token"
+                          value="{{ csrf_token() }}"
+                        />
+                        <button
+                          type="button"
+                          class="btn btn-danger"
+                          data-bs-toggle="modal"
+                          data-bs-target="#removeChairmanModal{{ chairman.id }}"
+                        >
                           Remove Chairman
-                        </h5>
-                        <button
-                          type="button"
-                          class="btn-close"
-                          data-bs-dismiss="modal"
-                          aria-label="Close"
-                        ></button>
-                      </div>
-                      <div class="modal-body">
-                        Are you sure you want to remove {{ chairman.full_name
-                        }}'s Chairman role?
-                      </div>
-                      <div class="modal-footer">
-                        <form
-                          method="POST"
-                          action="{{ url_for('main.committee', user_id=chairman.id) }}"
-                        >
-                          <input type="hidden" name="role_id" value="3" />
-                          <input
-                            type="hidden"
-                            name="active_tab"
-                            value="chairmen"
-                          />
-                          <input
-                            type="hidden"
-                            name="csrf_token"
-                            value="{{ csrf_token() }}"
-                          />
-                          <button
-                            type="submit"
-                            name="remove_role_submit"
-                            class="btn btn-danger"
-                          >
-                            Yes, Remove
-                          </button>
-                        </form>
-                        <button
-                          type="button"
-                          class="btn btn-secondary"
-                          data-bs-dismiss="modal"
-                        >
-                          Cancel
                         </button>
+                      </form>
+                    </td>
+                  </tr>
+
+                  <!-- Modal for Removing Chairman -->
+                  <div
+                    class="modal fade"
+                    id="removeChairmanModal{{ chairman.id }}"
+                    tabindex="-1"
+                    aria-labelledby="removeChairmanLabel"
+                    aria-hidden="true"
+                  >
+                    <div class="modal-dialog">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h5 class="modal-title" id="removeChairmanLabel">
+                            Remove Chairman
+                          </h5>
+                          <button
+                            type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"
+                          ></button>
+                        </div>
+                        <div class="modal-body">
+                          Are you sure you want to remove {{ chairman.full_name
+                          }}'s Chairman role?
+                        </div>
+                        <div class="modal-footer">
+                          <form
+                            method="POST"
+                            action="{{ url_for('main.committee', user_id=chairman.id) }}"
+                          >
+                            <input type="hidden" name="role_id" value="3" />
+                            <input
+                              type="hidden"
+                              name="active_tab"
+                              value="chairmen"
+                            />
+                            <input
+                              type="hidden"
+                              name="csrf_token"
+                              value="{{ csrf_token() }}"
+                            />
+                            <button
+                              type="submit"
+                              name="remove_role_submit"
+                              class="btn btn-danger"
+                            >
+                              Yes, Remove
+                            </button>
+                          </form>
+                          <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                {% endfor %}
-              </tbody>
-            </table>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
             {% else %}
             <div class="alert alert-info text-center">
               No chairmen found.
@@ -190,117 +196,119 @@
           <div>
             {{ flash.render_flash_messages() }} {% if
             committee_members.secretaries %}
-            <table
-              class="table table-responsive border-success table-bordered text-center table-hover"
-            >
-              <thead>
-                <tr>
-                  <th scope="col">#</th>
-                  <th scope="col">Name</th>
-                  <th scope="col">Block</th>
-                  <th scope="col">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for secretary in committee_members.secretaries %}
-                <tr>
-                  <th scope="row">{{ loop.index }}</th>
-                  <td>{{ secretary.full_name }}</td>
-                  <td>
-                    {% if secretary.secretary_blocks %}{{
-                    secretary.secretary_blocks[0].name }}{% else %}No block
-                    assigned{% endif %}
-                  </td>
-                  <td>
-                    <form
-                      method="POST"
-                      action="{{ url_for('main.committee', user_id=secretary.id) }}"
-                    >
-                      <input
-                        type="hidden"
-                        name="active_tab"
-                        value="secretaries"
-                      />
-                      <input
-                        type="hidden"
-                        name="csrf_token"
-                        value="{{ csrf_token() }}"
-                      />
-                      <button
-                        type="button"
-                        class="btn btn-danger"
-                        data-bs-toggle="modal"
-                        data-bs-target="#removeSecretaryModal{{ secretary.id }}"
+            <div class="table-responsive">
+              <table
+                class="table border-success table-bordered text-center table-hover"
+              >
+                <thead>
+                  <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Block</th>
+                    <th scope="col">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for secretary in committee_members.secretaries %}
+                  <tr>
+                    <th scope="row">{{ loop.index }}</th>
+                    <td>{{ secretary.full_name }}</td>
+                    <td>
+                      {% if secretary.secretary_blocks %}{{
+                      secretary.secretary_blocks[0].name }}{% else %}No block
+                      assigned{% endif %}
+                    </td>
+                    <td>
+                      <form
+                        method="POST"
+                        action="{{ url_for('main.committee', user_id=secretary.id) }}"
                       >
-                        Remove Secretary
-                      </button>
-                    </form>
-                  </td>
-                </tr>
-
-                <!-- Modal for Removing Secretary -->
-                <div
-                  class="modal fade"
-                  id="removeSecretaryModal{{ secretary.id }}"
-                  tabindex="-1"
-                  aria-labelledby="removeSecretaryLabel"
-                  aria-hidden="true"
-                >
-                  <div class="modal-dialog">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <h5 class="modal-title" id="removeSecretaryLabel">
+                        <input
+                          type="hidden"
+                          name="active_tab"
+                          value="secretaries"
+                        />
+                        <input
+                          type="hidden"
+                          name="csrf_token"
+                          value="{{ csrf_token() }}"
+                        />
+                        <button
+                          type="button"
+                          class="btn btn-danger"
+                          data-bs-toggle="modal"
+                          data-bs-target="#removeSecretaryModal{{ secretary.id }}"
+                        >
                           Remove Secretary
-                        </h5>
-                        <button
-                          type="button"
-                          class="btn-close"
-                          data-bs-dismiss="modal"
-                          aria-label="Close"
-                        ></button>
-                      </div>
-                      <div class="modal-body">
-                        Are you sure you want to remove {{ secretary.full_name
-                        }}'s Secretary role?
-                      </div>
-                      <div class="modal-footer">
-                        <form
-                          method="POST"
-                          action="{{ url_for('main.committee', user_id=secretary.id) }}"
-                        >
-                          <input type="hidden" name="role_id" value="4" />
-                          <input
-                            type="hidden"
-                            name="active_tab"
-                            value="secretaries"
-                          />
-                          <input
-                            type="hidden"
-                            name="csrf_token"
-                            value="{{ csrf_token() }}"
-                          />
-                          <button
-                            type="submit"
-                            name="remove_role_submit"
-                            class="btn btn-danger"
-                          >
-                            Yes, Remove
-                          </button>
-                        </form>
-                        <button
-                          type="button"
-                          class="btn btn-secondary"
-                          data-bs-dismiss="modal"
-                        >
-                          Cancel
                         </button>
+                      </form>
+                    </td>
+                  </tr>
+
+                  <!-- Modal for Removing Secretary -->
+                  <div
+                    class="modal fade"
+                    id="removeSecretaryModal{{ secretary.id }}"
+                    tabindex="-1"
+                    aria-labelledby="removeSecretaryLabel"
+                    aria-hidden="true"
+                  >
+                    <div class="modal-dialog">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h5 class="modal-title" id="removeSecretaryLabel">
+                            Remove Secretary
+                          </h5>
+                          <button
+                            type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"
+                          ></button>
+                        </div>
+                        <div class="modal-body">
+                          Are you sure you want to remove {{ secretary.full_name
+                          }}'s Secretary role?
+                        </div>
+                        <div class="modal-footer">
+                          <form
+                            method="POST"
+                            action="{{ url_for('main.committee', user_id=secretary.id) }}"
+                          >
+                            <input type="hidden" name="role_id" value="4" />
+                            <input
+                              type="hidden"
+                              name="active_tab"
+                              value="secretaries"
+                            />
+                            <input
+                              type="hidden"
+                              name="csrf_token"
+                              value="{{ csrf_token() }}"
+                            />
+                            <button
+                              type="submit"
+                              name="remove_role_submit"
+                              class="btn btn-danger"
+                            >
+                              Yes, Remove
+                            </button>
+                          </form>
+                          <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                {% endfor %}
-              </tbody>
-            </table>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
             {% else %}
             <div class="alert alert-info text-center">
               No secretaries found.
@@ -322,119 +330,121 @@
           <div>
             {{ flash.render_flash_messages() }} {% if
             committee_members.treasurers %}
-            <table
-              class="table table-responsive border-success table-bordered text-center table-hover"
-            >
-              <thead>
-                <tr>
-                  <th scope="col">#</th>
-                  <th scope="col">Name</th>
-                  <th scope="col">Block</th>
-                  <th scope="col">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for treasurer in committee_members.treasurers %}
-                <tr>
-                  <th scope="row">{{ loop.index }}</th>
-                  <td>{{ treasurer.full_name }}</td>
-                  <td>
-                    {% if treasurer.treasurer_blocks %}{{
-                    treasurer.treasurer_blocks[0].name }}{% else %}No block
-                    assigned{% endif %}
-                  </td>
-                  <td>
-                    <form
-                      method="POST"
-                      action="{{ url_for('main.committee', user_id=treasurer.id) }}"
-                    >
-                      <input
-                        type="hidden"
-                        name="active_tab"
-                        value="treasurers"
-                      />
-                      <input
-                        type="hidden"
-                        name="csrf_token"
-                        value="{{ csrf_token() }}"
-                      />
-                      <button
-                        type="button"
-                        class="btn btn-danger"
-                        data-bs-toggle="modal"
-                        data-bs-target="#removeTreasurerModal{{ treasurer.id }}"
+            <div class="table-responsive">
+              <table
+                class="table border-success table-bordered text-center table-hover"
+              >
+                <thead>
+                  <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Block</th>
+                    <th scope="col">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for treasurer in committee_members.treasurers %}
+                  <tr>
+                    <th scope="row">{{ loop.index }}</th>
+                    <td>{{ treasurer.full_name }}</td>
+                    <td>
+                      {% if treasurer.treasurer_blocks %}{{
+                      treasurer.treasurer_blocks[0].name }}{% else %}No block
+                      assigned{% endif %}
+                    </td>
+                    <td>
+                      <form
+                        method="POST"
+                        action="{{ url_for('main.committee', user_id=treasurer.id) }}"
                       >
-                        Remove Treasurer
-                      </button>
-                    </form>
-                  </td>
-                </tr>
-
-                <!-- Modal for Removing Treasurer -->
-                <div
-                  class="modal fade"
-                  id="removeTreasurerModal{{ treasurer.id }}"
-                  tabindex="-1"
-                  aria-labelledby="removeTreasurerLabel"
-                  aria-hidden="true"
-                >
-                  <div class="modal-dialog">
-                    <div class="modal-content">
-                      <div class="modal-header">
-                        <h5 class="modal-title" id="removeTreasurerLabel">
+                        <input
+                          type="hidden"
+                          name="active_tab"
+                          value="treasurers"
+                        />
+                        <input
+                          type="hidden"
+                          name="csrf_token"
+                          value="{{ csrf_token() }}"
+                        />
+                        <button
+                          type="button"
+                          class="btn btn-danger"
+                          data-bs-toggle="modal"
+                          data-bs-target="#removeTreasurerModal{{ treasurer.id }}"
+                        >
                           Remove Treasurer
-                        </h5>
-                        <button type="button" class="btn-close"
-                        data-bs-dismiss="
-                        <button
-                          type="button"
-                          class="btn-close"
-                          data-bs-dismiss="modal"
-                          aria-label="Close"
-                        ></button>
-                      </div>
-                      <div class="modal-body">
-                        Are you sure you want to remove {{ treasurer.full_name
-                        }}'s Treasurer role?
-                      </div>
-                      <div class="modal-footer">
-                        <form
-                          method="POST"
-                          action="{{ url_for('main.committee', user_id=treasurer.id) }}"
-                        >
-                          <input type="hidden" name="role_id" value="5" />
-                          <input
-                            type="hidden"
-                            name="active_tab"
-                            value="treasurers"
-                          />
-                          <input
-                            type="hidden"
-                            name="csrf_token"
-                            value="{{ csrf_token() }}"
-                          />
-                          <button
-                            type="submit"
-                            name="remove_role_submit"
-                            class="btn btn-danger"
-                          >
-                            Yes, Remove
-                          </button>
-                        </form>
-                        <button
-                          type="button"
-                          class="btn btn-secondary"
-                          data-bs-dismiss="modal"
-                        >
-                          Cancel
                         </button>
+                      </form>
+                    </td>
+                  </tr>
+
+                  <!-- Modal for Removing Treasurer -->
+                  <div
+                    class="modal fade"
+                    id="removeTreasurerModal{{ treasurer.id }}"
+                    tabindex="-1"
+                    aria-labelledby="removeTreasurerLabel"
+                    aria-hidden="true"
+                  >
+                    <div class="modal-dialog">
+                      <div class="modal-content">
+                        <div class="modal-header">
+                          <h5 class="modal-title" id="removeTreasurerLabel">
+                            Remove Treasurer
+                          </h5>
+                          <button type="button" class="btn-close"
+                          data-bs-dismiss="
+                          <button
+                            type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close"
+                          ></button>
+                        </div>
+                        <div class="modal-body">
+                          Are you sure you want to remove {{ treasurer.full_name
+                          }}'s Treasurer role?
+                        </div>
+                        <div class="modal-footer">
+                          <form
+                            method="POST"
+                            action="{{ url_for('main.committee', user_id=treasurer.id) }}"
+                          >
+                            <input type="hidden" name="role_id" value="5" />
+                            <input
+                              type="hidden"
+                              name="active_tab"
+                              value="treasurers"
+                            />
+                            <input
+                              type="hidden"
+                              name="csrf_token"
+                              value="{{ csrf_token() }}"
+                            />
+                            <button
+                              type="submit"
+                              name="remove_role_submit"
+                              class="btn btn-danger"
+                            >
+                              Yes, Remove
+                            </button>
+                          </form>
+                          <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                {% endfor %}
-              </tbody>
-            </table>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
             {% else %}
             <div class="alert alert-info text-center">
               No treasurers found.
