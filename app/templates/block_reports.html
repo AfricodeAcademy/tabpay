@@ -90,7 +90,8 @@ block content %}
               </div>
             </div>
 
-            <table class="table table-responsive text-center mt-5">
+            <table             class="table table-responsive border-success table-bordered text-center table-hover"
+            >
               <thead>
                 <tr>
                   <th colspan="5">
@@ -199,7 +200,9 @@ block content %}
             </div>
           </div>
 
-          <table class="table table-responsive text-center">
+          <table             
+          class="table table-responsive border-success table-bordered text-center table-hover"
+          >
             <thead>
               <tr>
                 <tr>
@@ -218,15 +221,18 @@ block content %}
                     </div>
                   </th>
                 </tr>
-                <th>Full Names</th>
-                <th>Status</th>
-                <th>Amount</th>
-                <th>Send reminder</th>
+                <th>#</th>
+                <th scope="col">Full Names</th>
+                <th scope="col">Status</th>
+                <th scope="col">Amount</th>
+                <th scope="col">Send reminder</th>
               </tr>
             </thead>
             <tbody id="contribution-details">
               {% for member in members %}
               <tr>
+                <th scope="row">{{ loop.index }}</th>
+
                 <td>{{member.full_name}}</td>
                 <td
                   style="color: {% if member.status == 'Pending' %}red{% else %}#4c9323{% endif %}"

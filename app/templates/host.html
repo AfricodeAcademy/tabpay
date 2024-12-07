@@ -476,22 +476,27 @@ Regular Block Hosting {% endblock %} {% block content %}
             </div>
           </div>
 
-          <table class="table table-responsive text-center" id="membersTable">
+          <table
+            class="table table-responsive border-success table-bordered text-center table-hover"
+            id="membersTable"
+          >
             <thead>
               <tr>
-                <th>Full Names</th>
-                <th>Phone Number</th>
-                <th>ID Number</th>
-                <th>Membership</th>
-                <th>Bank</th>
-                <th>A/C Number</th>
-                <th>Edit</th>
-                <th>Remove</th>
+                <th class="">#</th>
+                <th scope="col">Full Names</th>
+                <th scope="col">Phone Number</th>
+                <th scope="col">ID Number</th>
+                <th scope="col">Membership</th>
+                <th scope="col">Bank</th>
+                <th scope="col">A/C Number</th>
+                <th scope="col">Edit</th>
+                <th scope="col">Remove</th>
               </tr>
             </thead>
             <tbody>
               {% for member in members %}
               <tr>
+                <th scope="row">{{ loop.index }}</th>
                 <td>{{ member.full_name }}</td>
                 <td>{{ member.phone_number }}</td>
                 <td>{{ member.id_number }}</td>
