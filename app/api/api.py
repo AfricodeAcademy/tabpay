@@ -1,28 +1,31 @@
-from sqlalchemy.exc import SQLAlchemyError,IntegrityError
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from datetime import datetime, timedelta, timezone
 from flask import Blueprint, jsonify, request
 from flask_security import current_user
 from werkzeug.exceptions import HTTPException
 from flask_restful import Api, Resource, marshal_with, marshal, abort
-from ..main.models import UserModel, CommunicationModel, \
-    PaymentModel, BankModel, BlockModel, UmbrellaModel, ZoneModel, MeetingModel, RoleModel, roles_users, member_blocks,member_zones
-from .serializers import get_user_fields, user_args, communication_fields, \
-    communication_args, payment_fields, payment_args, payment_update_args, \
-    bank_fields, bank_args, block_fields, block_args, \
-    umbrella_fields, umbrella_args, zone_fields, zone_args, \
-    meeting_fields, meeting_args,role_args,role_fields, mpesa_validation_args, mpesa_validation_fields, mpesa_confirmation_args, mpesa_confirmation_fields
+from ..main.models import (
+    UserModel, CommunicationModel, PaymentModel, BankModel, 
+    BlockModel, UmbrellaModel, ZoneModel, MeetingModel, 
+    RoleModel, roles_users, member_blocks, member_zones
+)
+from .serializers import (
+    get_user_fields, user_args, communication_fields,
+    communication_args, payment_fields, payment_args, 
+    payment_update_args, bank_fields, bank_args, block_fields, 
+    block_args, umbrella_fields, umbrella_args, zone_fields, 
+    zone_args, meeting_fields, meeting_args, role_args, role_fields
+)
 from ..utils import db
+from ..utils.mpesa_security import require_mpesa_validation
 import logging
-from ..main.routes import save_picture
-from sqlalchemy.orm import joinedload
+import json
 
-logger = logging.getLogger(__name__)
+# Configure logger
+logger = logging.getLogger('mpesa')
 
 api_bp = Blueprint('api', __name__)
 api = Api(api_bp)
-
-
-
 
 def handle_error(self, e):
     db.session.rollback()
@@ -1046,17 +1049,32 @@ class MpesaValidationResource(MpesaCallbackMixin, BaseResource):
             data = request.get_json()
             logger.info(f"Validation request data: {json.dumps(data, indent=2)}")
             
-            # Always accept the transaction
+            # Store validation request
+            transaction = PaymentModel(
+                mpesa_id=data.get('TransID'),
+                account_number=data.get('BillRefNumber'),
+                source_phone_number=data.get('MSISDN'),
+                amount=float(data.get('TransAmount', 0)),
+                transaction_type=data.get('TransactionType'),
+                business_short_code=data.get('BusinessShortCode'),
+                transaction_status='pending'
+            )
+            db.session.add(transaction)
+            db.session.commit()
+            
+            logger.info(f"Stored validation request for TransID: {data.get('TransID')}")
+            
             return {
                 "ResultCode": "0",
-                "ResultDesc": "Success"
+                "ResultDesc": "Accepted"
             }, 200
             
         except Exception as e:
             logger.error(f"Error in validation request: {str(e)}", exc_info=True)
+            db.session.rollback()
             return {
-                "ResultCode": "0",
-                "ResultDesc": "Success"
+                "ResultCode": "1",
+                "ResultDesc": "Internal server error"
             }, 200
 
 class MpesaConfirmationResource(MpesaCallbackMixin, BaseResource):
@@ -1069,19 +1087,57 @@ class MpesaConfirmationResource(MpesaCallbackMixin, BaseResource):
             data = request.get_json()
             logger.info(f"Confirmation request data: {json.dumps(data, indent=2)}")
             
-            # Process the confirmation
-            # TODO: Update payment status in database
+            # Find existing transaction
+            transaction = PaymentModel.query.filter_by(
+                mpesa_id=data.get('TransID')
+            ).first()
+            
+            if transaction:
+                # Update transaction status
+                transaction.transaction_status = 'completed'
+                transaction.payment_date = datetime.strptime(
+                    data.get('TransTime', ''), 
+                    '%Y%m%d%H%M%S'
+                ).replace(tzinfo=timezone.utc)
+                transaction.first_name = data.get('FirstName')
+                transaction.middle_name = data.get('MiddleName')
+                transaction.last_name = data.get('LastName')
+                transaction.org_account_balance = data.get('OrgAccountBalance')
+                
+                db.session.commit()
+                logger.info(f"Updated transaction status for TransID: {data.get('TransID')}")
+            else:
+                # Create new transaction record
+                transaction = PaymentModel(
+                    mpesa_id=data.get('TransID'),
+                    account_number=data.get('BillRefNumber'),
+                    source_phone_number=data.get('MSISDN'),
+                    amount=float(data.get('TransAmount', 0)),
+                    payment_date=datetime.strptime(
+                        data.get('TransTime', ''), 
+                        '%Y%m%d%H%M%S'
+                    ).replace(tzinfo=timezone.utc),
+                    transaction_type=data.get('TransactionType'),
+                    business_short_code=data.get('BusinessShortCode'),
+                    first_name=data.get('FirstName'),
+                    middle_name=data.get('MiddleName'),
+                    last_name=data.get('LastName'),
+                    org_account_balance=data.get('OrgAccountBalance'),
+                    transaction_status='completed'
+                )
+                db.session.add(transaction)
+                db.session.commit()
+                logger.info(f"Created new transaction record for TransID: {data.get('TransID')}")
             
             return {
-                "ResultCode": "0",
-                "ResultDesc": "Success"
+                "C2BPaymentConfirmationResult": "Success"
             }, 200
             
         except Exception as e:
             logger.error(f"Error in confirmation request: {str(e)}", exc_info=True)
+            db.session.rollback()
             return {
-                "ResultCode": "0",
-                "ResultDesc": "Success"
+                "C2BPaymentConfirmationResult": "Success"
             }, 200
 
 class MpesaSTKCallbackResource(MpesaCallbackMixin, BaseResource):
@@ -1105,7 +1161,39 @@ class MpesaSTKCallbackResource(MpesaCallbackMixin, BaseResource):
             logger.info(f"MerchantRequestID: {merchant_request_id}")
             logger.info(f"CheckoutRequestID: {checkout_request_id}")
             
-            # TODO: Update payment status in database
+            # Find existing transaction
+            transaction = PaymentModel.query.filter_by(
+                merchant_request_id=merchant_request_id,
+                checkout_request_id=checkout_request_id
+            ).first()
+            
+            if transaction:
+                # Update transaction status based on result code
+                transaction.transaction_status = 'completed' if result_code == "0" else 'failed'
+                transaction.result_code = result_code
+                transaction.result_desc = result_desc
+                
+                if result_code == "0":
+                    # Extract payment details on success
+                    items = callback_data.get("CallbackMetadata", {}).get("Item", [])
+                    for item in items:
+                        name = item.get("Name")
+                        value = item.get("Value")
+                        
+                        if name == "Amount":
+                            transaction.amount = float(value)
+                        elif name == "MpesaReceiptNumber":
+                            transaction.mpesa_id = value
+                        elif name == "TransactionDate":
+                            transaction.payment_date = datetime.strptime(
+                                str(value), 
+                                '%Y%m%d%H%M%S'
+                            ).replace(tzinfo=timezone.utc)
+                        elif name == "PhoneNumber":
+                            transaction.source_phone_number = value
+                
+                db.session.commit()
+                logger.info(f"Updated STK transaction status: {transaction.transaction_status}")
             
             return {
                 "ResultCode": "0",
@@ -1129,6 +1217,6 @@ api.add_resource(UmbrellasResource, '/umbrellas/', '/umbrellas/<int:id>')
 api.add_resource(RolesResource, '/roles/', '/roles/<int:id>')
 api.add_resource(MeetingsResource, '/meetings/', '/meetings/<int:id>')
 api.add_resource(ZonesResource, '/zones/', '/zones/<int:id>')
-api.add_resource(MpesaValidationResource, '/payments/c2b/validation')
-api.add_resource(MpesaConfirmationResource, '/payments/c2b/confirmation')
+api.add_resource(MpesaValidationResource, '/payments/validation')
+api.add_resource(MpesaConfirmationResource, '/payments/confirmation')
 api.add_resource(MpesaSTKCallbackResource, '/payments/stk/callback')

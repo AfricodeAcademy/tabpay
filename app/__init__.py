@@ -17,6 +17,7 @@ from flask_babel import Babel
 from datetime import timedelta
 import uuid
 import secrets
+from .utils.logging_config import setup_logger
 
 # Load environment variables
 load_dotenv()
@@ -56,6 +57,9 @@ def create_app(config_name):
     app.config['BABEL_DEFAULT_LOCALE'] = 'en'
     app.config['BABEL_DEFAULT_TIMEZONE'] = 'UTC'
     babel.init_app(app)
+    
+    # Setup logging
+    setup_logger()
     
     # Load environment variables into config
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY',secrets.token_hex(32))

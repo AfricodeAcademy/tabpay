@@ -2022,7 +2022,7 @@ def mpesa_confirmation():
     """Handle M-Pesa confirmation callback by forwarding to API endpoint"""
     try:
         # Forward the request to the API endpoint
-        api_url = f"{current_app.config['API_BASE_URL']}/api/v1/payments/c2b/confirmation"
+        api_url = f"{current_app.config['API_BASE_URL']}/api/v1/payments/confirmation"
         response = requests.post(api_url, json=request.get_json())
         return jsonify(response.json()), response.status_code
     except Exception as e:
@@ -2037,7 +2037,7 @@ def mpesa_validation():
     """Handle M-Pesa validation requests by forwarding to API endpoint"""
     try:
         # Forward the request to the API endpoint
-        api_url = f"{current_app.config['API_BASE_URL']}/api/v1/payments/c2b/validation"
+        api_url = f"{current_app.config['API_BASE_URL']}/api/v1/payments/validation"
         response = requests.post(api_url, json=request.get_json())
         return jsonify(response.json()), response.status_code
     except Exception as e:
