@@ -73,6 +73,9 @@ def create_app(config_name):
         app.config['SESSION_COOKIE_SECURE'] = os.environ.get('SESSION_COOKIE_SECURE', 'True').lower() == 'true'
         app.config['SESSION_COOKIE_DOMAIN'] = os.environ.get('SESSION_COOKIE_DOMAIN', '.tabpay.africa')
         app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(seconds=int(os.environ.get('PERMANENT_SESSION_LIFETIME', 86400)))
+    # CSRF Configuration
+    app.config['WTF_CSRF_CHECK_DEFAULT'] = False
+    app.config['WTF_CSRF_METHODS'] = ['POST', 'PUT', 'PATCH', 'DELETE']
     
     # Initialize CSRF protection
     csrf = CSRFProtect()
@@ -91,7 +94,6 @@ def create_app(config_name):
     # Update CSRF configuration
     # Exempt M-Pesa routes from CSRF
     for route in app.config.get('CSRF_EXEMPT_ROUTES', []):
-        print(f"Exempting route from CSRF: {route}")
         csrf.exempt(route)
 
     # Update Security settings
