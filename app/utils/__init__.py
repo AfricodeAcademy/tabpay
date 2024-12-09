@@ -5,14 +5,13 @@ from PIL import Image
 from flask import current_app
 import logging
 import os
-from flask_wtf.csrf import CSRFProtect
 # from .send_sms import SendSMS # SMS service
 # import africastalking
 
 
 db = SQLAlchemy()
 mail = Mail()
-csrf = CSRFProtect()
+
 
 # SMS service
 # Initialize SMS service as None first

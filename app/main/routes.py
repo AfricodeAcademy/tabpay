@@ -2025,8 +2025,9 @@ def handle_request_payment(payment_form):
 
     # Redirect back to the 'Request Payment' tab
     return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
-@csrf.exempt
+
 @main.route('/payments/confirmation', methods=['POST'])
+@csrf.exempt
 def mpesa_confirmation():
     """Handle M-Pesa confirmation callback by forwarding to API endpoint"""
     ip_validation = validate_ip_or_reject()
@@ -2043,8 +2044,9 @@ def mpesa_confirmation():
             "ResultCode": "0",
             "ResultDesc": "Success"
         }), 200
-@csrf.exempt
+
 @main.route('/payments/validation', methods=['POST'])
+@csrf.exempt
 def mpesa_validation():
     """Handle M-Pesa validation requests by forwarding to API endpoint"""
     ip_validation = validate_ip_or_reject()
