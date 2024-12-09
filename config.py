@@ -54,12 +54,18 @@ class Config:
     SECURITY_REMEMBER_SALT = '432109876543210987654321098765432109876543'
     
     # CSRF Settings
+    CSRF_EXEMPT_ROUTES = [
+        '/payments/confirmation',
+        '/payments/validation',
+        '/api/payments/stk/callback'
+    ]
     WTF_CSRF_ENABLED = True
+    SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = True
+    SECURITY_CSRF_PROTECT_MECHANISMS = ['session']
     WTF_CSRF_CHECK_DEFAULT = True
     WTF_CSRF_TIME_LIMIT = None
     WTF_CSRF_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE']
     SECURITY_CSRF_ENABLE = True
-    SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = True
     
     # Session settings
     SESSION_TYPE = 'filesystem'
