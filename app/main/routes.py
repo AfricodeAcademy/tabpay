@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify, session
 from flask_security import login_required, current_user, roles_accepted, user_registered
+from flask_wtf.csrf import csrf_exempt 
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm,PaymentForm,AddMembershipForm
 from app.main.models import UserModel, BlockModel, PaymentModel, ZoneModel, MeetingModel
 from app.auth.decorators import approval_required, umbrella_required
@@ -15,6 +16,7 @@ from ..utils.umbrella import (
     get_zones_by_block,
     cache_for_request,
 )
+from ..utils.mpesa_security import is_valid_safaricom_ip
 
 main = Blueprint('main', __name__)
 
@@ -23,7 +25,15 @@ sms = SendSMS()
 logger = logging.getLogger(__name__)
 
 
-
+def validate_ip_or_reject():
+    """Helper to validate the IP and return rejection if unauthorized."""
+    if not is_valid_safaricom_ip():
+        logger.warning("Unauthorized IP address attempted to access the route.")
+        return jsonify({
+            "ResultCode": 1,
+            "ResultDesc": "Invalid request source"
+        }), 403
+    return None
 
 
 @main.route('/', methods=['GET'])
@@ -92,39 +102,36 @@ def render_settings_page(umbrella_form=None, block_form=None, zone_form=None,
             flash('Unable to load user data.', 'danger')
     except Exception as e:
         flash('Error loading user details. Please try again later.', 'danger')
+    
+    umbrella = get_umbrella_by_user(current_user.id)
 
-    zones =  []
-    # API call to get umbrella by user
+    if not umbrella:
+        flash('You need to create an umbrella before adding a member!', 'danger')
+        return redirect(url_for('main.settings', active_tab='umbrella'))
+
+    # Fetch blocks associated with the umbrella to populate zones
     try:
-        umbrella = get_umbrella_by_user(current_user.id)
-        if umbrella:
-            block_form.parent_umbrella.data = umbrella.get('name', '')
-
-            # API calls to dynamically fetch blocks and zones
-            blocks = get_blocks_by_umbrella()
-            zone_form.parent_block.choices = [("", "--Choose Parent Block--")] + [(str(block['id']), block['name']) for block in blocks]
-            committee_form.block_id.choices = [("", "--Choose a Block--")] + [(str(block['id']), block['name']) for block in blocks]
-
-            # Prepare a mapping for zones with block names
-            zone_map = {}  # Store a mapping of zone_id to (zone_name, block_name)
-            for block in blocks:
-                # Fetch zones associated with the current block       
-                block_id = block['id']         
-                block_zones = get_zones_by_block(block_id)
-                block_name = block['name']  #_idlock name from the block data
-                for zone in block_zones:
-                    zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
-            
-            member_form.umbrella.data = umbrella['name']
-            # member_form.member_block.choices = [("", "--Choose a Block--")] + [(str(block['id']), block['name']) for block in blocks]
-
-            # Set the choices for the member_zone field in the form
-            member_form.member_zone.choices = [("", "--Choose a Zone--")] + [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
-
-        else:
-            flash('No umbrella found. Please create one first.', 'danger')
+        blocks = get_blocks_by_umbrella()
     except Exception as e:
-        print(f'Settings page Error: {e}')
+        current_app.logger.error(f"Error fetching blocks: {e}")
+        return "An error occurred while fetching data.", 500  
+    
+    # Prepare a mapping for zones with block names
+    zone_map = {}  # Store a mapping of zone_id to (zone_name, block_name)
+    for block in blocks:
+        # Fetch zones associated with the current block       
+        block_id = block['id']         
+        block_zones = get_zones_by_block(block_id)
+        block_name = block['name']  #_idlock name from the block data
+        for zone in block_zones:
+            zone_map[zone['id']] = (zone['name'], block_name)  # Store both zone name and block name
+            
+    member_form.umbrella.data = umbrella['name']
+    # member_form.member_block.choices = [("", "--Choose a Block--")] + [(str(block['id']), block['name']) for block in blocks]
+
+    # Set the choices for the member_zone field in the form
+    member_form.member_zone.choices = [("", "--Choose a Zone--")] + [(str(zone_id), f"{zone_name} - ({block_name})") for zone_id, (zone_name, block_name) in zone_map.items()]
+    # member_form.member_block.choices = [("", "--Choose a Block--")] + [(str(block['id']), block['name']) for block in blocks]
 
     # API call to get banks
     try:
@@ -156,7 +163,7 @@ def render_settings_page(umbrella_form=None, block_form=None, zone_form=None,
                            member_form=member_form,
                            user=current_user,
                            blocks=blocks,
-                           zones=zones,
+                           zones=zone_map.keys(),  
                            active_tab=active_tab,  
                            selected_block=selected_block,
                            selected_zone=selected_zone)
@@ -181,6 +188,9 @@ def settings():
     elif 'committee_submit' in request.form:
         return handle_committee_addition(committee_form=committee_form)
     elif 'block_submit' in request.form:
+        return handle_block_creation(block_form=block_form)
+    elif 'zone_submit' in request.form:
+        return handle_zone_creation(zone_form=zone_form)
         return handle_block_creation(block_form=block_form)
     elif 'zone_submit' in request.form:
         return handle_zone_creation(zone_form=zone_form)
@@ -2018,8 +2028,12 @@ def handle_request_payment(payment_form):
     return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
 
 @main.route('/payments/confirmation', methods=['POST'])
+@csrf_exempt
 def mpesa_confirmation():
     """Handle M-Pesa confirmation callback by forwarding to API endpoint"""
+    ip_validation = validate_ip_or_reject()
+    if ip_validation:
+        return ip_validation
     try:
         # Forward the request to the API endpoint
         api_url = f"{current_app.config['API_BASE_URL']}/api/v1/payments/confirmation"
@@ -2033,8 +2047,12 @@ def mpesa_confirmation():
         }), 200
 
 @main.route('/payments/validation', methods=['POST'])
+@csrf_exempt
 def mpesa_validation():
     """Handle M-Pesa validation requests by forwarding to API endpoint"""
+    ip_validation = validate_ip_or_reject()
+    if ip_validation:
+        return ip_validation
     try:
         # Forward the request to the API endpoint
         api_url = f"{current_app.config['API_BASE_URL']}/api/v1/payments/validation"
