@@ -78,7 +78,7 @@ def create_app(config_name):
     csrf = CSRFProtect()
     csrf.init_app(app)
     # Define exempt endpoints
-    mpesa_endpoints = [
+    CSRF_EXEMPT_ROUTES = [
         'main.mpesa_confirmation',
         'main.mpesa_validation',
         'main.mpesa_stk_callback'
@@ -95,11 +95,11 @@ def create_app(config_name):
         csrf.exempt(route)
 
     # Update Security settings
-    app.config.update(
-        WTF_CSRF_CHECK_DEFAULT=False,
-        SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS=True,
-        SECURITY_CSRF_PROTECT_MECHANISMS=['session']
-    )
+    # app.config.update(
+    #     WTF_CSRF_CHECK_DEFAULT=False,
+    #     SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS=True,
+    #     SECURITY_CSRF_PROTECT_MECHANISMS=['session']
+    # )
     # app.config.update(
     #     WTF_CSRF_ENABLED=True,
     #     WTF_CSRF_CHECK_DEFAULT=False,
