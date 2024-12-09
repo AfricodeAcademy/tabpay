@@ -1,12 +1,12 @@
 from flask import Flask, request, render_template, session, make_response
 from flask_security import Security, SQLAlchemyUserDatastore, current_user
-from .utils import db, mail
+from .utils import db, mail, csrf
 from .utils.initial_banks import import_initial_banks
 from .main.models import UserModel, RoleModel
 from flask_security.utils import hash_password
 from config import config
 from app.auth.forms import ExtendedConfirmRegisterForm, ExtendedLoginForm, ExtendedRegisterForm
-from flask_wtf.csrf import CSRFProtect, CSRFError, generate_csrf
+from flask_wtf.csrf import  CSRFError, generate_csrf
 from .admin import init_admin
 from .main.models import user_datastore
 import logging
@@ -78,38 +78,20 @@ def create_app(config_name):
     app.config['WTF_CSRF_METHODS'] = ['POST', 'PUT', 'PATCH', 'DELETE']
     
     # Initialize CSRF protection
-    csrf = CSRFProtect()
     csrf.init_app(app)
     # Define exempt endpoints
-    CSRF_EXEMPT_ROUTES = [
-        'main.mpesa_confirmation',
-        'main.mpesa_validation',
-        'main.mpesa_stk_callback'
-    ]
-    
-    # # Set up CSRF exemptions for M-Pesa endpoints
-    # for endpoint in mpesa_endpoints:
-    #     csrf.exempt(endpoint)
+    # CSRF_EXEMPT_ROUTES = [
+    #     'main.mpesa_confirmation',
+    #     'main.mpesa_validation',
+    #     'main.mpesa_stk_callback'
+    # ]
 
-    # Update CSRF configuration
-    # Exempt M-Pesa routes from CSRF
-    for route in app.config.get('CSRF_EXEMPT_ROUTES', []):
-        csrf.exempt(route)
+    # # Update CSRF configuration
+    # # Exempt M-Pesa routes from CSRF
+    # for route in app.config.get('CSRF_EXEMPT_ROUTES', []):
+    #     csrf.exempt(route)
 
-    # Update Security settings
-    # app.config.update(
-    #     WTF_CSRF_CHECK_DEFAULT=False,
-    #     SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS=True,
-    #     SECURITY_CSRF_PROTECT_MECHANISMS=['session']
-    # )
-    # app.config.update(
-    #     WTF_CSRF_ENABLED=True,
-    #     WTF_CSRF_CHECK_DEFAULT=False,
-    #     WTF_CSRF_METHODS=['POST', 'PUT', 'PATCH', 'DELETE'],
-    #     CSRF_HEADERS=['X-CSRFToken', 'X-CSRF-Token'],
-    #     SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS=True,
-    #     SECURITY_CSRF_PROTECT_MECHANISMS=['session', 'basic']
-    # )
+
     
     # Set CSRF configuration
     app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour
