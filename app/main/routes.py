@@ -2029,6 +2029,7 @@ def handle_request_payment(payment_form):
 @main.route('/payments/confirmation', methods=['POST'])
 @csrf.exempt
 def mpesa_confirmation():
+    print(request.json)
     """Handle M-Pesa confirmation callback by forwarding to API endpoint"""
     ip_validation = validate_ip_or_reject()
     if ip_validation:
@@ -2048,6 +2049,7 @@ def mpesa_confirmation():
 @main.route('/payments/validation', methods=['POST'])
 @csrf.exempt
 def mpesa_validation():
+    print(request.json)
     """Handle M-Pesa validation requests by forwarding to API endpoint"""
     ip_validation = validate_ip_or_reject()
     if ip_validation:
