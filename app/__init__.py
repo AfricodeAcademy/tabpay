@@ -91,6 +91,7 @@ def create_app(config_name):
     # Update CSRF configuration
     # Exempt M-Pesa routes from CSRF
     for route in app.config.get('CSRF_EXEMPT_ROUTES', []):
+        print(f"Exempting route from CSRF: {route}")
         csrf.exempt(route)
 
     # Update Security settings
