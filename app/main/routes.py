@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify, session
 from flask_security import login_required, current_user, roles_accepted, user_registered
+from flask_wtf.csrf import csrf
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm,PaymentForm,AddMembershipForm
 from app.main.models import UserModel, BlockModel, PaymentModel, ZoneModel, MeetingModel
 from app.auth.decorators import approval_required, umbrella_required
@@ -9,6 +10,7 @@ from datetime import datetime,timedelta
 from ..utils.send_sms import SendSMS
 from ..utils.mpesa import get_mpesa_client
 import logging,requests,os
+from functools import wraps
 from ..utils.umbrella import (
     get_umbrella_by_user,
     get_blocks_by_umbrella,
@@ -32,7 +34,11 @@ def validate_ip_or_reject():
             "ResultDesc": "Invalid request source"
         }), 403
     return None
-
+def mpesa_exempt(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        return f(*args, **kwargs)
+    return csrf.exempt(decorated_function)
 
 @main.route('/', methods=['GET'])
 def home():
@@ -2026,6 +2032,7 @@ def handle_request_payment(payment_form):
     return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
 
 @main.route('/payments/confirmation', methods=['POST'])
+@mpesa_exempt
 def mpesa_confirmation():
     """Handle M-Pesa confirmation callback by forwarding to API endpoint"""
     ip_validation = validate_ip_or_reject()
@@ -2044,6 +2051,7 @@ def mpesa_confirmation():
         }), 200
 
 @main.route('/payments/validation', methods=['POST'])
+@mpesa_exempt
 def mpesa_validation():
     """Handle M-Pesa validation requests by forwarding to API endpoint"""
     ip_validation = validate_ip_or_reject()

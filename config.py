@@ -60,12 +60,20 @@ class Config:
         '/api/payments/stk/callback'
     ]
     WTF_CSRF_ENABLED = True
+    WTF_CSRF_CHECK_DEFAULT = False
+    WTF_CSRF_TIME_LIMIT = 3600
+    WTF_CSRF_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE']
+
+    SECURITY_CSRF_ENABLE = True
     SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = True
     SECURITY_CSRF_PROTECT_MECHANISMS = ['session']
-    WTF_CSRF_CHECK_DEFAULT = True
-    WTF_CSRF_TIME_LIMIT = None
-    WTF_CSRF_METHODS = ['POST', 'PUT', 'PATCH', 'DELETE']
-    SECURITY_CSRF_ENABLE = True
+    SECURITY_CSRF_COOKIE = {
+        'key': 'csrf_token',
+        'httponly': False,
+        'samesite': 'Lax',
+        'secure': True
+    }
+    SECURITY_CSRF_COOKIE_NAME = 'tabpay_csrf_token'
     
     # Session settings
     SESSION_TYPE = 'filesystem'
@@ -158,7 +166,11 @@ class DevelopmentConfig(Config):
     SESSION_COOKIE_SAMESITE = 'Lax'
     SESSION_COOKIE_NAME = 'tabpay_session'
     PERMANENT_SESSION_LIFETIME = timedelta(days=1)
-    SECURITY_CSRF_COOKIE = {'key': 'csrf_token', 'httponly': False, 'samesite': 'Lax', 'secure': False}
+    SECURITY_CSRF_COOKIE = {
+        'key': 'csrf_token', 
+        'httponly': False, 
+        'samesite': 'Lax',
+        'secure': False}
     SECURITY_CSRF_COOKIE_NAME = 'tabpay_csrf_token'
     SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS = True
 class ProductionConfig(Config):

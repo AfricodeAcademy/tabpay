@@ -89,14 +89,24 @@ def create_app(config_name):
         csrf.exempt(endpoint)
 
     # Update CSRF configuration
+    # Exempt M-Pesa routes from CSRF
+    for route in app.config.get('CSRF_EXEMPT_ROUTES', []):
+        csrf.exempt(route)
+
+    # Update Security settings
     app.config.update(
-        WTF_CSRF_ENABLED=True,
         WTF_CSRF_CHECK_DEFAULT=False,
-        WTF_CSRF_METHODS=['POST', 'PUT', 'PATCH', 'DELETE'],
-        CSRF_HEADERS=['X-CSRFToken', 'X-CSRF-Token'],
         SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS=True,
-        SECURITY_CSRF_PROTECT_MECHANISMS=['session', 'basic']
+        SECURITY_CSRF_PROTECT_MECHANISMS=['session']
     )
+    # app.config.update(
+    #     WTF_CSRF_ENABLED=True,
+    #     WTF_CSRF_CHECK_DEFAULT=False,
+    #     WTF_CSRF_METHODS=['POST', 'PUT', 'PATCH', 'DELETE'],
+    #     CSRF_HEADERS=['X-CSRFToken', 'X-CSRF-Token'],
+    #     SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS=True,
+    #     SECURITY_CSRF_PROTECT_MECHANISMS=['session', 'basic']
+    # )
     
     # Set CSRF configuration
     app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour
