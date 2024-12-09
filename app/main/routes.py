@@ -1,6 +1,5 @@
 from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify, session
 from flask_security import login_required, current_user, roles_accepted, user_registered
-from flask_wtf.csrf import CSRFProtect
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm,PaymentForm,AddMembershipForm
 from app.main.models import UserModel, BlockModel, PaymentModel, ZoneModel, MeetingModel
 from app.auth.decorators import approval_required, umbrella_required
@@ -19,16 +18,15 @@ from ..utils.umbrella import (
 from ..utils.mpesa_security import is_valid_safaricom_ip
 
 main = Blueprint('main', __name__)
-csrf = CSRFProtect(app=current_app)
 sms = SendSMS()
 
 logger = logging.getLogger(__name__)
 
 
 def validate_ip_or_reject():
-    """Helper to validate the IP and return rejection if unauthorized."""
+    """Validate M-Pesa IP addresses"""
     if not is_valid_safaricom_ip():
-        logger.warning("Unauthorized IP address attempted to access the route.")
+        logger.warning(f"Unauthorized IP {request.remote_addr} attempted access")
         return jsonify({
             "ResultCode": 1,
             "ResultDesc": "Invalid request source"
@@ -2028,7 +2026,6 @@ def handle_request_payment(payment_form):
     return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
 
 @main.route('/payments/confirmation', methods=['POST'])
-@csrf.exempt
 def mpesa_confirmation():
     """Handle M-Pesa confirmation callback by forwarding to API endpoint"""
     ip_validation = validate_ip_or_reject()
@@ -2047,7 +2044,6 @@ def mpesa_confirmation():
         }), 200
 
 @main.route('/payments/validation', methods=['POST'])
-@csrf.exempt
 def mpesa_validation():
     """Handle M-Pesa validation requests by forwarding to API endpoint"""
     ip_validation = validate_ip_or_reject()

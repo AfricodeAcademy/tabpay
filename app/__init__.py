@@ -77,6 +77,26 @@ def create_app(config_name):
     # Initialize CSRF protection
     csrf = CSRFProtect()
     csrf.init_app(app)
+    # Define exempt endpoints
+    mpesa_endpoints = [
+        'main.mpesa_confirmation',
+        'main.mpesa_validation',
+        'main.mpesa_stk_callback'
+    ]
+    
+    # Set up CSRF exemptions for M-Pesa endpoints
+    for endpoint in mpesa_endpoints:
+        csrf.exempt(endpoint)
+
+    # Update CSRF configuration
+    app.config.update(
+        WTF_CSRF_ENABLED=True,
+        WTF_CSRF_CHECK_DEFAULT=True,
+        WTF_CSRF_METHODS=['POST', 'PUT', 'PATCH', 'DELETE'],
+        CSRF_HEADERS=['X-CSRFToken', 'X-CSRF-Token'],
+        SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS=True,
+        SECURITY_CSRF_PROTECT_MECHANISMS=['session', 'basic']
+    )
     
     # Set CSRF configuration
     app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour
