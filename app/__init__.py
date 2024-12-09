@@ -91,7 +91,7 @@ def create_app(config_name):
     # Update CSRF configuration
     app.config.update(
         WTF_CSRF_ENABLED=True,
-        WTF_CSRF_CHECK_DEFAULT=True,
+        WTF_CSRF_CHECK_DEFAULT=False,
         WTF_CSRF_METHODS=['POST', 'PUT', 'PATCH', 'DELETE'],
         CSRF_HEADERS=['X-CSRFToken', 'X-CSRF-Token'],
         SECURITY_CSRF_IGNORE_UNAUTH_ENDPOINTS=True,
