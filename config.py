@@ -55,9 +55,9 @@ class Config:
     
     # CSRF Settings
     CSRF_EXEMPT_ROUTES = [
-        '/payments/confirmation',
-        '/payments/validation',
-        '/api/payments/stk/callback'
+        'main.mpesa_confirmation',
+        'main.mpesa_validation',
+        'main.mpesa_stk_callback'
     ]
     WTF_CSRF_ENABLED = True
     WTF_CSRF_CHECK_DEFAULT = False

@@ -84,9 +84,9 @@ def create_app(config_name):
         'main.mpesa_stk_callback'
     ]
     
-    # Set up CSRF exemptions for M-Pesa endpoints
-    for endpoint in mpesa_endpoints:
-        csrf.exempt(endpoint)
+    # # Set up CSRF exemptions for M-Pesa endpoints
+    # for endpoint in mpesa_endpoints:
+    #     csrf.exempt(endpoint)
 
     # Update CSRF configuration
     # Exempt M-Pesa routes from CSRF
