@@ -2033,7 +2033,7 @@ def handle_request_payment(payment_form):
 
     # Redirect back to the 'Request Payment' tab
     return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
-@csrf._exempt_views.add('mpesa_confirmation')
+@csrf.exempt
 @main.route('/payments/confirmation', methods=['POST'])
 @require_safaricom_ip_validation
 def mpesa_confirmation():
@@ -2050,7 +2050,7 @@ def mpesa_confirmation():
             "ResultCode": "0",
             "ResultDesc": "Success"
         }), 200
-
+@csrf.exempt
 @main.route('/payments/validation', methods=['POST'])
 @require_safaricom_ip_validation
 def mpesa_validation():
