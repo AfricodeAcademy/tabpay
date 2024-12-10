@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify, session
 from flask_security import login_required, current_user, roles_accepted, user_registered
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import validate_csrf
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm,PaymentForm,AddMembershipForm
 from app.main.models import UserModel, BlockModel, PaymentModel, ZoneModel, MeetingModel
 from app.auth.decorators import approval_required, umbrella_required
@@ -22,14 +22,15 @@ from ..utils.umbrella import (
 
 
 
-csrf = CSRFProtect(current_app)
 
-def disable_csrf(f):
+def exempt_from_csrf(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        csrf.disable()
+        if request.method == 'POST':
+            validate_csrf.token = False  # Disable CSRF token validation for this route
         return f(*args, **kwargs)
     return decorated_function
+
 main = Blueprint('main', __name__)
 sms = SendSMS()
 
@@ -2036,7 +2037,7 @@ def handle_request_payment(payment_form):
 
     # Redirect back to the 'Request Payment' tab
     return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
-@csrf.exempt
+@exempt_from_csrf
 @main.route('/payments/confirmation', methods=['POST'])
 @require_safaricom_ip_validation
 def mpesa_confirmation():
@@ -2053,7 +2054,7 @@ def mpesa_confirmation():
             "ResultCode": "0",
             "ResultDesc": "Success"
         }), 200
-@csrf.exempt
+@exempt_from_csrf
 @main.route('/payments/validation', methods=['POST'])
 @require_safaricom_ip_validation
 def mpesa_validation():
