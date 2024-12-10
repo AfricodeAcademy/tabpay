@@ -5,7 +5,6 @@ from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, Umbrella
 from app.main.models import UserModel, BlockModel, PaymentModel, ZoneModel, MeetingModel
 from app.auth.decorators import approval_required, umbrella_required
 from ..utils import save_picture, db
-
 from flask import current_app
 from datetime import datetime,timedelta
 from ..utils.send_sms import SendSMS
@@ -23,18 +22,21 @@ from ..utils.umbrella import (
 
 
 
-# def exempt_from_csrf(f):
-#     @wraps(f)
-#     def decorated_function(*args, **kwargs):
-#         if request.method == 'POST':
-#             validate_csrf.token = False  # Disable CSRF token validation for this route
-#         return f(*args, **kwargs)
-#     return decorated_function
 
 main = Blueprint('main', __name__)
+csrf = CSRFProtect()
 sms = SendSMS()
 
 logger = logging.getLogger(__name__)
+
+csrf_exempt_routes = ['/payment_callback', '/payment_confirmation', '/payment_validation']
+
+@csrf.error_handler
+def csrf_error_handler(reason):
+    if request.path in csrf_exempt_routes:
+        return None  # Don't raise an error if the route is exempt
+    return reason
+
 
 
 # def validate_ip_or_reject():
@@ -2043,10 +2045,6 @@ def handle_request_payment(payment_form):
 def mpesa_confirmation():
     print(request.json)
     """Handle M-Pesa confirmation callback by forwarding to API endpoint"""
-    with current_app.test_request_context('/payments/confirmation', method='POST'):
-        csrf = CSRFProtect()
-        csrf.init_app(current_app)
-        csrf.exempt(mpesa_confirmation)
     try:
         # Forward the request to the API endpoint
         api_url = f"{current_app.config['API_BASE_URL']}/api/v1/payments/confirmation"
@@ -2064,10 +2062,6 @@ def mpesa_confirmation():
 def mpesa_validation():
     print(request.json)
     """Handle M-Pesa validation requests by forwarding to API endpoint"""
-    with current_app.test_request_context('/payments/confirmation', method='POST'):
-        csrf = CSRFProtect()
-        csrf.init_app(current_app)
-        csrf.exempt(mpesa_validation)
     try:
         # Forward the request to the API endpoint
         api_url = f"{current_app.config['API_BASE_URL']}/api/v1/payments/validation"
