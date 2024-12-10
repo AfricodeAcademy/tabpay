@@ -52,7 +52,7 @@ class CustomCsrfProtect(CSRFProtect):
     def __init__(self):
         super(CustomCsrfProtect, self).__init__()
     def error_handler(self, reason):
-        if request.path in ['/payments/confirmation', '/payments/validation']:
+        if request.path in ['/payments/confirmation', '/payments/validation','/api/v1/payments/stk/callback', '/api/v1/payments/confirmation', '/api/v1/payments/validation']:
             return None
         return reason
 
