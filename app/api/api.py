@@ -16,9 +16,10 @@ from .serializers import (
     block_args, umbrella_fields, umbrella_args, zone_fields, 
     zone_args, meeting_fields, meeting_args, role_args, role_fields
 )
-from ..utils import db
+from ..utils import db, save_picture
 import logging
 import json
+from sqlalchemy.orm import joinedload
 
 # Configure logger
 logger = logging.getLogger('mpesa')
