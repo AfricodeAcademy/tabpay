@@ -1,10 +1,10 @@
-from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify, session
+from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify, session, current_app
 from flask_security import login_required, current_user, roles_accepted, user_registered
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm,PaymentForm,AddMembershipForm
 from app.main.models import UserModel, BlockModel, PaymentModel, ZoneModel, MeetingModel
 from app.auth.decorators import approval_required, umbrella_required
 from ..utils import save_picture, db
-from flask import current_app
+from flask_wtf.csrf import CSRFProtect
 from datetime import datetime,timedelta
 from ..utils.send_sms import SendSMS
 from ..utils.mpesa_security import require_safaricom_ip_validation
@@ -20,12 +20,16 @@ from ..utils.umbrella import (
 
 
 
-
-
 main = Blueprint('main', __name__)
 sms = SendSMS()
 
 logger = logging.getLogger(__name__)
+
+def disable_csrf(view_function):
+    @wraps(view_function)
+    def decorated_function(*args, **kwargs):
+        return view_function(*args, **kwargs)
+    return decorated_function
 
 @main.route('/', methods=['GET'])
 def home():
@@ -2019,24 +2023,37 @@ def handle_request_payment(payment_form):
     return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
     
 @main.route('/payments/confirmation', methods=['POST'])
-@require_safaricom_ip_validation
+@disable_csrf
+# @require_safaricom_ip_validation
 def mpesa_confirmation():
     print(request.json)
     """Handle M-Pesa confirmation callback by forwarding to API endpoint"""
     try:
+        callback_data = request.get_json()
         # Forward the request to the API endpoint
         api_url = f"{current_app.config['API_BASE_URL']}/api/v1/payments/confirmation"
+
+        # Log both API URL and callback data
+        logger.info(f"M-Pesa Confirmation - API URL: {api_url}")
+        logger.info(f"M-Pesa Confirmation - Callback Data: {callback_data}")
+
         response = requests.post(api_url, json=request.get_json())
+
+         # Log the API response
+        logger.info(f"M-Pesa Confirmation - API Response: {response.json()}")
+
         return jsonify(response.json()), response.status_code
     except Exception as e:
         logger.error(f"Error forwarding M-Pesa confirmation to API: {str(e)}")
+        logger.error(f"Full exception details:", exc_info=True)  # This logs the full stack trace
         return jsonify({
             "ResultCode": "0",
             "ResultDesc": "Success"
         }), 200
         
 @main.route('/payments/validation', methods=['POST'])
-@require_safaricom_ip_validation
+@disable_csrf
+# @require_safaricom_ip_validation
 def mpesa_validation():
     print(request.json)
     """Handle M-Pesa validation requests by forwarding to API endpoint"""
