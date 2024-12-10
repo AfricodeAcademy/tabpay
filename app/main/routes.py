@@ -1,10 +1,11 @@
 from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify, session
 from flask_security import login_required, current_user, roles_accepted, user_registered
-from ..utils import csrf
+from flask_wtf.csrf import CSRFProtect
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm,PaymentForm,AddMembershipForm
 from app.main.models import UserModel, BlockModel, PaymentModel, ZoneModel, MeetingModel
 from app.auth.decorators import approval_required, umbrella_required
 from ..utils import save_picture, db
+
 from flask import current_app
 from datetime import datetime,timedelta
 from ..utils.send_sms import SendSMS
@@ -19,6 +20,7 @@ from ..utils.umbrella import (
     cache_for_request,
 )
 
+csrf = CSRFProtect(current_app)
 main = Blueprint('main', __name__)
 sms = SendSMS()
 
