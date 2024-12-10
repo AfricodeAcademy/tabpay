@@ -47,6 +47,15 @@ def configure_logging():
 
 logging.getLogger('passlib').setLevel(logging.WARNING)
 
+# Custom CSRF 
+class CustomCsrfProtect(CSRFProtect):
+    def __init__(self):
+        super(CustomCsrfProtect, self).__init__()
+    def error_handler(self, reason):
+        if request.path in ['/payments/confirmation', '/payments/validation']:
+            return None
+        return reason
+
 def create_app(config_name):
     # configure_logging()
     
@@ -75,16 +84,7 @@ def create_app(config_name):
         app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(seconds=int(os.environ.get('PERMANENT_SESSION_LIFETIME', 86400)))
     # CSRF Configuration
     app.config['WTF_CSRF_CHECK_DEFAULT'] = False
-    app.config['WTF_CSRF_METHODS'] = ['POST', 'PUT', 'PATCH', 'DELETE']
-
-    # Custom CSRF 
-    class CustomCsrfProtect(CSRFProtect):
-        def __init__(self, app):
-            super(CustomCsrfProtect, self).__init__(app)
-        def error_handler(self, reason):
-            if request.path in ['/payments/confirmation', '/payments/validation']:
-                return None
-            return reason
+    app.config['WTF_CSRF_METHODS'] = ['POST', 'PUT', 'PATCH', 'DELETE'] 
     
     # Initialize CSRF protection
     csrf = CustomCsrfProtect()
