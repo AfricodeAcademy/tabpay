@@ -1,6 +1,5 @@
 from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify, session
 from flask_security import login_required, current_user, roles_accepted, user_registered
-from flask_wtf.csrf import  CSRFProtect
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm,PaymentForm,AddMembershipForm
 from app.main.models import UserModel, BlockModel, PaymentModel, ZoneModel, MeetingModel
 from app.auth.decorators import approval_required, umbrella_required
@@ -24,24 +23,9 @@ from ..utils.umbrella import (
 
 
 main = Blueprint('main', __name__)
-csrf = CSRFProtect()
 sms = SendSMS()
 
 logger = logging.getLogger(__name__)
-
-# csrf_exempt_routes = ['/payment_callback', '/payment_confirmation', '/payment_validation']
-
-
-
-# def validate_ip_or_reject():
-#     """Validate M-Pesa IP addresses"""
-#     if not is_valid_safaricom_ip():
-#         logger.warning(f"Unauthorized IP {request.remote_addr} attempted access")
-#         return jsonify({
-#             "ResultCode": 1,
-#             "ResultDesc": "Invalid request source"
-#         }), 403
-#     return None
 
 @main.route('/', methods=['GET'])
 def home():
