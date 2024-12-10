@@ -118,6 +118,10 @@ def create_app(config_name):
     # CSRF protection for all routes except login/register and API
     @app.before_request
     def csrf_protect():
+         # Exempt specific routes from CSRF protection
+        exempt_routes = ['/payments/confirmation', '/payments/validation']
+        if request.endpoint and any(route in request.endpoint for route in exempt_routes):
+            return  # Skip CSRF protection for these routes
         if request.endpoint and request.endpoint.startswith('api.'):
             return
             
