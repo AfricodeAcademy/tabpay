@@ -81,20 +81,6 @@ def create_app(config_name):
     csrf = CSRFProtect()
     csrf.init_app(app)
 
-    # Create a list of exempt routes
-    CSRF_EXEMPT_ROUTES = [
-        'main.mpesa_confirmation',
-        'main.mpesa_validation',
-        'main.mpesa_stk_callback'
-    ]
-
-    # Update CSRF configuration to exempt specific routes
-    for route in CSRF_EXEMPT_ROUTES:
-        csrf.exempt(route)
-
-
-
-    
     # Set CSRF configuration
     app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour
     app.config['WTF_CSRF_SSL_STRICT'] = True

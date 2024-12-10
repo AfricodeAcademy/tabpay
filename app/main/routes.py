@@ -8,6 +8,7 @@ from ..utils import save_picture, db
 from flask import current_app
 from datetime import datetime,timedelta
 from ..utils.send_sms import SendSMS
+from ..utils.mpesa_security import is_valid_safaricom_ip, require_safaricom_ip_validation
 from ..utils.mpesa import get_mpesa_client
 import logging,requests,os
 from functools import wraps
@@ -17,7 +18,6 @@ from ..utils.umbrella import (
     get_zones_by_block,
     cache_for_request,
 )
-from ..utils.mpesa_security import is_valid_safaricom_ip
 
 main = Blueprint('main', __name__)
 sms = SendSMS()
@@ -25,15 +25,15 @@ sms = SendSMS()
 logger = logging.getLogger(__name__)
 
 
-def validate_ip_or_reject():
-    """Validate M-Pesa IP addresses"""
-    if not is_valid_safaricom_ip():
-        logger.warning(f"Unauthorized IP {request.remote_addr} attempted access")
-        return jsonify({
-            "ResultCode": 1,
-            "ResultDesc": "Invalid request source"
-        }), 403
-    return None
+# def validate_ip_or_reject():
+#     """Validate M-Pesa IP addresses"""
+#     if not is_valid_safaricom_ip():
+#         logger.warning(f"Unauthorized IP {request.remote_addr} attempted access")
+#         return jsonify({
+#             "ResultCode": 1,
+#             "ResultDesc": "Invalid request source"
+#         }), 403
+#     return None
 
 @main.route('/', methods=['GET'])
 def home():
@@ -2027,13 +2027,10 @@ def handle_request_payment(payment_form):
     return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
 
 @main.route('/payments/confirmation', methods=['POST'])
-@csrf.exempt
+@require_safaricom_ip_validation
 def mpesa_confirmation():
     print(request.json)
     """Handle M-Pesa confirmation callback by forwarding to API endpoint"""
-    ip_validation = validate_ip_or_reject()
-    if ip_validation:
-        return ip_validation
     try:
         # Forward the request to the API endpoint
         api_url = f"{current_app.config['API_BASE_URL']}/api/v1/payments/confirmation"
@@ -2047,13 +2044,10 @@ def mpesa_confirmation():
         }), 200
 
 @main.route('/payments/validation', methods=['POST'])
-@csrf.exempt
+@require_safaricom_ip_validation
 def mpesa_validation():
     print(request.json)
     """Handle M-Pesa validation requests by forwarding to API endpoint"""
-    ip_validation = validate_ip_or_reject()
-    if ip_validation:
-        return ip_validation
     try:
         # Forward the request to the API endpoint
         api_url = f"{current_app.config['API_BASE_URL']}/api/v1/payments/validation"
