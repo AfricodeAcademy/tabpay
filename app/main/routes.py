@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash,request,jsonify, session
 from flask_security import login_required, current_user, roles_accepted, user_registered
-from flask_wtf.csrf import validate_csrf
+from flask_wtf.csrf import  CSRFProtect
 from app.main.forms import ProfileForm, AddMemberForm, AddCommitteForm, UmbrellaForm, BlockForm, ZoneForm, ScheduleForm, EditMemberForm,PaymentForm,AddMembershipForm
 from app.main.models import UserModel, BlockModel, PaymentModel, ZoneModel, MeetingModel
 from app.auth.decorators import approval_required, umbrella_required
@@ -23,13 +23,13 @@ from ..utils.umbrella import (
 
 
 
-def exempt_from_csrf(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if request.method == 'POST':
-            validate_csrf.token = False  # Disable CSRF token validation for this route
-        return f(*args, **kwargs)
-    return decorated_function
+# def exempt_from_csrf(f):
+#     @wraps(f)
+#     def decorated_function(*args, **kwargs):
+#         if request.method == 'POST':
+#             validate_csrf.token = False  # Disable CSRF token validation for this route
+#         return f(*args, **kwargs)
+#     return decorated_function
 
 main = Blueprint('main', __name__)
 sms = SendSMS()
@@ -2037,12 +2037,16 @@ def handle_request_payment(payment_form):
 
     # Redirect back to the 'Request Payment' tab
     return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
-@exempt_from_csrf
+
 @main.route('/payments/confirmation', methods=['POST'])
 @require_safaricom_ip_validation
 def mpesa_confirmation():
     print(request.json)
     """Handle M-Pesa confirmation callback by forwarding to API endpoint"""
+    with current_app.test_request_context('/payments/confirmation', method='POST'):
+        csrf = CSRFProtect()
+        csrf.init_app(current_app)
+        csrf.disable()
     try:
         # Forward the request to the API endpoint
         api_url = f"{current_app.config['API_BASE_URL']}/api/v1/payments/confirmation"
@@ -2054,12 +2058,16 @@ def mpesa_confirmation():
             "ResultCode": "0",
             "ResultDesc": "Success"
         }), 200
-@exempt_from_csrf
+
 @main.route('/payments/validation', methods=['POST'])
 @require_safaricom_ip_validation
 def mpesa_validation():
     print(request.json)
     """Handle M-Pesa validation requests by forwarding to API endpoint"""
+    with current_app.test_request_context('/payments/confirmation', method='POST'):
+        csrf = CSRFProtect()
+        csrf.init_app(current_app)
+        csrf.disable()
     try:
         # Forward the request to the API endpoint
         api_url = f"{current_app.config['API_BASE_URL']}/api/v1/payments/validation"
