@@ -2046,7 +2046,7 @@ def mpesa_confirmation():
     with current_app.test_request_context('/payments/confirmation', method='POST'):
         csrf = CSRFProtect()
         csrf.init_app(current_app)
-        csrf.disable()
+        csrf.exempt(mpesa_confirmation)
     try:
         # Forward the request to the API endpoint
         api_url = f"{current_app.config['API_BASE_URL']}/api/v1/payments/confirmation"
@@ -2067,7 +2067,7 @@ def mpesa_validation():
     with current_app.test_request_context('/payments/confirmation', method='POST'):
         csrf = CSRFProtect()
         csrf.init_app(current_app)
-        csrf.disable()
+        csrf.exempt(mpesa_validation)
     try:
         # Forward the request to the API endpoint
         api_url = f"{current_app.config['API_BASE_URL']}/api/v1/payments/validation"
