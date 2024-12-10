@@ -76,9 +76,18 @@ def create_app(config_name):
     # CSRF Configuration
     app.config['WTF_CSRF_CHECK_DEFAULT'] = False
     app.config['WTF_CSRF_METHODS'] = ['POST', 'PUT', 'PATCH', 'DELETE']
+
+    # Custom CSRF 
+    class CustomCsrfProtect(CSRFProtect):
+        def __init__(self, app):
+            super(CustomCsrfProtect, self).__init__(app)
+        def error_handler(self, reason):
+            if request.path in ['/payments/confirmation', '/payments/validation']:
+                return None
+            return reason
     
     # Initialize CSRF protection
-    csrf = CSRFProtect()
+    csrf = CustomCsrfProtect()
     csrf.init_app(app)
 
     # Set CSRF configuration
