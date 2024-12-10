@@ -20,7 +20,16 @@ from ..utils.umbrella import (
     cache_for_request,
 )
 
+
+
 csrf = CSRFProtect(current_app)
+
+def disable_csrf(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        csrf.disable()
+        return f(*args, **kwargs)
+    return decorated_function
 main = Blueprint('main', __name__)
 sms = SendSMS()
 
