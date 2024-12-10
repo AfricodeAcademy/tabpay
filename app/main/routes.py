@@ -29,13 +29,7 @@ sms = SendSMS()
 
 logger = logging.getLogger(__name__)
 
-csrf_exempt_routes = ['/payment_callback', '/payment_confirmation', '/payment_validation']
-
-@csrf.error_handler
-def csrf_error_handler(reason):
-    if request.path in csrf_exempt_routes:
-        return None  # Don't raise an error if the route is exempt
-    return reason
+# csrf_exempt_routes = ['/payment_callback', '/payment_confirmation', '/payment_validation']
 
 
 
@@ -2039,7 +2033,7 @@ def handle_request_payment(payment_form):
 
     # Redirect back to the 'Request Payment' tab
     return render_contribution_page(payment_form=payment_form, active_tab='request_payment')
-
+@csrf._exempt_views.add('mpesa_confirmation')
 @main.route('/payments/confirmation', methods=['POST'])
 @require_safaricom_ip_validation
 def mpesa_confirmation():
