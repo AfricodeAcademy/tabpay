@@ -17,7 +17,6 @@ from .serializers import (
     zone_args, meeting_fields, meeting_args, role_args, role_fields
 )
 from ..utils import db
-from ..utils.mpesa_security import require_mpesa_validation
 import logging
 import json
 

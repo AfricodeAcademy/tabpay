@@ -8,7 +8,7 @@ from ..utils import save_picture, db
 from flask import current_app
 from datetime import datetime,timedelta
 from ..utils.send_sms import SendSMS
-from ..utils.mpesa_security import is_valid_safaricom_ip, require_safaricom_ip_validation
+from ..utils.mpesa_security import require_safaricom_ip_validation
 from ..utils.mpesa import get_mpesa_client
 import logging,requests,os
 from functools import wraps
