@@ -51,7 +51,7 @@ def get_blocks_by_umbrella(show_flash_messages=True, max_retries=3):
             umbrella = get_umbrella_by_user(current_user.id)
             if not umbrella:
                 if show_flash_messages:
-                    flash('No umbrella association found.', 'warning')
+                    flash('No umbrella found. Please create an umbrella first.', 'warning')
                 return []
 
             response = requests.get(
