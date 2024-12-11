@@ -113,8 +113,7 @@ def render_settings_page(umbrella_form=None, block_form=None, zone_form=None,
         block_form.parent_umbrella.data = umbrella.get('name', 'No Umbrella!')
     else:
         member_form.umbrella.data = 'No Umbrella!'
-        block_form.parent_umbrella.data = 'No Umbrella!'
-   
+        block_form.parent_umbrella.data = 'No Umbrella!'   
 
     # Fetch blocks associated with the umbrella to populate zones
     try:
