@@ -1123,7 +1123,10 @@ class MpesaConfirmationResource(MpesaCallbackMixin, BaseResource):
                     middle_name=data.get('MiddleName'),
                     last_name=data.get('LastName'),
                     org_account_balance=data.get('OrgAccountBalance'),
-                    transaction_status='completed'
+                    transaction_status='completed',
+                    block_id=data['block_id'],
+                    payer_id=data['payer_id'],
+                    meeting_id=data['meeting_id']
                 )
                 db.session.add(transaction)
                 db.session.commit()
