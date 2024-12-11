@@ -1,5 +1,5 @@
 from functools import wraps
-from flask import redirect, url_for, flash, abort, current_app
+from flask import redirect, url_for, flash, abort, current_app, request
 from flask_login import current_user
 from ..utils.umbrella import get_umbrella_by_user, get_blocks_by_umbrella
 
@@ -29,24 +29,30 @@ def umbrella_required(f):
 
         # Get user's umbrella
         umbrella = get_umbrella_by_user(current_user.id)
-        if not umbrella:
+        
+        # Prevent redirect loops by checking current endpoint
+        current_endpoint = request.endpoint
+        is_settings_page = current_endpoint and current_endpoint.endswith('settings')
+        
+        if not umbrella and not is_settings_page:
             flash('You need to create an umbrella before accessing this resource.', 'warning')
             return redirect(url_for('main.settings', active_tab='umbrella'))
 
         # If an umbrella_id is provided in kwargs, verify it matches the user's umbrella
-        if 'umbrella_id' in kwargs and str(kwargs['umbrella_id']) != str(umbrella['id']):
+        if umbrella and 'umbrella_id' in kwargs and str(kwargs['umbrella_id']) != str(umbrella['id']):
             flash('You do not have permission to access this resource.', 'danger')
             abort(403)
 
         # If a block_id is provided, verify it belongs to the user's umbrella
-        if 'block_id' in kwargs:
-            blocks = get_blocks_by_umbrella()
+        if umbrella and 'block_id' in kwargs:
+            blocks = get_blocks_by_umbrella(show_flash_messages=False)
             if not any(str(block['id']) == str(kwargs['block_id']) for block in blocks):
                 flash('You do not have permission to access this block.', 'danger')
                 abort(403)
 
-        # Add the umbrella to kwargs for the decorated function to use
-        kwargs['umbrella'] = umbrella
+        # Add the umbrella to kwargs for the decorated function to use if it exists
+        if umbrella:
+            kwargs['umbrella'] = umbrella
         return f(*args, **kwargs)
 
     return decorated_function
