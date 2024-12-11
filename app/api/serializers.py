@@ -80,7 +80,7 @@ payment_fields = {
     "source_phone_number": fields.String,
     "amount": fields.Integer,
     "payment_date": fields.DateTime(dt_format="rfc822", attribute=lambda x: format_datetime(x.payment_date)),
-    "transaction_status": fields.Boolean,
+    "transaction_status": fields.String,
     "bank_id": fields.Integer,
     "block_id": fields.Integer,
     "payer_id": fields.Integer,
