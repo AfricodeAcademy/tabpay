@@ -293,8 +293,8 @@ class PaymentModel(db.Model):
     
     # Bank and block relationships
     bank_id = db.Column(db.Integer, db.ForeignKey('banks.id'), nullable=True)
-    block_id = db.Column(db.Integer, db.ForeignKey('blocks.id'), nullable=False)
-    payer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    block_id = db.Column(db.Integer, db.ForeignKey('blocks.id'), nullable=True)
+    payer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     meeting_id = db.Column(db.Integer, db.ForeignKey('meetings.id'), nullable=True)
     
     # Additional M-Pesa fields

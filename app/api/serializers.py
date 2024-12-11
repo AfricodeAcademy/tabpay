@@ -194,8 +194,8 @@ payment_args.add_argument('amount', type=int, required=True, help='Amount is req
 payment_args.add_argument('payment_date', type=lambda x: datetime.strptime(x, '%Y-%m-%d %H:%M:%S') if x else None)
 payment_args.add_argument('transaction_status', type=bool)
 payment_args.add_argument('bank_id', type=int, required=False, help='Bank ID is required')
-payment_args.add_argument('block_id', type=int, required=True, help='Block ID is required')
-payment_args.add_argument('payer_id', type=int, required=True, help='Payer ID is required')
+payment_args.add_argument('block_id', type=int, required=False, help='Block ID is required')
+payment_args.add_argument('payer_id', type=int, required=False, help='Payer ID is required')
 payment_args.add_argument('meeting_id', type=int)
 
 # STK Push specific fields
