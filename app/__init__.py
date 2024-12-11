@@ -80,7 +80,7 @@ class CustomCsrfProtect(CSRFProtect):
             return None
             
         # Check if it's an M-Pesa callback
-        if request.path in ['/payments/confirmation', '/payments/validation', '/payments/stk/callback', '/api/v1/payments/stk/callback']:
+        if request.path in ['/payments/confirmation', '/payments/validation', '/payments/stk/callback', '/api/v1/payments/stk/callback', '/api/v1/payments']:
             return None
             
         # Default error handling
