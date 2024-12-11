@@ -1124,9 +1124,9 @@ class MpesaConfirmationResource(MpesaCallbackMixin, BaseResource):
                     last_name=data.get('LastName'),
                     org_account_balance=data.get('OrgAccountBalance'),
                     transaction_status='completed',
-                    block_id=data['block_id'],
-                    payer_id=data['payer_id'],
-                    meeting_id=data['meeting_id']
+                    payer_id=None,
+                    block_id=None,
+                    meeting_id=None
                 )
                 db.session.add(transaction)
                 db.session.commit()
