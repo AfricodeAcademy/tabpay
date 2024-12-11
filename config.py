@@ -55,11 +55,13 @@ class Config:
     
     # CSRF Settings
     CSRF_EXEMPT_ROUTES = [
-         '/payments/confirmation',
+        '/payments/confirmation',
         '/payments/validation',
         '/api/v1/payments/stk/callback',
         '/api/v1/payments/confirmation',
-        '/api/v1/payments/validation'
+        '/api/v1/payments/validation',
+        '/payments/stk/callback',
+        '/api/v1/payments'
     ]
     WTF_CSRF_ENABLED = True
     WTF_CSRF_CHECK_DEFAULT = False
