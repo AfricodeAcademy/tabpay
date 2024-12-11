@@ -458,6 +458,18 @@ class BanksResource(BaseResource):
     fields = bank_fields
     args = bank_args
 
+
+
+def normalize_phone_number(phone_number):
+        """Normalize phone number to remove country code or leading zeroes."""
+        if phone_number.startswith("+"):
+            phone_number = phone_number[1:]  # Remove the '+'
+        if phone_number.startswith("254"):
+            phone_number = phone_number[3:]  # Remove '254'
+        if phone_number.startswith("0"):
+            phone_number = phone_number[1:]  # Remove leading '0'
+        return phone_number
+
 class PaymentsResource(BaseResource):
     model = PaymentModel
     fields = payment_fields
@@ -469,55 +481,56 @@ class PaymentsResource(BaseResource):
             if id:
                 return super().get(id)
             
-            # Check for query parameters
-            meeting_id = request.args.get('meeting_id', None)
-            mpesa_id = request.args.get('mpesa_id', None)
+            # Extract phone number from query parameters or request body
+            phone_number = request.args.get('phone_number', None)
             
-            query = PaymentModel.query
-            
-            if mpesa_id:
-                # Filter by mpesa_id if provided
-                query = query.filter_by(mpesa_id=mpesa_id)
-                payments = query.all()
-                return marshal(payments, self.fields), 200
-            
-            if meeting_id:
-                try:
-                    logger.info(f"Fetching payments for meeting ID: {meeting_id}")
-                    # Query payments by meeting_id and join payer (user) and block tables
-                    payments = query \
-                        .filter_by(meeting_id=meeting_id) \
-                        .join(UserModel, PaymentModel.payer_id == UserModel.id) \
-                        .join(BlockModel, PaymentModel.block_id == BlockModel.id) \
-                        .options(joinedload(PaymentModel.payer), joinedload(PaymentModel.block)) \
-                        .all()
-                    logger.info(f"Payments fetched for meeting ID {meeting_id}: {payments}")
-                    payment_data = []
-                    for payment in payments:
-                        logger.debug(f"Processing payment: ID {payment.id}, Payer {payment.payer.full_name}, Block {payment.block.name}")
-                        payment_data.append({
+            if phone_number:
+                normalized_phone = normalize_phone_number(phone_number)
+                logger.info(f"Searching for payment by normalized phone number: {normalized_phone}")
+                
+                # Find the user by normalizing the phone number
+                users = UserModel.query.all()
+                matched_user = None
+                for user in users:
+                    user_phone = normalize_phone_number(user.phone_number)
+                    if user_phone == normalized_phone:
+                        matched_user = user
+                        break
+                
+                if not matched_user:
+                    logger.warning(f"No user found for phone number: {phone_number} (normalized: {normalized_phone})")
+                    return {"message": "User not found for this phone number."}, 404
+                
+                # Query payments made by this user
+                payments = PaymentModel.query.filter_by(source_phone_number=phone_number).all()
+                if not payments:
+                    logger.info(f"No payments found for phone number: {phone_number}")
+                    return {"message": "No payments found for this phone number."}, 404
+                
+                # Associate the payment with the user and block
+                payment_data = []
+                for payment in payments:
+                    block = BlockModel.query.get(payment.block_id)
+                    payment_data.append({
                         "mpesa_id": payment.mpesa_id,
                         "amount": payment.amount,
                         "transaction_status": payment.transaction_status,
-                        "payer_id": payment.payer.id,  # Payer ID
-                        "payer_full_name": payment.payer.full_name,  # Payer Full Name
-                        "block_id": payment.block.id,  # Block ID
-                        "block_name": payment.block.name,  # Block Name
+                        "payer_id": matched_user.id,  # Payer ID
+                        "payer_full_name": f"{matched_user.first_name} {matched_user.last_name}",  # Payer Full Name
+                        "block_id": block.id if block else None,  # Block ID
+                        "block_name": block.name if block else "Unknown",  # Block Name
                         "payment_date": payment.payment_date,
                         "status": "Contributed" if payment.transaction_status else "Pending"
                     })
-                    logger.info(f"Payments query result: {payment_data}")
-                    return marshal(payments, self.fields), 200
-                except Exception as e:
-                    logger.error(f'Payments error: {e}')
-                    return self.handle_error(e)
-            else:
-                # Handle other queries for fetching all payments or specific payment by ID
-                return super().get()
+                
+                logger.info(f"Payments retrieved for phone number {phone_number}: {payment_data}")
+                return {"payments": payment_data}, 200
             
+            # Handle other queries for fetching all payments or specific payment by ID
+            return super().get()
         except Exception as e:
             logger.error(f"Error retrieving payment(s): {str(e)}", exc_info=True)
-            return handle_error(self, e)
+            return self.handle_error(e)
 
     def post(self):
         try:
