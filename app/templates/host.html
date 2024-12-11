@@ -475,243 +475,249 @@ Regular Block Hosting {% endblock %} {% block content %}
               </div>
             </div>
           </div>
+          <div class="table-responsive">
+            <table
+              class="table border-success table-bordered text-center table-hover"
+              id="membersTable"
+            >
+              <thead>
+                <tr>
+                  <th class="">#</th>
+                  <th scope="col">Full Names</th>
+                  <th scope="col">Phone Number</th>
+                  <th scope="col">ID Number</th>
+                  <th scope="col">Membership</th>
+                  <th scope="col">Bank</th>
+                  <th scope="col">A/C Number</th>
+                  <th scope="col">Edit</th>
+                  <th scope="col">Remove</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for member in members %}
+                <tr>
+                  <th scope="row">{{ loop.index }}</th>
+                  <td>{{ member.full_name }}</td>
+                  <td>{{ member.phone_number }}</td>
+                  <td>{{ member.id_number }}</td>
+                  <td>
+                    {% for i in range(member.block_memberships | length) %} {{
+                    member.block_memberships[i]['name'] }} ({{
+                    member.zone_memberships[i]['name'] }}) {% if i + 1 <
+                    member.block_memberships | length %}
+                    <br />
+                    {% endif %} {% endfor %}
+                  </td>
 
-          <table class="table table-responsive text-center" id="membersTable">
-            <thead>
-              <tr>
-                <th>Full Names</th>
-                <th>Phone Number</th>
-                <th>ID Number</th>
-                <th>Membership</th>
-                <th>Bank</th>
-                <th>A/C Number</th>
-                <th>Edit</th>
-                <th>Remove</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for member in members %}
-              <tr>
-                <td>{{ member.full_name }}</td>
-                <td>{{ member.phone_number }}</td>
-                <td>{{ member.id_number }}</td>
-                <td>
-                  {% for i in range(member.block_memberships | length) %} {{
-                  member.block_memberships[i]['name'] }} ({{
-                  member.zone_memberships[i]['name'] }}) {% if i + 1 <
-                  member.block_memberships | length %}
-                  <br />
-                  {% endif %} {% endfor %}
-                </td>
+                  <td>{{ member.bank_name }}</td>
+                  <td>{{ member.acc_number }}</td>
 
-                <td>{{ member.bank_name }}</td>
-                <td>{{ member.acc_number }}</td>
+                  <td>
+                    <button
+                      class="btn"
+                      style="
+                        color: green;
+                        background-color: white;
+                        font-size: 25px;
+                        padding: 0;
+                        margin: 0;
+                      "
+                      data-bs-toggle="modal"
+                      data-bs-target="#editModal{{ member.id }}"
+                    >
+                      <i class="bi bi-pencil-square"></i>
+                    </button>
+                  </td>
+                  <td>
+                    <button
+                      class="btn"
+                      style="
+                        color: white;
+                        background-color: rgb(200, 26, 26);
+                        border-radius: 20px;
+                      "
+                      data-bs-toggle="modal"
+                      data-bs-target="#removeModal{{ member.id }}"
+                    >
+                      <i class="bi bi-trash3-fill"></i>
+                    </button>
+                  </td>
+                </tr>
 
-                <td>
-                  <button
-                    class="btn"
-                    style="
-                      color: green;
-                      background-color: white;
-                      font-size: 25px;
-                      padding: 0;
-                      margin: 0;
-                    "
-                    data-bs-toggle="modal"
-                    data-bs-target="#editModal{{ member.id }}"
-                  >
-                    <i class="bi bi-pencil-square"></i>
-                  </button>
-                </td>
-                <td>
-                  <button
-                    class="btn"
-                    style="
-                      color: white;
-                      background-color: rgb(200, 26, 26);
-                      border-radius: 20px;
-                    "
-                    data-bs-toggle="modal"
-                    data-bs-target="#removeModal{{ member.id }}"
-                  >
-                    <i class="bi bi-trash3-fill"></i>
-                  </button>
-                </td>
-              </tr>
-
-              <!-- Edit Member Modal -->
-              <div
-                class="modal fade"
-                id="editModal{{ member.id }}"
-                tabindex="-1"
-                aria-labelledby="editModalLabel{{ member.id }}"
-                aria-hidden="true"
-              >
-                <div class="modal-dialog">
-                  <div class="modal-content">
-                    <div class="modal-header">
-                      <h5
-                        class="modal-title"
-                        style="color: #4c9323"
-                        id="editModalLabel{{ member.id }}"
-                      >
-                        Edit Member
-                      </h5>
-                      <button
-                        type="button"
-                        class="btn-close"
-                        data-bs-dismiss="modal"
-                        aria-label="Close"
-                      ></button>
-                    </div>
-                    {{ flash.render_flash_messages() }}
-
-                    <div class="modal-body">
-                      <form
-                        id="editForm{{ member.id }}"
-                        method="post"
-                        action="{{ url_for('main.host', user_id=member.id,active_tab='block_members') }}"
-                        novalidate
-                      >
-                        {{ update_form.hidden_tag() }}
-
-                        <div class="mb-3">
-                          {{
-                          update_form.full_name.label(class="update_form-label")
-                          }} {{
-                          update_form.full_name(class="update_form-control",
-                          value=member.full_name) }} {% if
-                          update_form.full_name.errors %}
-                          <div class="text-danger">
-                            {{ update_form.full_name.errors[0] }}
-                          </div>
-                          {% endif %}
-                        </div>
-                        <div class="mb-3">
-                          {{
-                          update_form.phone_number.label(class="update_form-label")
-                          }} {{
-                          update_form.phone_number(class="update_form-control",
-                          value=member.phone_number) }} {% if
-                          update_form.phone_number.errors %}
-                          <div class="text-danger">
-                            {{ update_form.phone_number.errors[0] }}
-                          </div>
-                          {% endif %}
-                        </div>
-                        <div class="mb-3">
-                          {{
-                          update_form.id_number.label(class="update_form-label")
-                          }} {{
-                          update_form.id_number(class="update_form-control",
-                          value=member.id_number) }}
-                        </div>
-                        <div class="mb-3">
-                          {{
-                          update_form.block_id.label(class="update_form-label")
-                          }} {{ update_form.block_id(class="form-control",
-                          value=member.block_memberships[0]['name']) }}
-                        </div>
-                        <div class="mb-3">
-                          {{
-                          update_form.member_zone.label(class="update_form-label")
-                          }} {{ update_form.member_zone(class="form-control",
-                          value=member.zone_memberships[0]['name']) }}
-                        </div>
-
-                        <div class="mb-3">
-                          {{
-                          update_form.bank_id.label(class="update_form-label")
-                          }} {{ update_form.bank_id(class="form-control",
-                          value=member.bank_name) }}
-                        </div>
-                        <div class="mb-3">
-                          {{
-                          update_form.account_number.label(class="update_form-label")
-                          }} {{
-                          update_form.account_number(class="update_form-control",
-                          value=member.acc_number) }}
-                        </div>
-
-                        <button
-                          type="submit"
-                          class="submit-btn"
-                          name="edit_member_submit"
+                <!-- Edit Member Modal -->
+                <div
+                  class="modal fade"
+                  id="editModal{{ member.id }}"
+                  tabindex="-1"
+                  aria-labelledby="editModalLabel{{ member.id }}"
+                  aria-hidden="true"
+                >
+                  <div class="modal-dialog">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5
+                          class="modal-title"
+                          style="color: #4c9323"
+                          id="editModalLabel{{ member.id }}"
                         >
-                          Save Changes
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Remove Member Modal -->
-              <div
-                class="modal fade"
-                id="removeModal{{ member.id }}"
-                tabindex="-1"
-                aria-labelledby="removeModalLabel{{ member.id }}"
-                aria-hidden="true"
-              >
-                <div class="modal-dialog">
-                  <div class="modal-content">
-                    <div class="modal-header">
-                      <h5
-                        class="modal-title"
-                        style="color: #4c9323"
-                        id="removeModalLabel{{ member.id }}"
-                      >
-                        Remove Member
-                      </h5>
-                      <button
-                        type="button"
-                        class="btn-close"
-                        data-bs-dismiss="modal"
-                        aria-label="Close"
-                      ></button>
-                    </div>
-                    {{ flash.render_flash_messages() }}
-
-                    <div class="modal-body">
-                      Are you sure you want to remove {{ member.full_name }}?
-                    </div>
-                    <div class="modal-footer">
-                      <form
-                        id="removeForm{{ member.id }}"
-                        method="post"
-                        action="{{ url_for('main.host', user_id=member.id) }}"
-                      >
+                          Edit Member
+                        </h5>
                         <button
                           type="button"
-                          class="btn btn-secondary"
+                          class="btn-close"
                           data-bs-dismiss="modal"
-                        >
-                          Cancel
-                        </button>
-                        <input type="hidden" name="_method" value="DELETE" />
+                          aria-label="Close"
+                        ></button>
+                      </div>
+                      {{ flash.render_flash_messages() }}
 
-                        <input
-                          type="hidden"
-                          name="csrf_token"
-                          value="{{ csrf_token() }}"
-                        />
-
-                        <button
-                          type="submit"
-                          class="btn btn-danger"
-                          name="remove_member_submit"
+                      <div class="modal-body">
+                        <form
+                          id="editForm{{ member.id }}"
+                          method="post"
+                          action="{{ url_for('main.host', user_id=member.id,active_tab='block_members') }}"
+                          novalidate
                         >
-                          Remove
-                        </button>
-                      </form>
+                          {{ update_form.hidden_tag() }}
+
+                          <div class="mb-3">
+                            {{
+                            update_form.full_name.label(class="update_form-label")
+                            }} {{
+                            update_form.full_name(class="update_form-control",
+                            value=member.full_name) }} {% if
+                            update_form.full_name.errors %}
+                            <div class="text-danger">
+                              {{ update_form.full_name.errors[0] }}
+                            </div>
+                            {% endif %}
+                          </div>
+                          <div class="mb-3">
+                            {{
+                            update_form.phone_number.label(class="update_form-label")
+                            }} {{
+                            update_form.phone_number(class="update_form-control",
+                            value=member.phone_number) }} {% if
+                            update_form.phone_number.errors %}
+                            <div class="text-danger">
+                              {{ update_form.phone_number.errors[0] }}
+                            </div>
+                            {% endif %}
+                          </div>
+                          <div class="mb-3">
+                            {{
+                            update_form.id_number.label(class="update_form-label")
+                            }} {{
+                            update_form.id_number(class="update_form-control",
+                            value=member.id_number) }}
+                          </div>
+                          <div class="mb-3">
+                            {{
+                            update_form.block_id.label(class="update_form-label")
+                            }} {{ update_form.block_id(class="form-control",
+                            value=member.block_memberships[0]['name']) }}
+                          </div>
+                          <div class="mb-3">
+                            {{
+                            update_form.member_zone.label(class="update_form-label")
+                            }} {{ update_form.member_zone(class="form-control",
+                            value=member.zone_memberships[0]['name']) }}
+                          </div>
+
+                          <div class="mb-3">
+                            {{
+                            update_form.bank_id.label(class="update_form-label")
+                            }} {{ update_form.bank_id(class="form-control",
+                            value=member.bank_name) }}
+                          </div>
+                          <div class="mb-3">
+                            {{
+                            update_form.account_number.label(class="update_form-label")
+                            }} {{
+                            update_form.account_number(class="update_form-control",
+                            value=member.acc_number) }}
+                          </div>
+
+                          <button
+                            type="submit"
+                            class="submit-btn"
+                            name="edit_member_submit"
+                          >
+                            Save Changes
+                          </button>
+                        </form>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-              {% endfor %}
-            </tbody>
-          </table>
+
+                <!-- Remove Member Modal -->
+                <div
+                  class="modal fade"
+                  id="removeModal{{ member.id }}"
+                  tabindex="-1"
+                  aria-labelledby="removeModalLabel{{ member.id }}"
+                  aria-hidden="true"
+                >
+                  <div class="modal-dialog">
+                    <div class="modal-content">
+                      <div class="modal-header">
+                        <h5
+                          class="modal-title"
+                          style="color: #4c9323"
+                          id="removeModalLabel{{ member.id }}"
+                        >
+                          Remove Member
+                        </h5>
+                        <button
+                          type="button"
+                          class="btn-close"
+                          data-bs-dismiss="modal"
+                          aria-label="Close"
+                        ></button>
+                      </div>
+                      {{ flash.render_flash_messages() }}
+
+                      <div class="modal-body">
+                        Are you sure you want to remove {{ member.full_name }}?
+                      </div>
+                      <div class="modal-footer">
+                        <form
+                          id="removeForm{{ member.id }}"
+                          method="post"
+                          action="{{ url_for('main.host', user_id=member.id) }}"
+                        >
+                          <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                          >
+                            Cancel
+                          </button>
+                          <input type="hidden" name="_method" value="DELETE" />
+
+                          <input
+                            type="hidden"
+                            name="csrf_token"
+                            value="{{ csrf_token() }}"
+                          />
+
+                          <button
+                            type="submit"
+                            class="btn btn-danger"
+                            name="remove_member_submit"
+                          >
+                            Remove
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
 
           <!-- Pagination Controls -->
           <nav aria-label="Page navigation">

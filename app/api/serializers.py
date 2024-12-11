@@ -215,7 +215,7 @@ payment_args.add_argument('middle_name', type=str)
 payment_args.add_argument('last_name', type=str)
 
 payment_update_args = reqparse.RequestParser()
-payment_update_args.add_argument('transaction_status', type=bool)
+payment_update_args.add_argument('transaction_status', type=str)
 payment_update_args.add_argument('org_account_balance', type=float)
 payment_update_args.add_argument('third_party_trans_id', type=str)
 

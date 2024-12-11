@@ -273,7 +273,7 @@ class PaymentModel(db.Model):
     source_phone_number = db.Column(db.String(80), nullable=False)  # MSISDN
     amount = db.Column(db.Integer, nullable=False)
     payment_date = db.Column(db.DateTime, default=db.func.current_timestamp())
-    transaction_status = db.Column(db.Boolean, default=False)
+    transaction_status = db.Column(db.String, default='Pending')
     
     # Payment status tracking
     status = db.Column(db.String(20), default='pending')  # pending, completed, failed
