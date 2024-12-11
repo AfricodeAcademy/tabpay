@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, session, make_response
+from flask import Flask, request, render_template, session, make_response, current_app
 from flask_security import Security, SQLAlchemyUserDatastore, current_user
 from .utils import db, mail
 from .utils.initial_banks import import_initial_banks
@@ -6,7 +6,7 @@ from .main.models import UserModel, RoleModel
 from flask_security.utils import hash_password
 from config import config
 from app.auth.forms import ExtendedConfirmRegisterForm, ExtendedLoginForm, ExtendedRegisterForm
-from flask_wtf.csrf import CSRFProtect, CSRFError, generate_csrf
+from flask_wtf.csrf import CSRFProtect,CSRFError, generate_csrf
 from .admin import init_admin
 from .main.models import user_datastore
 import logging
@@ -17,6 +17,8 @@ from flask_babel import Babel
 from datetime import timedelta
 import uuid
 import secrets
+from .utils.logging_config import setup_logger
+from functools import wraps
 
 # Load environment variables
 load_dotenv()
@@ -46,6 +48,52 @@ def configure_logging():
 
 logging.getLogger('passlib').setLevel(logging.WARNING)
 
+# Custom CSRF 
+class CustomCsrfProtect(CSRFProtect):
+    def __init__(self):
+        super(CustomCsrfProtect, self).__init__()
+        self._exempt_views = set()
+
+    def _get_csrf_token(self):
+        """Get CSRF token from form, headers, or query string"""
+        # Try to get token from form
+        token = request.form.get('csrf_token')
+        if token:
+            return token
+            
+        # Try to get token from headers
+        token = request.headers.get('X-CSRFToken')
+        if token:
+            return token
+            
+        # Try to get token from query string
+        return request.args.get('csrf_token')
+
+    def error_handler(self, reason):
+        """Custom error handler for CSRF validation"""
+        # Check if endpoint exists and is csrf exempt
+        if request.endpoint and getattr(current_app.view_functions[request.endpoint], '_csrf_exempt', False):
+            return None
+            
+        # Check if route is in exempt list
+        if request.path in current_app.config.get('CSRF_EXEMPT_ROUTES', []):
+            return None
+            
+        # Check if it's an M-Pesa callback
+        if request.path in ['/payments/confirmation', '/payments/validation', '/api/v1/payments/stk/callback']:
+            return None
+            
+        # Default error handling
+        return super(CustomCsrfProtect, self).error_handler(reason)
+
+    def exempt(self, view):
+        """Mark a view function as being exempt from CSRF protection"""
+        @wraps(view)
+        def decorated_view(*args, **kwargs):
+            return view(*args, **kwargs)
+        self._exempt_views.add(view)
+        return decorated_view
+
 def create_app(config_name):
     # configure_logging()
     
@@ -56,6 +104,9 @@ def create_app(config_name):
     app.config['BABEL_DEFAULT_LOCALE'] = 'en'
     app.config['BABEL_DEFAULT_TIMEZONE'] = 'UTC'
     babel.init_app(app)
+    
+    # Setup logging
+    setup_logger()
     
     # Load environment variables into config
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY',secrets.token_hex(32))
@@ -69,11 +120,13 @@ def create_app(config_name):
         app.config['SESSION_COOKIE_SECURE'] = os.environ.get('SESSION_COOKIE_SECURE', 'True').lower() == 'true'
         app.config['SESSION_COOKIE_DOMAIN'] = os.environ.get('SESSION_COOKIE_DOMAIN', '.tabpay.africa')
         app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(seconds=int(os.environ.get('PERMANENT_SESSION_LIFETIME', 86400)))
+    # CSRF Configuration
+    app.config['WTF_CSRF_CHECK_DEFAULT'] = False
     
     # Initialize CSRF protection
-    csrf = CSRFProtect()
+    csrf = CustomCsrfProtect()
     csrf.init_app(app)
-    
+
     # Set CSRF configuration
     app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour
     app.config['WTF_CSRF_SSL_STRICT'] = True
@@ -109,22 +162,21 @@ def create_app(config_name):
                     db.session.commit()
 
     # CSRF protection for all routes except login/register and API
-    @app.before_request
+    # Update the csrf_protect function
+    @app.before_request 
     def csrf_protect():
-        if request.endpoint and request.endpoint.startswith('api.'):
+        if (request.endpoint and 
+            (any(route in request.path for route in app.config['CSRF_EXEMPT_ROUTES']) or
+            request.endpoint.startswith('api.') or
+            request.endpoint in ['security.login', 'security.register', 
+                                'security.logout', 'security.forgot_password',
+                                'security.reset_password', 'security.send_confirmation'])):
             return
             
-        if request.endpoint in ['security.login', 'security.register', 
-                              'security.logout', 'security.forgot_password',
-                              'security.reset_password', 'security.send_confirmation']:
-            return
-            
-        if request.method not in app.config['WTF_CSRF_METHODS']:
-            return
-            
-        csrf.protect()
+        if request.method in app.config['WTF_CSRF_METHODS']:
+            csrf.protect()
 
-    # Add security headers to all responses
+        # Add security headers to all responses
     @app.after_request
     def add_security_headers(response):
         if not request.endpoint or not request.endpoint.startswith('api.'):
