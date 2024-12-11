@@ -30,11 +30,13 @@ def umbrella_required(f):
         # Get user's umbrella
         umbrella = get_umbrella_by_user(current_user.id)
         
-        # Prevent redirect loops by checking current endpoint
+        # Prevent redirect loops by checking current endpoint and request method
         current_endpoint = request.endpoint
-        is_settings_page = current_endpoint and current_endpoint.endswith('settings')
+        is_settings_page = current_endpoint == 'main.settings'
+        is_get_request = request.method == 'GET'
         
-        if not umbrella and not is_settings_page:
+        # Only allow access to settings page without umbrella if it's a GET request
+        if not umbrella and not (is_settings_page and is_get_request):
             flash('You need to create an umbrella before accessing this resource.', 'warning')
             return redirect(url_for('main.settings', active_tab='umbrella'))
 
@@ -50,7 +52,7 @@ def umbrella_required(f):
                 flash('You do not have permission to access this block.', 'danger')
                 abort(403)
 
-        # Add the umbrella to kwargs for the decorated function to use if it exists
+        # Add the umbrella to kwargs for the decorated function to use
         if umbrella:
             kwargs['umbrella'] = umbrella
         return f(*args, **kwargs)
