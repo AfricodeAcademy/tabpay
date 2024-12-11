@@ -292,7 +292,7 @@ class PaymentModel(db.Model):
     last_retry_at = db.Column(db.DateTime)
     
     # Bank and block relationships
-    bank_id = db.Column(db.Integer, db.ForeignKey('banks.id'), nullable=False)
+    bank_id = db.Column(db.Integer, db.ForeignKey('banks.id'), nullable=True)
     block_id = db.Column(db.Integer, db.ForeignKey('blocks.id'), nullable=False)
     payer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     meeting_id = db.Column(db.Integer, db.ForeignKey('meetings.id'), nullable=True)
