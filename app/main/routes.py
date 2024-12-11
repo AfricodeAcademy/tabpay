@@ -2044,7 +2044,7 @@ def mpesa_confirmation():
     """Handle M-Pesa confirmation callback by forwarding to API endpoint"""
     try:
         # Forward the request to the API endpoint
-        api_url = f"{current_app.config['API_BASE_URL']}/api/v1/payments/confirmation"
+        api_url = f"{current_app.config['API_BASE_URL']}/api/v1/payments"
         response = requests.post(api_url, json=request.get_json())
         return jsonify(response.json()), response.status_code
     except Exception as e:
@@ -2410,3 +2410,21 @@ def get_filtered_member_contributions():
         print(f"Error in get_filtered_member_contributions: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
 
+
+@main.route('/payments/stk/callback', methods=['POST'])
+@csrf_exempt
+@require_safaricom_ip_validation
+def mpesa_stk_callback():
+    """Handle M-Pesa STK push callback by forwarding to API endpoint"""
+    try:
+        # Forward the request to the API endpoint
+        api_url = f"{current_app.config['API_BASE_URL']}/api/v1/payments/stk/callback"
+        response = requests.post(api_url, json=request.get_json())
+        logger.info(f"Forwarded STK callback to API. Response: {response.status_code}")
+        return jsonify(response.json()), response.status_code
+    except Exception as e:
+        logger.error(f"Error forwarding M-Pesa STK callback to API: {str(e)}")
+        return jsonify({
+            "ResultCode": "0",
+            "ResultDesc": "Success"
+        }), 200
