@@ -1149,7 +1149,9 @@ class MpesaConfirmationResource(MpesaCallbackMixin, BaseResource):
                     org_account_balance=data.get('OrgAccountBalance'),
                     transaction_status='completed',
                     payer_id=payer.id if payer else None,
-                    block_id=payer.block_memberships[0].id if payer and payer.block_memberships else None,
+                    block_id=(payer.block_memberships.first().id 
+                              if payer and payer.block_memberships.first() 
+                              else None),
                     meeting_id=None #TODO add logic To get meeting id
                 )
                 db.session.add(transaction)
