@@ -590,6 +590,12 @@ render_field(field) %}
       select.disabled = false;
     }
 
+     // Function to trigger change event
+  function triggerChangeEvent(element) {
+    const event = new Event('change');
+    element.dispatchEvent(event);
+  }
+
     // Handle block selection for member tab
     if (blockSelect && zoneSelect) {
       blockSelect.addEventListener("change", function () {
@@ -623,6 +629,10 @@ render_field(field) %}
 
       // Initially disable zone select
       resetSelect(zoneSelect, "Choose a Zone");
+      // Trigger change event to repopulate zones if a block is already selected
+      if (blockSelect.value) {
+        triggerChangeEvent(blockSelect);
+      }
     }
   });
 </script>
