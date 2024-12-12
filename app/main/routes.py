@@ -1091,10 +1091,10 @@ def handle_schedule_creation(schedule_form):
 
         # Create meeting via API
         try:
-            print(f"Attempting to schedule meeting with payload: {payload}")
+            # print(f"Attempting to schedule meeting with payload: {payload}")
             response = requests.post(f"{current_app.config['API_BASE_URL']}/api/v1/meetings/", json=payload)
-            print(f"API Response Status: {response.status_code}")
-            print(f"API Response Content: {response.text}")
+            # print(f"API Response Status: {response.status_code}")
+            # print(f"API Response Content: {response.text}")
             if response.status_code == 201:
                 flash("Meeting has been scheduled successfully!", "success")
                 return redirect(url_for('main.host', active_tab='schedule_meeting'))
@@ -1127,7 +1127,7 @@ def get_upcoming_meeting_details():
             logging.warning(f"No umbrella found for user {organizer_id}")
             return None
 
-        logging.info(f"Fetching upcoming meetings for organizer_id={organizer_id}, umbrella_id={umbrella.get('id')}, start={week_start}, end={week_end}")
+        # logging.info(f"Fetching upcoming meetings for organizer_id={organizer_id}, umbrella_id={umbrella.get('id')}, start={week_start}, end={week_end}")
 
         # Format dates in ISO format for API
         params = {
@@ -1148,13 +1148,13 @@ def get_upcoming_meeting_details():
         )
         
         # Log the full request details for debugging
-        logging.info(f"API request URL: {response.request.url}")
-        logging.info(f"API request headers: {response.request.headers}")
-        logging.info(f"API response status: {response.status_code}")
+        # logging.info(f"API request URL: {response.request.url}")
+        # logging.info(f"API request headers: {response.request.headers}")
+        # logging.info(f"API response status: {response.status_code}")
 
         if response.status_code == 200:
             meeting_data = response.json()
-            logging.info(f"API response received: {meeting_data}")
+            # logging.info(f"API response received: {meeting_data}")
 
             # Handle empty response
             if not meeting_data:
