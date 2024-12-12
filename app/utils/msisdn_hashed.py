@@ -24,7 +24,7 @@ def find_user_by_hashed_msisdn(hashed_msisdn: Optional[str]) -> Optional[UserMod
     try:
         # Get all users
         role = RoleModel.query.filter_by(name='Member').first()
-        users = UserModel.query.filter_by(roles=role).all()
+        users = UserModel.query.filter(UserModel.roles.contains(role)).all()
         logger.debug(f"Found {len(users)} users to check")
         
         # Check each user's phone number
