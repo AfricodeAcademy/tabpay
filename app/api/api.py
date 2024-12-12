@@ -16,7 +16,8 @@ from .serializers import (
     block_args, umbrella_fields, umbrella_args, zone_fields, 
     zone_args, meeting_fields, meeting_args, role_args, role_fields
 )
-from ..utils import db, save_picture, find_user_by_hashed_msisdn
+from ..utils import db, save_picture
+from ..utils.msisdn_hashed import find_user_by_hashed_msisdn
 import logging
 import json
 from sqlalchemy.orm import joinedload
