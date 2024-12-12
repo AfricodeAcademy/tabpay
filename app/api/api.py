@@ -1105,6 +1105,13 @@ class MpesaConfirmationResource(MpesaCallbackMixin, BaseResource):
             msisdn = data.get('MSISDN')
             payer = find_user_by_hashed_msisdn(msisdn) if msisdn else None
             logger.info(f"Found matching user: {payer.full_name if payer else 'None'} for MSISDN: {msisdn}")
+            # Safely get block_id
+            block_id = None
+            if payer:
+                memberships = payer.block_memberships.all()
+                logger.debug(f"User {payer.full_name} has {len(memberships)} block memberships")
+                if memberships:
+                    block_id = memberships[0].id
             
             # Find existing transaction
             transaction = PaymentModel.query.filter_by(
@@ -1149,9 +1156,7 @@ class MpesaConfirmationResource(MpesaCallbackMixin, BaseResource):
                     org_account_balance=data.get('OrgAccountBalance'),
                     transaction_status='completed',
                     payer_id=payer.id if payer else None,
-                    block_id=(payer.block_memberships.first().id 
-                              if payer and payer.block_memberships.first() 
-                              else None),
+                    block_id=block_id,
                     meeting_id=None #TODO add logic To get meeting id
                 )
                 db.session.add(transaction)
