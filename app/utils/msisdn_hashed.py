@@ -1,6 +1,6 @@
 import hashlib
 from typing import Optional
-from app.main.models import UserModel
+from app.main.models import UserModel,RoleModel
 import logging
 
 
@@ -23,7 +23,8 @@ def find_user_by_hashed_msisdn(hashed_msisdn: Optional[str]) -> Optional[UserMod
         
     try:
         # Get all users
-        users = UserModel.query.all()
+        member = RoleModel.query.filter_by(name='Member').first()
+        users = UserModel.query.filter_by(role=member).all()
         logger.debug(f"Found {len(users)} users to check")
         
         # Check each user's phone number
