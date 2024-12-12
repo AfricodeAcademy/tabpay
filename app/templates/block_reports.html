@@ -81,7 +81,7 @@ block content %}
                 <div class="col-md-3 tt-contributed">
                   {% if block_contributions %}
                   {% set total_contributed = block_contributions.values() | sum %}
-                  <span style="color: rgb(14, 169, 14)">Kes {{ total_contributed }}</span>
+                  <span style="color: rgb(14, 169, 14)">Total Contributed: Kes {{ total_contributed }}</span>
                   {% else %}
                   <span style="color: rgb(14, 169, 14)">Kes 0.00</span>
               {% endif %}

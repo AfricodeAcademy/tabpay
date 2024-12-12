@@ -4,7 +4,7 @@ from typing import List
 import logging
 from config import Config
 
-
+logger = logging.getLogger(__name__)
 
 class SendSMS:
     def __init__(self):
@@ -26,7 +26,7 @@ class SendSMS:
             # Verify initialization by fetching account info
             try:
                 account_info = africastalking.Application.fetch_application_data()
-                # logger.info(f"SMS service initialized successfully. Account info: {account_info}")
+                logger.info(f"SMS service initialized successfully. Account info: {account_info}")
             except Exception as acc_error:
                 print("Error sending message, couldn't connect with the server!")
                 # logger.warning(f"Initialized but couldn't fetch account info: {acc_error}")
@@ -127,7 +127,7 @@ class SendSMS:
         """
         try:
             account_info = africastalking.Application.fetch_application_data()
-            # logger.info(f"Connection test successful. Account info: {account_info}")
+            logger.info(f"Connection test successful. Account info: {account_info}")
             return True
         except Exception as e:
             # logger.error(f"Connection test failed: {str(e)}")

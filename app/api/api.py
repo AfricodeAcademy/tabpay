@@ -477,18 +477,19 @@ class PaymentsResource(BaseResource):
     args = payment_args
 
     def get(self, id=None):
-        """Get a single payment or list all payments"""
+        """Get a single payment or list payments filtered by phone number and meeting"""
         try:
             if id:
                 return super().get(id)
-            
-            # Extract phone number from query parameters or request body
+
+            # Extract query parameters
             phone_number = request.args.get('phone_number', None)
-            
+            meeting_id = request.args.get('meeting_id', None)
+
             if phone_number:
                 normalized_phone = normalize_phone_number(phone_number)
-                logger.info(f"Searching for payment by normalized phone number: {normalized_phone}")
-                
+                logger.info(f"Searching for payments by normalized phone number: {normalized_phone} and meeting_id: {meeting_id}")
+
                 # Find the user by normalizing the phone number
                 users = UserModel.query.all()
                 matched_user = None
@@ -497,21 +498,27 @@ class PaymentsResource(BaseResource):
                     if user_phone == normalized_phone:
                         matched_user = user
                         break
-                
+
                 if not matched_user:
                     logger.warning(f"No user found for phone number: {phone_number} (normalized: {normalized_phone})")
                     return {"message": "User not found for this phone number."}, 404
-                
-                # Query payments made by this user
-                payments = PaymentModel.query.filter_by(source_phone_number=phone_number).all()
+
+                # Query payments made by this user, optionally filter by meeting_id
+                query = PaymentModel.query.filter_by(source_phone_number=phone_number)
+                if meeting_id:
+                    query = query.filter_by(meeting_id=meeting_id)
+
+                payments = query.all()
+
                 if not payments:
-                    logger.info(f"No payments found for phone number: {phone_number}")
-                    return {"message": "No payments found for this phone number."}, 404
-                
-                # Associate the payment with the user and block
+                    logger.info(f"No payments found for phone number: {phone_number} and meeting_id: {meeting_id}")
+                    return {"message": "No payments found for this phone number and meeting."}, 404
+
+                # Associate the payment with the user, block, and meeting
                 payment_data = []
                 for payment in payments:
                     block = BlockModel.query.get(payment.block_id)
+                    meeting = MeetingModel.query.get(payment.meeting_id)
                     payment_data.append({
                         "mpesa_id": payment.mpesa_id,
                         "amount": payment.amount,
@@ -520,18 +527,20 @@ class PaymentsResource(BaseResource):
                         "payer_full_name": f"{matched_user.first_name} {matched_user.last_name}",  # Payer Full Name
                         "block_id": block.id if block else None,  # Block ID
                         "block_name": block.name if block else "Unknown",  # Block Name
+                        "meeting_id": meeting.id if meeting else None,  # Meeting ID
                         "payment_date": payment.payment_date,
                         "status": "Contributed" if payment.transaction_status else "Pending"
                     })
-                
-                logger.info(f"Payments retrieved for phone number {phone_number}: {payment_data}")
+
+                logger.info(f"Payments retrieved for phone number {phone_number} and meeting_id {meeting_id}: {payment_data}")
                 return {"payments": payment_data}, 200
-            
+
             # Handle other queries for fetching all payments or specific payment by ID
             return super().get()
         except Exception as e:
             logger.error(f"Error retrieving payment(s): {str(e)}", exc_info=True)
             return self.handle_error(e)
+
 
     def post(self):
         try:
@@ -1103,15 +1112,28 @@ class MpesaConfirmationResource(MpesaCallbackMixin, BaseResource):
 
             # Find matching user by MSISDN
             msisdn = data.get('MSISDN')
+            bill_ref = data.get('BillRefNumber')
             payer = find_user_by_hashed_msisdn(msisdn) if msisdn else None
             logger.info(f"Found matching user: {payer.full_name if payer else 'None'} for MSISDN: {msisdn}")
             # Safely get block_id
             block_id = None
+            meeting_id = None
+            meeting_id = MeetingModel.query.filter_by(unique_id=bill_ref).first()
+              
+            # Fetch meeting using BillRefNumber
+            if bill_ref:
+                meeting = MeetingModel.query.filter_by(unique_id=bill_ref).first()
+                if meeting:
+                    meeting_id = meeting.id
+                    logger.info(f"Found meeting ID: {meeting_id} for BillRefNumber: {bill_ref}")
+                else:
+                    logger.warning(f"No meeting found for BillRefNumber: {bill_ref}")
             if payer:
                 memberships = payer.block_memberships.all()
                 logger.debug(f"User {payer.full_name} has {len(memberships)} block memberships")
                 if memberships:
                     block_id = memberships[0].id
+                    
             
             # Find existing transaction
             transaction = PaymentModel.query.filter_by(
@@ -1157,7 +1179,7 @@ class MpesaConfirmationResource(MpesaCallbackMixin, BaseResource):
                     transaction_status='completed',
                     payer_id=payer.id if payer else None,
                     block_id=block_id,
-                    meeting_id=None #TODO add logic To get meeting id
+                    meeting_id=meeting_id
                 )
                 db.session.add(transaction)
                 db.session.commit()
