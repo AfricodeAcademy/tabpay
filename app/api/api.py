@@ -16,7 +16,7 @@ from .serializers import (
     block_args, umbrella_fields, umbrella_args, zone_fields, 
     zone_args, meeting_fields, meeting_args, role_args, role_fields
 )
-from ..utils import db, save_picture
+from ..utils import db, save_picture, find_user_by_hashed_msisdn
 import logging
 import json
 from sqlalchemy.orm import joinedload
@@ -1099,6 +1099,11 @@ class MpesaConfirmationResource(MpesaCallbackMixin, BaseResource):
             logger.info("Processing M-Pesa confirmation request")
             data = request.get_json()
             logger.info(f"Confirmation request data: {json.dumps(data, indent=2)}")
+
+            # Find matching user by MSISDN
+            msisdn = data.get('MSISDN')
+            payer = find_user_by_hashed_msisdn(msisdn) if msisdn else None
+            logger.info(f"Found matching user: {payer.full_name if payer else 'None'} for MSISDN: {msisdn}")
             
             # Find existing transaction
             transaction = PaymentModel.query.filter_by(
@@ -1116,6 +1121,11 @@ class MpesaConfirmationResource(MpesaCallbackMixin, BaseResource):
                 transaction.middle_name = data.get('MiddleName')
                 transaction.last_name = data.get('LastName')
                 transaction.org_account_balance = data.get('OrgAccountBalance')
+
+                 # Update payer information if found
+                if payer:
+                    transaction.payer_id = payer.id
+                    transaction.block_id = payer.block_memberships[0].id if payer.block_memberships else None
                 
                 db.session.commit()
                 logger.info(f"Updated transaction status for TransID: {data.get('TransID')}")
@@ -1137,9 +1147,9 @@ class MpesaConfirmationResource(MpesaCallbackMixin, BaseResource):
                     last_name=data.get('LastName'),
                     org_account_balance=data.get('OrgAccountBalance'),
                     transaction_status='completed',
-                    payer_id=None,
-                    block_id=None,
-                    meeting_id=None
+                    payer_id=payer.id if payer else None,
+                    block_id=payer.block_memberships[0].id if payer and payer.block_memberships else None,
+                    meeting_id=None #TODO add logic To get meeting id
                 )
                 db.session.add(transaction)
                 db.session.commit()
