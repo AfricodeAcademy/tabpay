@@ -485,6 +485,11 @@ class PaymentsResource(BaseResource):
             # Extract query parameters
             phone_number = request.args.get('phone_number', None)
             meeting_id = request.args.get('meeting_id', None)
+            umbrella_id = request.args.get('umbrella_id', None)
+
+            if not umbrella_id:
+                logger.warning("Umbrella ID is required for filtering payments.")
+                return {"message": "Umbrella ID is required for filtering payments."}, 400
 
             if phone_number:
                 normalized_phone = normalize_phone_number(phone_number)
@@ -504,7 +509,7 @@ class PaymentsResource(BaseResource):
                     return {"message": "User not found for this phone number."}, 404
 
                 # Query payments made by this user, optionally filter by meeting_id
-                query = PaymentModel.query.filter_by(source_phone_number=phone_number)
+                query = PaymentModel.query.filter_by(source_phone_number=phone_number, umbrella_id=umbrella_id)
                 if meeting_id:
                     query = query.filter_by(meeting_id=meeting_id)
 
@@ -1118,6 +1123,7 @@ class MpesaConfirmationResource(MpesaCallbackMixin, BaseResource):
             # Safely get block_id
             block_id = None
             meeting_id = None
+            umbrella_id = None
             meeting_id = MeetingModel.query.filter_by(unique_id=bill_ref).first()
               
             # Fetch meeting using BillRefNumber
@@ -1125,6 +1131,8 @@ class MpesaConfirmationResource(MpesaCallbackMixin, BaseResource):
                 meeting = MeetingModel.query.filter_by(unique_id=bill_ref).first()
                 if meeting:
                     meeting_id = meeting.id
+                    block_id = meeting.block_id
+                    umbrella_id = BlockModel.query.get(block_id).parent_umbrella_id if block_id else None
                     logger.info(f"Found meeting ID: {meeting_id} for BillRefNumber: {bill_ref}")
                 else:
                     logger.warning(f"No meeting found for BillRefNumber: {bill_ref}")
@@ -1133,6 +1141,7 @@ class MpesaConfirmationResource(MpesaCallbackMixin, BaseResource):
                 logger.debug(f"User {payer.full_name} has {len(memberships)} block memberships")
                 if memberships:
                     block_id = memberships[0].id
+                    umbrella_id = memberships[0].parent_umbrella_id
                     
             
             # Find existing transaction
@@ -1155,7 +1164,8 @@ class MpesaConfirmationResource(MpesaCallbackMixin, BaseResource):
                  # Update payer information if found
                 if payer:
                     transaction.payer_id = payer.id
-                    transaction.block_id = payer.block_memberships[0].id if payer.block_memberships else None
+                    transaction.block_id = block_id
+                    transaction.umbrella_id = umbrella_id
                 
                 db.session.commit()
                 logger.info(f"Updated transaction status for TransID: {data.get('TransID')}")
@@ -1179,7 +1189,8 @@ class MpesaConfirmationResource(MpesaCallbackMixin, BaseResource):
                     transaction_status='completed',
                     payer_id=payer.id if payer else None,
                     block_id=block_id,
-                    meeting_id=meeting_id
+                    meeting_id=meeting_id,
+                    umbrella_id=umbrella_id
                 )
                 db.session.add(transaction)
                 db.session.commit()

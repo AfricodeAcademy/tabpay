@@ -292,6 +292,7 @@ class PaymentModel(db.Model):
     last_retry_at = db.Column(db.DateTime)
     
     # Bank and block relationships
+    umbrella_id = db.Column(db.Integer, db.ForeignKey('umbrellas.id'), nullable=True)
     bank_id = db.Column(db.Integer, db.ForeignKey('banks.id'), nullable=True)
     block_id = db.Column(db.Integer, db.ForeignKey('blocks.id'), nullable=True)
     payer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
