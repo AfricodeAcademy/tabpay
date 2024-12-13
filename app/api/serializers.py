@@ -83,6 +83,7 @@ payment_fields = {
     "transaction_status": fields.Boolean,
     "bank_id": fields.Integer,
     "block_id": fields.Integer,
+    "umbrella_id": fields.Integer,
     "payer_id": fields.Integer,
     "meeting_id": fields.Integer,
     "payer_full_name": fields.String(attribute=lambda x: getattr(x.payer, 'full_name', 'Unknown')),  
@@ -197,6 +198,8 @@ payment_args.add_argument('bank_id', type=int, required=False, help='Bank ID is 
 payment_args.add_argument('block_id', type=int, required=False, help='Block ID is required')
 payment_args.add_argument('payer_id', type=int, required=False, help='Payer ID is required')
 payment_args.add_argument('meeting_id', type=int)
+payment_args.add_argument('umbrella_id', type=int)
+
 
 # STK Push specific fields
 payment_args.add_argument('checkout_request_id', type=str)
