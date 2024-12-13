@@ -1745,7 +1745,7 @@ def get_block_contributions(meeting_id=None, host_id=None):
         return []
 
 
-def get_member_contributions(meeting_id=None, host_id=None, status=None,member_id=None):
+def get_member_contributions(meeting_id=None, host_id=None, status=None, member_id=None):
     umbrella_id = get_umbrella_by_user(current_user.id)
     try:
         # Fetch all members of the umbrella
@@ -1785,9 +1785,7 @@ def get_member_contributions(meeting_id=None, host_id=None, status=None,member_i
             flash("Error fetching contributions. Please try again later.", "danger")
             return []
 
-        payment_data = contributions_response.json().get('payments', {})
-        total_amount = payment_data.get('total_amount', 0)
-        transactions = payment_data.get('transactions', [])
+        transactions = contributions_response.json()
 
         # Combine members with their contributions
         member_contributions = []
@@ -1808,6 +1806,8 @@ def get_member_contributions(meeting_id=None, host_id=None, status=None,member_i
             }
             
             member_contributions.append(contribution)
+
+        total_amount = sum(c['amount'] for c in member_contributions)
 
         return {
             'total_amount': total_amount,
