@@ -1705,7 +1705,7 @@ def get_block_contributions(meeting_id=None, host_id=None, status=None):
             host_name = meeting_data.get('host', 'Unknown Host')
             meeting_date = meeting_data.get('when', 'Unknown Date')
             # Fetch contributions for each block
-        block_contributions = []
+        block_contributions = {}
         for block in blocks:
             params = {'meeting_id': meeting_id, 'block_id': block['id'], 'umbrella_id': umbrella_id}
             if status:
