@@ -1751,13 +1751,22 @@ def get_block_contributions(meeting_id=None, host_id=None):
 
 
 def get_member_contributions(meeting_id=None, host_id=None, status=None,member_id=None):
-    umbrella_id = get_umbrella_by_user(current_user.id)
+    umbrella = get_umbrella_by_user(current_user.id)
+    if not umbrella:
+        flash('You need to create an umbrella before getting member contributions!', 'info')
+        return {
+            'member_contributions': [],
+            'host_name': 'Unknown Host',
+            'meeting_date': 'Unknown Date'
+        }
+
+    umbrella_id = umbrella['id']
     try:
 
         # Fetch all members of the umbrella
         members_response = requests.get(
             f"{current_app.config['API_BASE_URL']}/api/v1/users/",
-            params={'role': 'Member', 'umbrella_id': umbrella_id['id']}
+            params={'role': 'Member', 'umbrella_id': umbrella_id}
         )
         
         if members_response.status_code != 200:
@@ -1769,12 +1778,30 @@ def get_member_contributions(meeting_id=None, host_id=None, status=None,member_i
         # Fetch the latest meeting if no meeting ID is provided
         if not meeting_id:
             meeting = get_upcoming_meeting_details()
+            if not meeting:
+                return {
+                    'member_contributions': [],
+                    'host_name': 'Unknown Host',
+                    'meeting_date': 'Unknown Date'
+                }
             meeting_id = meeting['meeting_id']
             host_name = meeting['host']
-            meeting_date = meeting['when'] 
+            meeting_date = meeting['when']
+        else:
+            # Fetch meeting details if meeting_id is provided
+            meeting_response = requests.get(
+                f"{current_app.config['API_BASE_URL']}/api/v1/meetings/{meeting_id}"
+            )
+            if meeting_response.status_code != 200:
+                flash("Error fetching meeting details.", "danger")
+                return []
+            
+            meeting_data = meeting_response.json()
+            host_name = meeting_data.get('host_name', 'Unknown Host')
+            meeting_date = meeting_data.get('when', 'Unknown Date')
         
         # Fetch contributions for the meeting and apply filters if provided
-        contributions_params = {'meeting_id': meeting_id}
+        contributions_params = {'meeting_id': meeting_id, 'umbrella_id': umbrella_id}
         if host_id:
             contributions_params['host_id'] = host_id
         if member_id:
@@ -1803,7 +1830,7 @@ def get_member_contributions(meeting_id=None, host_id=None, status=None,member_i
                 member_contributions.append({
                     'full_name': member['full_name'],
                     'amount': contribution_record['amount'],
-                    'status':'Contributed' if contribution_record['transaction_status'] else 'Unknown',
+                    'status': 'Contributed' if contribution_record['transaction_status'] else 'Unknown',
                 })
             else:
                 member_contributions.append({
@@ -1813,12 +1840,13 @@ def get_member_contributions(meeting_id=None, host_id=None, status=None,member_i
                 })
 
         return {
-                    'member_contributions': member_contributions,
-                    'host_name': host_name,
-                    'meeting_date': meeting_date
-                }
+            'member_contributions': member_contributions,
+            'host_name': host_name,
+            'meeting_date': meeting_date
+        }
 
     except Exception as e:
+        flash("Error fetching member contributions.", "danger")
         return []
 
 
