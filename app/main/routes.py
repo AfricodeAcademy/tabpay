@@ -1726,8 +1726,7 @@ def get_block_contributions(meeting_id=None, host_id=None, status=None):
                         'block_name': block['name'],
                         'contributions': contributions
                     }
-                    block_contributions.append(block_data)
-
+                block_contributions[block['name']] = sum(c.get('amount', 0) for c in contributions)
         return {
             'block_contributions': block_contributions,
             'host_name': host_name,
