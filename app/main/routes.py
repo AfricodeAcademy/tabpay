@@ -1786,10 +1786,7 @@ def get_member_contributions(meeting_id=None, host_id=None, status=None, member_
             return []
 
         payment_data = contributions_response.json()
-        if isinstance(payment_data, list):
-            transactions = payment_data
-        else:
-            transactions = payment_data.get('payments', {}).get('transactions', [])
+        transactions = payment_data.get('transactions', [])
 
         # Combine members with their contributions
         member_contributions = []
