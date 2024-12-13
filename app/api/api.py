@@ -515,35 +515,24 @@ class PaymentsResource(BaseResource):
                     return {"message": "No payments found for this phone number and meeting."}, 404
 
                 # Associate the payment with the user, block, and meeting
-                # Group payments by meeting_id
-                grouped_payments = {}
+                payment_data = []
                 for payment in payments:
-                    meeting_id = payment.meeting_id
-                    if meeting_id not in grouped_payments:
-                        block = BlockModel.query.get(payment.block_id)
-                        meeting = MeetingModel.query.get(meeting_id)
-                        grouped_payments[meeting_id] = {
-                            "mpesa_ids": [payment.mpesa_id],
-                            "amount": payment.amount,
-                            "transaction_status": payment.transaction_status,
-                            "payer_id": matched_user.id,
-                            "payer_full_name": f"{matched_user.first_name} {matched_user.last_name}",
-                            "block_id": block.id if block else None,
-                            "block_name": block.name if block else "Unknown",
-                            "meeting_id": meeting_id,
-                            "payment_dates": [payment.payment_date],
-                            "status": "Contributed" if payment.transaction_status else "Pending"
-                        }
-                    else:
-                        # Increment amount and append payment details for same meeting
-                        grouped_payments[meeting_id]["amount"] += payment.amount
-                        grouped_payments[meeting_id]["mpesa_ids"].append(payment.mpesa_id)
-                        grouped_payments[meeting_id]["payment_dates"].append(payment.payment_date)
+                    block = BlockModel.query.get(payment.block_id)
+                    meeting = MeetingModel.query.get(payment.meeting_id)
+                    payment_data.append({
+                        "mpesa_id": payment.mpesa_id,
+                        "amount": payment.amount,
+                        "transaction_status": payment.transaction_status,
+                        "payer_id": matched_user.id,  # Payer ID
+                        "payer_full_name": f"{matched_user.first_name} {matched_user.last_name}",  # Payer Full Name
+                        "block_id": block.id if block else None,  # Block ID
+                        "block_name": block.name if block else "Unknown",  # Block Name
+                        "meeting_id": meeting.id if meeting else None,  # Meeting ID
+                        "payment_date": payment.payment_date,
+                        "status": "Contributed" if payment.transaction_status else "Pending"
+                    })
 
-                # Convert grouped payments to list
-                payment_data = list(grouped_payments.values())
-
-                logger.info(f"Aggregated payments retrieved for phone number {phone_number} and meeting_id {meeting_id}: {payment_data}")
+                logger.info(f"Payments retrieved for phone number {phone_number} and meeting_id {meeting_id}: {payment_data}")
                 return {"payments": payment_data}, 200
 
             # Handle other queries for fetching all payments or specific payment by ID
