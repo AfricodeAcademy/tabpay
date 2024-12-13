@@ -1785,7 +1785,11 @@ def get_member_contributions(meeting_id=None, host_id=None, status=None, member_
             flash("Error fetching contributions. Please try again later.", "danger")
             return []
 
-        transactions = contributions_response.json()
+        payment_data = contributions_response.json()
+        if isinstance(payment_data, list):
+            transactions = payment_data
+        else:
+            transactions = payment_data.get('payments', {}).get('transactions', [])
 
         # Combine members with their contributions
         member_contributions = []
