@@ -1707,7 +1707,7 @@ def get_block_contributions(meeting_id=None, host_id=None, status=None):
             # Fetch contributions for each block
         block_contributions = []
         for block in blocks:
-            params = {'meeting_id': meeting_id, 'block_id': block['id']}
+            params = {'meeting_id': meeting_id, 'block_id': block['id'], 'umbrella_id': umbrella_id}
             if status:
                 params['status'] = status
             if host_id:
