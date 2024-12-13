@@ -1750,7 +1750,7 @@ def get_member_contributions(meeting_id=None, host_id=None, status=None, member_
     try:
         # Fetch all members of the umbrella
         members_response = requests.get(
-            f"{current_app.config['API_BASE_URL']}/api/v1/users/",
+            f"{current_app.config['API_BASE_URL']}/api/v1/users/", 
             params={'role': 'Member', 'umbrella_id': umbrella_id['id']}
         )
         
@@ -1765,7 +1765,7 @@ def get_member_contributions(meeting_id=None, host_id=None, status=None, member_
             meeting = get_upcoming_meeting_details()
             meeting_id = meeting['meeting_id']
             host_name = meeting['host']
-            meeting_date = meeting['when'] 
+            meeting_date = meeting['when']
         
         # Fetch contributions for the meeting and apply filters if provided
         contributions_params = {'meeting_id': meeting_id}
@@ -1777,7 +1777,7 @@ def get_member_contributions(meeting_id=None, host_id=None, status=None, member_
             contributions_params['status'] = status
 
         contributions_response = requests.get(
-            f"{current_app.config['API_BASE_URL']}/api/v1/payments/",
+            f"{current_app.config['API_BASE_URL']}/api/v1/payments/", 
             params=contributions_params
         )
 
@@ -1785,49 +1785,48 @@ def get_member_contributions(meeting_id=None, host_id=None, status=None, member_
             flash("Error fetching contributions. Please try again later.", "danger")
             return []
 
-        payment_data = contributions_response.json()
-        transactions = payment_data.get('transactions', [])
+        contributions = contributions_response.json()
+
+        # Dictionary to store total contribution for each member by phone and account number
+        contribution_totals = {}
+
+        for contribution in contributions:
+            phone_number = contribution['source_phone_number']
+            account_number = contribution['account_number']
+            key = (phone_number, account_number)  # Unique identifier for phone and account combination
+
+            if key not in contribution_totals:
+                contribution_totals[key] = 0
+            
+            contribution_totals[key] += contribution['amount']
 
         # Combine members with their contributions
         member_contributions = []
         for member in members:
-            contribution_record = next(
-                (t for t in transactions if t['payer_id'] == member['id']), 
-                None
-            )
+            member_total_contribution = 0
+            member_status = 'Pending'
 
-            contribution = {
+            # Sum up the contributions for this member's phone number and account
+            for (phone, account_number), total_amount in contribution_totals.items():
+                if member['phone_number'] == phone:
+                    member_total_contribution += total_amount
+                    member_status = 'Contributed'  # If any contribution exists, mark status as contributed
+
+            member_contributions.append({
                 'full_name': member['full_name'],
-                'member_id': member['id'],
-                'amount': contribution_record['amount'] if contribution_record else 0,
-                'status': contribution_record['status'] if contribution_record else 'Pending',
-                'mpesa_id': contribution_record['mpesa_id'] if contribution_record else None,
-                'payment_date': contribution_record['payment_date'] if contribution_record else None,
-                'block_name': contribution_record['block_name'] if contribution_record else 'Unknown',
-            }
-            
-            member_contributions.append(contribution)
-
-        total_amount = sum(c['amount'] for c in member_contributions)
+                'amount': member_total_contribution,
+                'status': member_status,
+            })
 
         return {
-            'total_amount': total_amount,
-            'contributions': member_contributions,
-            'meeting_id': meeting_id,
+            'member_contributions': member_contributions,
             'host_name': host_name,
             'meeting_date': meeting_date
         }
 
     except Exception as e:
-        logger.error(f"Error processing member contributions: {str(e)}", exc_info=True)
-        flash("Error processing contributions. Please try again later.", "danger")
-        return {
-            'total_amount': 0,
-            'contributions': [],
-            'meeting_id': meeting_id,
-            'host_name': 'Unknown',
-            'meeting_date': None
-        }
+        current_app.logger.error(f"Error in get_member_contributions: {e}")
+        return []
 
 
 def render_contribution_page(active_tab=None,payment_form=None, error=None):
