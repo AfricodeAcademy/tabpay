@@ -1647,36 +1647,40 @@ def block_reports(umbrella):
                              status=status,
                              umbrella=umbrella)
 
-def get_block_contributions(meeting_id=None, host_id=None):
+def get_block_contributions(meeting_id=None, host_id=None, status=None):
     # Get the current user's umbrella
     umbrella = get_umbrella_by_user(current_user.id)
     if not umbrella:
         flash('You need to create an umbrella before getting block reports!', 'info')
         return {
-            'block_contributions': {}, 
+            'block_contributions': [], 
             'host_name': 'Unknown Host',
             'meeting_date': 'Unknown Date'
         }
+    umbrella_id = umbrella['id']
 
     try:
         # Fetch all blocks under the umbrella
         blocks_response = requests.get(
             f"{current_app.config['API_BASE_URL']}/api/v1/blocks/", 
-            params={'parent_umbrella_id': umbrella['id']}  # Use parent_umbrella_id instead of umbrella_id
+            params={'parent_umbrella_id': umbrella_id}  # Use parent_umbrella_id instead of umbrella_id
         )
 
         if blocks_response.status_code != 200:
             flash("Error fetching blocks. Please try again later.", "danger")
-            return []
+            return {
+                'block_contributions': [],
+                'host_name': 'Unknown Host',
+                'meeting_date': 'Unknown Date'
+            }
 
         blocks = blocks_response.json()
 
-        # Fetch the latest meeting if no meeting ID is provided
         if not meeting_id:
             meeting = get_upcoming_meeting_details()
             if not meeting:
                 return {
-                    'block_contributions': {},
+                    'block_contributions': [],
                     'host_name': 'Unknown Host',
                     'meeting_date': 'Unknown Date'
                 }
@@ -1688,56 +1692,41 @@ def get_block_contributions(meeting_id=None, host_id=None):
             meeting_response = requests.get(
                 f"{current_app.config['API_BASE_URL']}/api/v1/meetings/{meeting_id}"
             )
+           
             if meeting_response.status_code != 200:
                 flash("Error fetching meeting details.", "danger")
-                return []
+                return {
+                    'block_contributions': [],
+                    'host_name': 'Unknown Host',
+                    'meeting_date': 'Unknown Date'
+                }
             
             meeting_data = meeting_response.json()
-            block_id = meeting_data.get('block_id')
-            # Check if the block belongs to the umbrella
-            if not any(block['id'] == block_id for block in blocks):
-                flash("You do not have permission to view this meeting's contributions.", "info")
-                return []
-            host_name = meeting_data.get('host_name', 'Unknown Host')
-            meeting_date = meeting_data.get('date', 'Unknown Date')
-
-        # Fetch contributions for the meeting and filter by host if provided
-        contributions_params = {'meeting_id': meeting_id}
-        if host_id:
-            # Verify that the host belongs to the umbrella's blocks
-            host_response = requests.get(
-                f"{current_app.config['API_BASE_URL']}/api/v1/users/{host_id}"
-            )
-            if host_response.status_code != 200:
-                flash("Error fetching host details.", "danger")
-                return []
-            
-            host_data = host_response.json()
-            host_blocks = host_data.get('block_memberships', [])
-            if not any(block['parent_umbrella_id'] == umbrella['id'] for block in host_blocks):
-                flash("You do not have permission to view this host's contributions.", "info")
-                return []
-            
-            contributions_params['host_id'] = host_id
-
-        contributions_response = requests.get(
-            f"{current_app.config['API_BASE_URL']}/api/v1/payments/",
-            params=contributions_params
-        )
-
-        if contributions_response.status_code != 200:
-            flash("Error fetching contributions. Please try again later.", "danger")
-            return []
-
-        contributions = contributions_response.json()
-
-        # Aggregate contributions by block
-        block_contributions = {}
+            host_name = meeting_data.get('host', 'Unknown Host')
+            meeting_date = meeting_data.get('when', 'Unknown Date')
+            # Fetch contributions for each block
+        block_contributions = []
         for block in blocks:
-            block_contributions[block['name']] = sum(
-                contribution['amount'] for contribution in contributions
-                if contribution['block_id'] == block['id']
+            params = {'meeting_id': meeting_id, 'block_id': block['id']}
+            if status:
+                params['status'] = status
+            if host_id:
+                params['host_id'] = host_id
+
+            contributions_response = requests.get(
+                f"{current_app.config['API_BASE_URL']}/api/v1/payments/",
+                params=params
             )
+            
+            if contributions_response.status_code == 200:
+                contributions = contributions_response.json()
+                if contributions:
+                    block_data = {
+                        'block_id': block['id'],
+                        'block_name': block['name'],
+                        'contributions': contributions
+                    }
+                    block_contributions.append(block_data)
 
         return {
             'block_contributions': block_contributions,
@@ -1747,7 +1736,11 @@ def get_block_contributions(meeting_id=None, host_id=None):
 
     except Exception as e:
         flash("Error fetching block contributions.", "danger")
-        return []
+        return {
+            'block_contributions': [],
+            'host_name': 'Unknown Host',
+            'meeting_date': 'Unknown Date'
+        }
 
 
 def get_member_contributions(meeting_id=None, host_id=None, status=None,member_id=None):
