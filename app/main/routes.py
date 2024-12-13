@@ -462,18 +462,13 @@ def handle_umbrella_creation(umbrella_form):
 
         # Check if the umbrella name or location already exists
         duplicate_name = any(u['name'].lower() == umbrella_form.umbrella_name.data.lower() for u in umbrellas)
-        duplicate_location = any(u['location'].lower() == umbrella_form.location.data.lower() for u in umbrellas)
 
         # Handle duplicates
-        if duplicate_name and duplicate_location:
-            flash('An umbrella with this name and location already exists!', 'info')
-            return redirect(url_for('main.settings', active_tab='umbrella'))
-        elif duplicate_name:
+    
+        if duplicate_name:
             flash('An umbrella with this name already exists!', 'info')
             return redirect(url_for('main.settings', active_tab='umbrella'))
-        elif duplicate_location:
-            flash('An umbrella with this location already exists!', 'info')
-            return redirect(url_for('main.settings', active_tab='umbrella'))
+     
 
         # Proceed with umbrella creation if no duplicates are found
         create_umbrella({
