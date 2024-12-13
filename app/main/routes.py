@@ -1190,7 +1190,7 @@ def get_upcoming_meeting_details():
                 today = datetime.now().date()
                 meeting_date_only = meeting_date.date()
                 
-                if meeting_date_only < today:
+                if meeting_date_only < today and (today - meeting_date_only).days > 6:
                     logging.info(f"Meeting has expired. Meeting date: {meeting_date_only}, Today: {today}")
                     return None
 
