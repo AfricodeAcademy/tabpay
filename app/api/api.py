@@ -462,14 +462,19 @@ class BanksResource(BaseResource):
 
 
 def normalize_phone_number(phone_number):
-        """Normalize phone number to remove country code or leading zeroes."""
-        if phone_number.startswith("+"):
-            phone_number = phone_number[1:]  # Remove the '+'
-        if phone_number.startswith("254"):
-            phone_number = phone_number[3:]  # Remove '254'
-        if phone_number.startswith("0"):
-            phone_number = phone_number[1:]  # Remove leading '0'
-        return phone_number
+    """Normalize phone number to remove country code or leading zeroes."""
+    if phone_number.startswith("+"):
+        phone_number = phone_number[1:]  # Remove the '+'
+    if phone_number.startswith("254"):
+        phone_number = phone_number[3:]  # Remove '254'
+    if phone_number.startswith("0"):
+        phone_number = phone_number[1:]  # Remove leading '0'
+    return phone_number
+
+def serialize_datetime(dt):
+    """Convert datetime object to ISO 8601 string format."""
+    return dt.isoformat() if isinstance(dt, datetime) else dt
+
 
 class PaymentsResource(BaseResource):
     model = PaymentModel
@@ -514,23 +519,26 @@ class PaymentsResource(BaseResource):
                     logger.info(f"No payments found for phone number: {phone_number} and meeting_id: {meeting_id}")
                     return {"message": "No payments found for this phone number and meeting."}, 404
 
-                # Associate the payment with the user, block, and meeting
-                payment_data = []
-                for payment in payments:
-                    block = BlockModel.query.get(payment.block_id)
-                    meeting = MeetingModel.query.get(payment.meeting_id)
-                    payment_data.append({
-                        "mpesa_id": payment.mpesa_id,
-                        "amount": payment.amount,
-                        "transaction_status": payment.transaction_status,
-                        "payer_id": matched_user.id,  # Payer ID
-                        "payer_full_name": f"{matched_user.first_name} {matched_user.last_name}",  # Payer Full Name
-                        "block_id": block.id if block else None,  # Block ID
-                        "block_name": block.name if block else "Unknown",  # Block Name
-                        "meeting_id": meeting.id if meeting else None,  # Meeting ID
-                        "payment_date": payment.payment_date,
-                        "status": "Contributed" if payment.transaction_status else "Pending"
-                    })
+                # Calculate cumulative payment and prepare response data
+                cumulative_amount = sum(payment.amount for payment in payments)
+                payment_data = {
+                    "total_amount": cumulative_amount,
+                    "transactions": [
+                        {
+                            "mpesa_id": payment.mpesa_id,
+                            "amount": payment.amount,
+                            "transaction_status": payment.transaction_status,
+                            "payer_id": matched_user.id,
+                            "payer_full_name": f"{matched_user.full_name}",
+                            "block_id": payment.block_id,
+                            "block_name": BlockModel.query.get(payment.block_id).name if payment.block_id else "Unknown",
+                            "meeting_id": payment.meeting_id,
+                        "payment_date": serialize_datetime(payment.payment_date),  # Serialize datetime
+                            "status": "Contributed" if payment.transaction_status else "Pending"
+                        }
+                        for payment in payments
+                    ]
+                }
 
                 logger.info(f"Payments retrieved for phone number {phone_number} and meeting_id {meeting_id}: {payment_data}")
                 return {"payments": payment_data}, 200

@@ -1748,7 +1748,6 @@ def get_block_contributions(meeting_id=None, host_id=None):
 def get_member_contributions(meeting_id=None, host_id=None, status=None,member_id=None):
     umbrella_id = get_umbrella_by_user(current_user.id)
     try:
-
         # Fetch all members of the umbrella
         members_response = requests.get(
             f"{current_app.config['API_BASE_URL']}/api/v1/users/",
@@ -1786,35 +1785,48 @@ def get_member_contributions(meeting_id=None, host_id=None, status=None,member_i
             flash("Error fetching contributions. Please try again later.", "danger")
             return []
 
-        contributions = contributions_response.json()
+        payment_data = contributions_response.json().get('payments', {})
+        total_amount = payment_data.get('total_amount', 0)
+        transactions = payment_data.get('transactions', [])
 
         # Combine members with their contributions
         member_contributions = []
         for member in members:
-            contribution_record = next((c for c in contributions if c['payer_id'] == member['id']), None)
+            contribution_record = next(
+                (t for t in transactions if t['payer_id'] == member['id']), 
+                None
+            )
 
-            # Add contribution details or pending status
-            if contribution_record:
-                member_contributions.append({
-                    'full_name': member['full_name'],
-                    'amount': contribution_record['amount'],
-                    'status':'Contributed' if contribution_record['transaction_status'] else 'Unknown',
-                })
-            else:
-                member_contributions.append({
-                    'full_name': member['full_name'],
-                    'amount': 0.0,
-                    'status': 'Pending',
-                })
+            contribution = {
+                'full_name': member['full_name'],
+                'member_id': member['id'],
+                'amount': contribution_record['amount'] if contribution_record else 0,
+                'status': contribution_record['status'] if contribution_record else 'Pending',
+                'mpesa_id': contribution_record['mpesa_id'] if contribution_record else None,
+                'payment_date': contribution_record['payment_date'] if contribution_record else None,
+                'block_name': contribution_record['block_name'] if contribution_record else 'Unknown',
+            }
+            
+            member_contributions.append(contribution)
 
         return {
-                    'member_contributions': member_contributions,
-                    'host_name': host_name,
-                    'meeting_date': meeting_date
-                }
+            'total_amount': total_amount,
+            'contributions': member_contributions,
+            'meeting_id': meeting_id,
+            'host_name': host_name,
+            'meeting_date': meeting_date
+        }
 
     except Exception as e:
-        return []
+        logger.error(f"Error processing member contributions: {str(e)}", exc_info=True)
+        flash("Error processing contributions. Please try again later.", "danger")
+        return {
+            'total_amount': 0,
+            'contributions': [],
+            'meeting_id': meeting_id,
+            'host_name': 'Unknown',
+            'meeting_date': None
+        }
 
 
 def render_contribution_page(active_tab=None,payment_form=None, error=None):
